@@ -1,5 +1,5 @@
 SHELL := /bin/bash
-.PHONY: bootstrap gen build test lint snapshot perf coverage content-lint sim todo
+.PHONY: bootstrap gen build test lint snapshot perf coverage sim content-lint todo
 
 bootstrap:
 	brew install --overwrite xcodegen swiftlint swift-format 2>/dev/null || true
@@ -8,33 +8,41 @@ gen:
 	xcodegen generate --spec project.yml
 
 build: gen
-	xcodebuild build -scheme NM -destination 'platform=iOS Simulator,name=iPad Pro 13-inch (M5)' -configuration Debug 2>&1 | tee /tmp/nm-ios-build.log
-	xcodebuild build -scheme NM-macOS -destination 'platform=macOS' -configuration Debug 2>&1 | tee /tmp/nm-mac-build.log
+	xcodebuild build -scheme NM -destination 'platform=iOS Simulator,name=iPad Pro 13-inch (M5)' -configuration Debug
+	xcodebuild build -scheme NM-macOS -destination 'platform=macOS' -configuration Debug
 
 test: gen
-	swift test --package-path Packages/NMCore --parallel --enable-code-coverage 2>&1 | tee /tmp/nm-core-test.log
-	swift test --package-path Packages/NMContent --parallel --enable-code-coverage 2>&1 | tee /tmp/nm-content-test.log
-	swift test --package-path Packages/NMAI --parallel --enable-code-coverage 2>&1 | tee /tmp/nm-ai-test.log
-	xcodebuild test -scheme NM -destination 'platform=iOS Simulator,name=iPad Pro 13-inch (M5)' -configuration Debug 2>&1 | tee /tmp/nm-xcode-test.log
+	swift test --package-path Packages/NMCore
+	swift test --package-path Packages/NMContent
+	swift test --package-path Packages/NMAI
+	xcodebuild test -scheme NM -destination 'platform=iOS Simulator,name=iPad Pro 13-inch (M5)' -configuration Debug
 
 lint:
-	swiftlint --strict --config .swiftlint.yml 2>&1
+	swiftlint --strict --config .swiftlint.yml
 	swift-format lint --recursive Packages/ App/ --configuration .swift-format
 
 content-lint:
-	swift run --package-path Tools/content-lint content-lint Resources/Content/ 2>&1 || true
+	swift run --package-path Tools/content-lint content-lint Resources/Content/
 
 snapshot: gen
-	xcodebuild test -scheme NM -destination 'platform=iOS Simulator,name=iPad Pro 13-inch (M5)' -configuration Debug -only-testing:Snapshots 2>&1 | tee /tmp/nm-snapshot.log
+	xcodebuild test -scheme NM -destination 'platform=iOS Simulator,name=iPad Pro 13-inch (M5)' -configuration Debug -only-testing:Snapshots
 
 perf: gen
-	xcodebuild test -scheme NM -destination 'platform=iOS Simulator,name=iPad Pro 13-inch (M5)' -configuration Debug -only-testing:PerfTests 2>&1 | tee /tmp/nm-perf.log
+	xcodebuild test -scheme NM -destination 'platform=iOS Simulator,name=iPad Pro 13-inch (M5)' -configuration Debug -only-testing:PerfTests
 
+# Headless rules-engine check (S1.3): N seeded nights, invariants, deterministic.
+sim:
+	swift build -c release --package-path Tools/sim
+	swift run -c release --package-path Tools/sim sim --invariant-sweep $(or $(N),1000)
+
+# Line-coverage summary into docs/COVERAGE.md (Core target: >= 90%).
 coverage:
-	xcrun xccov report --workspace --all-targets /Users/agent/.hermes/profiles/geist/work/Geist/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/Library/Xcode/DerivedData/Geist-hjscgijzzwfyztbivsinfrtcjnmo/Build/Products/Debug-iphonesimulator/NMUITests*.xctest 2>&1 | tee docs/COVERAGE.md || true
-
-sim: gen
-	swift run --package-path Tools/sim sim --count 200 --seed 42 2>&1 || true
+	swift test --enable-code-coverage --package-path Packages/NMCore
+	@xcrun llvm-cov report Packages/NMCore/.build/out/Products/Debug/NMCoreTests.xctest/Contents/MacOS/NMCoreTests \
+		-instr-profile Packages/NMCore/.build/out/Products/Debug/codecov/default.profdata \
+		> /tmp/nm-cov.txt
+	@grep -E 'TOTAL' /tmp/nm-cov.txt | sed 's|/Users.*/Sources/|Sources/|' > docs/COVERAGE.md
+	@grep -E 'Sources' /tmp/nm-cov.txt | sed 's|/Users.*/Sources/|Sources/|' >> docs/COVERAGE.md
 
 todo:
 	grep -rn 'TODO(' Packages/ App/ 2>/dev/null | sort || true

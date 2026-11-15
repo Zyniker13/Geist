@@ -3,11 +3,14 @@ public struct Gate: Codable, Sendable, Equatable, Hashable {
     public let id: Int
     public var position: Tile
     public var isOpen: Bool
+    /// Tick at which this gate opens (R-6: 21:00 and 00:00 when the map has more gates).
+    public var opensAtTick: Int?
 
-    public init(id: Int, position: Tile, isOpen: Bool = true) {
+    public init(id: Int, position: Tile, isOpen: Bool = true, opensAtTick: Int? = nil) {
         self.id = id
         self.position = position
-        self.isOpen = isOpen
+        self.isOpen = opensAtTick == nil
+        self.opensAtTick = opensAtTick
     }
 }
 

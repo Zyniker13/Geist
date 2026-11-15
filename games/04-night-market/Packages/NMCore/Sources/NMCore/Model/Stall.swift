@@ -4,20 +4,26 @@ public struct Stall: Codable, Sendable, Equatable, Hashable {
     public let color: StallColor
     public var position: Tile
     public var isOpen: Bool
+    /// Tick at which this stall opens (R-6 schedule, jitter already applied).
+    public var scheduledOpenTick: Int?
     public var queue: [CustomerID]
     public var serviceProgress: Int  // ticks until next service
     public var overflowTimer: Int
     public var serviceTicks: Int  // default 90
 
-    public init(id: Int, color: StallColor, position: Tile, serviceTicks: Int = 90) {
+    public init(
+        id: Int, color: StallColor, position: Tile, serviceTicks: Int = 90,
+        scheduledOpenTick: Int? = nil
+    ) {
         self.id = id
         self.color = color
         self.position = position
-        self.isOpen = false
+        self.isOpen = scheduledOpenTick == nil
         self.queue = []
         self.serviceProgress = 0
         self.overflowTimer = 0
         self.serviceTicks = serviceTicks
+        self.scheduledOpenTick = scheduledOpenTick
     }
 }
 

@@ -122,6 +122,26 @@ struct GameStateTests {
         #expect(s1.grid.width == s2.grid.width)
         #expect(s1.grid.height == s2.grid.height)
     }
+
+    @Test("state digest covers walkway tiles (INV-5 soundness)")
+    func digestCoversWalkways() throws {
+        var state = GameState.initial(seed: 42)
+        let base = StateHash.digest(state)
+        var rng = SeededRNG(seed: 7)
+        (state, _) = try Reducer.apply(.paintWalkway([Tile(col: 3, row: 3)]), to: state, rng: &rng)
+        #expect(StateHash.digest(state) != base, "painting a walkway must change the digest")
+
+        // Tile order in the Set must not matter (sorted hashing).
+        var flipped = state
+        flipped.walkwayTiles = []
+        flipped.walkwayTiles.insert(Tile(col: 9, row: 2))
+        flipped.walkwayTiles.insert(Tile(col: 3, row: 3))
+        var ordered = state
+        ordered.walkwayTiles = []
+        ordered.walkwayTiles.insert(Tile(col: 3, row: 3))
+        ordered.walkwayTiles.insert(Tile(col: 9, row: 2))
+        #expect(StateHash.digest(flipped) == StateHash.digest(ordered))
+    }
 }
 
 @Suite("Reducer Tests")
@@ -229,13 +249,13 @@ struct FlowFieldTests {
         for i in state.stalls.indices {
             state.stalls[i].isOpen = true
         }
+        state.fieldVersion += 1
 
-        var ff = FlowField()
-        ff.compute(for: state)
+        let withFields = FlowFields.ensureCurrent(for: state)
 
-        // Check that some tiles have values
+        // A plaza tile is traversable and reachable from stalls on the plaza.
         let tile = Tile(col: 14, row: 9)
-        let steps = ff.steps(toColor: .noodles, at: tile)
+        let steps = withFields.pathFields.steps(toColor: .noodles, at: tile)
         #expect(steps != nil)
         #expect(steps! >= 0)
     }
@@ -247,13 +267,41 @@ struct FlowFieldTests {
         for i in state.stalls.indices {
             state.stalls[i].isOpen = false
         }
+        state.fieldVersion += 1
 
-        var ff = FlowField()
-        ff.compute(for: state)
+        let withFields = FlowFields.ensureCurrent(for: state)
 
         let tile = Tile(col: 14, row: 9)
-        let steps = ff.steps(toColor: .noodles, at: tile)
+        let steps = withFields.pathFields.steps(toColor: .noodles, at: tile)
         #expect(steps == nil)
+    }
+
+    @Test("unpainted ground is not traversable (R-10)")
+    func groundNotTraversableWithoutWalkway() {
+        let state = GameState.initial(seed: 42)
+        #expect(!state.isTraversable(Tile(col: 5, row: 5)))
+        #expect(state.isTraversable(Tile(col: 14, row: 10)))  // plaza
+    }
+
+    @Test("walkway paint makes ground traversable (R-10, R-14)")
+    func walkwayMakesGroundTraversable() throws {
+        var state = GameState.initial(seed: 42)
+        let tile = Tile(col: 5, row: 5)
+        var rng = SeededRNG(seed: 1)
+        (state, _) = try Reducer.apply(.paintWalkway([tile]), to: state, rng: &rng)
+        #expect(state.isTraversable(tile))
+        #expect(state.usedBudget == 1)
+    }
+
+    @Test("corner turn adds cost (R-10)")
+    func cornerCost() {
+        let state = GameState.initial(seed: 42)
+        let a = Tile(col: 14, row: 10)
+        // Direct check of the edge cost function with fixtures absent:
+        // base 10 + dark 6 = 16; the +2 corner is applied in Dijkstra.
+        #expect(FlowFields.edgeCost(of: a, in: state) == 10)  // lantern at (14,10) lights it
+        let dark = Tile(col: 12, row: 8)
+        #expect(FlowFields.edgeCost(of: dark, in: state) == 16)
     }
 }
 
@@ -261,10 +309,21 @@ struct FlowFieldTests {
 struct ReplayTests {
     @Test("replay runs deterministically")
     func replayDeterministic() {
-        let state1 = GameState.initial(seed: 42)
-        let state2 = GameState.initial(seed: 42)
+        // Determinism check over a 3-checkpoint horizon keeps the Debug suite
+        // fast; the full-night run is exercised by Tools/sim at gate time.
+        let data = ReplayData(seed: 42, contentVersion: "0.0.0", actions: [])
+        let run1 = Replay.run(data, horizonTicks: 5_400)
+        let run2 = Replay.run(data, horizonTicks: 5_400)
+        #expect(run1.finalState == run2.finalState)
+        #expect(run1.checkpointHashes == run2.checkpointHashes)
+        #expect(run1.checkpointHashes.count == 3)  // 1800, 3600, 5400
+    }
 
-        #expect(state1.stalls.count == state2.stalls.count)
-        #expect(state1.grid.width == state2.grid.width)
+    @Test("initial state is deterministic")
+    func initialStateDeterministicHash() {
+        let s1 = GameState.initial(seed: 42)
+        let s2 = GameState.initial(seed: 42)
+        #expect(StateHash.digest(s1) == StateHash.digest(s2))
+        #expect(StateHash.digest(s1) != StateHash.digest(GameState.initial(seed: 43)))
     }
 }

@@ -16,7 +16,8 @@ let package = Package(
         .testTarget(
             name: "NMCoreTests",
             dependencies: ["NMCore"],
-            path: "Tests/NMCoreTests"
+            path: "Tests/NMCoreTests",
+            resources: [.copy("GoldenReplays")]
         ),
     ]
 )

@@ -1,10 +1,17 @@
-/// Scoring logic.
+/// Scoring logic (R-13).
 public enum Scoring {
-    /// Update score from served events (tracked in events).
+    /// Apply the dawn bonus when the night is survived: +25% of the score.
+    public static func dawnBonus(for score: Int) -> Int {
+        score / 4
+    }
+
+    /// Final score after a survived night.
+    public static func finalScore(survived: Bool, score: Int) -> Int {
+        survived ? score + dawnBonus(for: score) : score
+    }
+
+    /// Update hook kept for the tick pipeline; per-serve scoring happens in Service.
     public static func update(state: GameState) -> GameState {
-        var s = state
-        // Score is incremented in the reducer when .served events are produced.
-        // The UI layer tracks this; here we just ensure invariants hold.
-        return s
+        state
     }
 }

@@ -24,7 +24,7 @@
 - R-13 Score = customers served; a full night survived (reaching 06:00) adds a dawn bonus of 25% of the score.
 
 **Actions (Allowed While Paused or Running)**
-- R-14 `paintWalkway([Tile])` consumes budget per new tile; tiles must be ground or plaza; `eraseWalkway([Tile])` refunds the budget fully (no penalty) but customers on erased tiles are moved to the nearest walkway.
+- R-14 `paintWalkway([Tile])` consumes budget per new tile; tiles must be ground or plaza; `eraseWalkway([Tile])` refunds the budget fully (no penalty) but customers on erased tiles are moved to the nearest walkway. The same relocation applies to any edit that makes a customer's tile untraversable (e.g. moving a bridge off its span); seat-seekers whose target seat becomes unreachable give up and walk to the exit instead. Edits never leave a customer on a non-traversable tile.
 - R-15 `placeFixture(kind, tile)` and `moveFixture(id, tile)`: lanterns light radius 3; awnings cover a 3×3 area; buskers attract within radius 2; bridges span exactly 1–3 water tiles in a straight line.
 - R-16 `chooseUpgrade(id)` at hour boundaries; `setSpeed(1|2|3)`; `pause`/`resume`.
 

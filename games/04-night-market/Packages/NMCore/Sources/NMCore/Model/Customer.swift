@@ -5,18 +5,17 @@ public struct Customer: Codable, Sendable, Equatable, Hashable {
     public var position: FixedPoint2
     public var state: CustomerState
     public var targetStall: Int?  // stall ID
-    public var queueIndex: Int = 0
+    public var targetSeatID: Int?  // fixture ID of the claimed seat
     public var waitAtGate: Int = 0
     public var seatTimer: Int = 0
-    public var path: [FixedPoint2] = []
-    public var pathIndex: Int = 0
 
     public init(id: CustomerID, color: StallColor, position: FixedPoint2) {
         self.id = id
         self.color = color
         self.position = position
-        self.state = .walkingToGate
+        self.state = .atGateWaiting
         self.targetStall = nil
+        self.targetSeatID = nil
     }
 }
 

@@ -10,6 +10,38 @@ public enum TileType: Codable, Sendable, Equatable, Hashable {
     }
 }
 
+/// Cardinal direction (bridge spans, flow-field corner costs).
+public enum Direction: Codable, Sendable, Equatable, Hashable, CaseIterable {
+    case north
+    case south
+    case east
+    case west
+
+    public var delta: (col: Int, row: Int) {
+        switch self {
+        case .north: return (0, -1)
+        case .south: return (0, 1)
+        case .east: return (1, 0)
+        case .west: return (-1, 0)
+        }
+    }
+
+    /// The opposite direction (a corner turn changes direction).
+    public var opposite: Direction {
+        switch self {
+        case .north: return .south
+        case .south: return .north
+        case .east: return .west
+        case .west: return .east
+        }
+    }
+
+    /// True when moving `from` this direction to `to` turns a corner.
+    public static func isTurn(from: Direction, to: Direction) -> Bool {
+        from != to && from != to.opposite
+    }
+}
+
 /// A walkway tile.
 public struct WalkwayTile: Codable, Sendable, Equatable, Hashable {
     public let tile: Tile
@@ -38,11 +70,18 @@ public struct Tile: Codable, Sendable, Equatable, Hashable, Comparable {
     /// Neighbors (up, down, left, right).
     public func neighbors(in grid: Grid) -> [Tile] {
         var result: [Tile] = []
-        if col > 0 { result.append(Tile(col: col - 1, row: row)) }
-        if col < grid.width - 1 { result.append(Tile(col: col + 1, row: row)) }
-        if row > 0 { result.append(Tile(col: col, row: row - 1)) }
-        if row < grid.height - 1 { result.append(Tile(col: col, row: row + 1)) }
+        result.reserveCapacity(4)
+        forEachNeighbor(in: grid) { result.append($0) }
         return result
+    }
+
+    /// Allocation-free neighbor iteration for hot loops.
+    @inline(__always)
+    public func forEachNeighbor(in grid: Grid, _ body: (Tile) -> Void) {
+        if col > 0 { body(Tile(col: col - 1, row: row)) }
+        if col < grid.width - 1 { body(Tile(col: col + 1, row: row)) }
+        if row > 0 { body(Tile(col: col, row: row - 1)) }
+        if row < grid.height - 1 { body(Tile(col: col, row: row + 1)) }
     }
 
     public func manhattanTiles(to other: Tile) -> Int {
@@ -76,5 +115,9 @@ public struct Grid: Sendable, Codable, Equatable, Hashable {
         case .ground, .plaza: return true
         case .water, .building: return false
         }
+    }
+
+    public func boundsContain(_ tile: Tile) -> Bool {
+        tile.col >= 0 && tile.col < width && tile.row >= 0 && tile.row < height
     }
 }

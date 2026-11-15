@@ -3,10 +3,10 @@
 This file is the single place to resume the program from. Keep every field below current after every meaningful step (see "Resuming After a Restart" in `ROADMAP.md`). Per-game detail (gate evidence and sign-offs) lives in each game's `docs/STATUS.md`.
 
 - **Current game:** Night Market (`04-night-market`)
-- **Phase:** P0 (Setup) — G0 checks green, tag pending
-- **Last done:** fixed the real bugs the gates exposed (Fixed division/description, FlowField overflow crash, SeededRNG.randomElement always-nil, Tick pause/speed); all S0 tasks + NM-P0.1/NM-P0.2 complete; all gates green except the final UI-test rerun (running)
-- **Next step:** push blocked — the profile deploy key is bound to the old Seedvault repo and GitHub denies it for Zyniker13/Geist ("Permission to Zyniker13/Geist.git denied to deploy key"). G0 tagged locally on main (65013b6). Once push access exists: push main + tags, watch CI, then start P1 (Rules Engine Prototype). Local P1 work continues meanwhile.
-- **Blocked on:** maintainer — add a deploy key (or equivalent push credential) for `Zyniker13/Geist`.
+- **Phase:** P1 (Rules Engine Prototype) — COMPLETE; G1 evidence green, tagged `night-market/gate-G1-pass` (local; push blocked)
+- **Last done:** final-binary 500-night sweep OK (148,783 served, 0 violations); both app builds green; UI smoke test green; G1 tagged. Full P1 evidence in games/04-night-market/docs/STATUS.md.
+- **Next step:** P2 (Core Loop Vertical Slice) — MarketScene on iPad+Mac, painting gestures with autotile atlas, upgrade picker, results screen, save/resume, slice recording; G2 = full-night UI test on iPad+Mac, 400 customers at 60 fps, save/resume hash parity.
+- **Blocked on:** maintainer — add a deploy key (or equivalent push credential) for `Zyniker13/Geist`; P0 commits + G0 tag are local on main (65013b6) until then.
 
 ## Environment Check
 
@@ -32,7 +32,7 @@ If Xcode 27.2 or an iOS 26-or-later runtime is missing and cannot be installed w
 
 | Order | No. | Folder | Game | State | Last Gate | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | 04 | [`04-night-market`](games/04-night-market/ROADMAP.md) | Night Market | In Progress (P0) | — | all gates green; G0 tag pending |
+| 1 | 04 | [`04-night-market`](games/04-night-market/ROADMAP.md) | Night Market | In Progress (P1) | `night-market/gate-G0-pass` (local) | G0 green+tagged; P1 evidence green; G1 tag pending final sweep |
 | 2 | 12 | [`12-murmuration`](games/12-murmuration/ROADMAP.md) | Murmuration | Not Started | — | — |
 | 3 | 02 | [`02-orrery`](games/02-orrery/ROADMAP.md) | Orrery | Not Started | — | — |
 | 4 | 14 | [`14-beacon-coast`](games/14-beacon-coast/ROADMAP.md) | Beacon Coast | Not Started | — | — |
@@ -78,3 +78,5 @@ One line per meaningful step, newest last: date, phase or game and stage, what w
 - 2026-11-15: reconciled the program files with the game roadmap set (`games/_shared/`); build order set in `ROADMAP.md`, Night Market first; superseded program docs removed.
 - 2026-11-15: the build agent now owns every phase, P0–P10, of every game, with self-checked gates, local substitutes for owner-only steps, and maintainer items filed as GitHub issues (fallback: Needs the Maintainer). Toolchain set to Xcode 27.2 with 26.0 deployment targets.
 - 2026-11-15: Night Market P0 built on `night-market/phase/P0-setup`: config layer, 7 SwiftPM packages, core sim (SeededRNG/Fixed/FixedPoint2/Grid/Stall/Customer/Reducer/Tick/Spawner/FlowField/Movement/Service/Overflow/Scoring/Replay), app shell + debug overlay, tools, CI workflow, docs. Real bugs fixed: Fixed ÷ and description, FlowField Int overflow crash, SeededRNG.randomElement always-nil, Tick pause/speed. All gates green; G0 tag pending.
+- 2026-11-15: Night Market P0 complete — G0 evidence recorded in the game's docs/STATUS.md, tag `night-market/gate-G0-pass` created locally on main (65013b6). Push blocked: profile deploy key authenticates as the old Seedvault repo; needs-maintainer entries added (deploy key, GitHub token, 120fps-vs-60Hz question).
+- 2026-11-15: Night Market P1 rules engine built per R-1…R-17: flow fields ((tile, direction) Dijkstra, version-keyed cache), movement (density slowdown, integer moveToward), service/overflow/scoring, fixtures and rain. `Tools/sim` headless runner: full night ≤ 1.12 s CPU (target ≤ 1.5 s). Ten golden replays committed and bit-reproducible (ADR-0007 ordering). The 500-night sweep exposed two customer-stranding bugs (bridge moves; seats on erased walkways) — fixed TDD, ADR-0006 — and a map bug (plaza loop overwrote the row-12 canal; ADR-0008). Debug/Release hash parity achieved by sorted walkway hashing and removing Set iteration order from RNG paths. NMCore: 71 tests / 11 suites, line coverage 94.95%; lint clean in 52 files.
