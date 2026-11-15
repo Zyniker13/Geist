@@ -90,7 +90,7 @@ final class NMUITests: XCTestCase {
     }
 
     func testFullNightToResults() throws {
-        let app = launch("-uitest-fast", "-uitest-fresh", "-uitest-autochoose")
+        let app = launch("-uitest-fast", "-uitest-fresh", "-uitest-autochoose", "-uitest-debug")
         paintLane(app: app, row: 9)
         waitForResults(app)
         let next = app.buttons["next-night-button"]
@@ -99,6 +99,11 @@ final class NMUITests: XCTestCase {
             || app.buttons["next-night"].waitForExistence(timeout: 2)
             || app.descendants(matching: .any)["next-night-button"].firstMatch.exists
         XCTAssertTrue(found, "results screen should offer the next night")
+        // NM-P7.1: a finished night fires its leaderboard/achievement posts
+        // (the mock poster records them; the debug overlay shows the count).
+        let posts = app.staticTexts["debug-posts"]
+        XCTAssertTrue(posts.waitForExistence(timeout: 5), "the debug overlay should show the posts row")
+        XCTAssertNotEqual(posts.label, "POSTS 0", "a finished night must fire at least one post")
         app.terminate()
     }
 

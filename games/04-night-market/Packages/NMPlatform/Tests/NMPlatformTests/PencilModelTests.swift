@@ -16,7 +16,7 @@ struct PencilModelTests {
 
     @Test("the bridge type list compiles on every platform")
     func typesExist() {
-        let _ = PencilInputModel()
+        _ = PencilInputModel()
         #expect(PencilInputModel() == PencilInputModel())
     }
 }
