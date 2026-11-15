@@ -117,7 +117,7 @@ public extension GameState {
     }
 
     /// The tile a position sits on.
-    func tileOf(_ position: FixedPoint2) -> Tile {
+    public func tileOf(_ position: FixedPoint2) -> Tile {
         Tile(col: Int(position.x) / 1024, row: Int(position.y) / 1024)
     }
 

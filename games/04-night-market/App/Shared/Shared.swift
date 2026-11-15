@@ -10,6 +10,10 @@ public final class DebugState: ObservableObject {
     @Published public var tick: Int = 0
     @Published public var seed: UInt64 = 0
     @Published public var stateHash: UInt64 = 0
+    /// Hex form of the current state hash (matches the sim's hash format).
+    @Published public var stateHashHex: String = "-"
+    /// Hex hash of the last completed save (UI-test save/resume assertion).
+    @Published public var autosaveHash: String = "-"
 
     public init() {}
 }
@@ -22,14 +26,7 @@ public struct ContentView: View {
 
     public var body: some View {
         ZStack(alignment: .topTrailing) {
-            VStack {
-                Text("Night Market")
-                    .font(.largeTitle)
-                Text("Build in progress — P0 scaffold")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            GameScreen()
 
             if debug.isVisible {
                 DebugOverlay()
@@ -60,9 +57,14 @@ struct DebugOverlay: View {
         VStack(alignment: .leading, spacing: 2) {
             Text("DEBUG").font(.caption2.bold()).foregroundStyle(.secondary)
             Text("FPS  \(debug.fps)").font(.system(.caption, design: .monospaced))
+                .accessibilityIdentifier("debug-fps")
             Text("TICK \(debug.tick)").font(.system(.caption, design: .monospaced))
+                .accessibilityIdentifier("debug-tick")
             Text("SEED \(debug.seed)").font(.system(.caption, design: .monospaced))
-            Text("HASH \(debug.stateHash)").font(.system(.caption, design: .monospaced))
+            Text("HASH \(debug.stateHashHex)").font(.system(.caption, design: .monospaced))
+                .accessibilityIdentifier("debug-hash")
+            Text("SAVE \(debug.autosaveHash)").font(.system(.caption, design: .monospaced))
+                .accessibilityIdentifier("debug-savehash")
         }
     }
 }

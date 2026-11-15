@@ -3,10 +3,10 @@
 This file is the single place to resume the program from. Keep every field below current after every meaningful step (see "Resuming After a Restart" in `ROADMAP.md`). Per-game detail (gate evidence and sign-offs) lives in each game's `docs/STATUS.md`.
 
 - **Current game:** Night Market (`04-night-market`)
-- **Phase:** P1 (Rules Engine Prototype) — COMPLETE; G1 evidence green, tagged `night-market/gate-G1-pass` (local; push blocked)
-- **Last done:** final-binary 500-night sweep OK (148,783 served, 0 violations); both app builds green; UI smoke test green; G1 tagged. Full P1 evidence in games/04-night-market/docs/STATUS.md.
-- **Next step:** P2 (Core Loop Vertical Slice) — MarketScene on iPad+Mac, painting gestures with autotile atlas, upgrade picker, results screen, save/resume, slice recording; G2 = full-night UI test on iPad+Mac, 400 customers at 60 fps, save/resume hash parity.
-- **Blocked on:** maintainer — add a deploy key (or equivalent push credential) for `Zyniker13/Geist`; P0 commits + G0 tag are local on main (65013b6) until then.
+- **Phase:** P2 (Core Loop Vertical Slice) — COMPLETE; G2 checks green (iPad XCUITest 3/3; Mac scripted evidence); tagging `night-market/gate-G2-pass`
+- **Last done:** full-night, save/resume-hash, and 400-customer-fps UI tests green on iPad; Mac scripted runs to results + save/resume hash parity captured via the in-app snapshot; `docs/media/slice.mp4` (72 s) + `docs/SLICE_ASSESSMENT.md` written; maintainer issues #6–#8 filed via gh.
+- **Next step:** P3 (Content and Systems) — Bangkok and Marrakesh maps, all 8 upgrade kinds, buskers/seating/bridges, rain visuals, content JSON + content-lint.
+- **Blocked on:** maintainer — push access for the deploy key (issue #7); Mac UI-test automation grant (issue #6). Work continues locally.
 
 ## Environment Check
 
@@ -24,7 +24,7 @@ If Xcode 27.2 or an iOS 26-or-later runtime is missing and cannot be installed w
 - iOS 27.2 runtime ✓
 - Required simulators: iPad Pro 13-inch (M5) ✓, iPad Pro 11-inch (M5) ✓, iPad (A16) ✓, iPad mini (A20 Pro) ✓, iPhone 18 Pro Max ✓
 - Swift 6.4.2 ✓, Homebrew 7.0.13 ✓, XcodeGen 2.46.0 ✓, SwiftLint 0.65.1 ✓, swift-format 604.0.0 ✓
-- gh auth: not authenticated — using fallback in STATUS.md for maintainer items
+- gh auth: authenticated with an issues-only token (Mahler, 2026-11-15) — issues file via gh; pushes stay on the deploy key (blocked, issue #7)
 
 ## Game Queue
 
@@ -32,7 +32,7 @@ If Xcode 27.2 or an iOS 26-or-later runtime is missing and cannot be installed w
 
 | Order | No. | Folder | Game | State | Last Gate | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | 04 | [`04-night-market`](games/04-night-market/ROADMAP.md) | Night Market | In Progress (P1) | `night-market/gate-G0-pass` (local) | G0 green+tagged; P1 evidence green; G1 tag pending final sweep |
+| 1 | 04 | [`04-night-market`](games/04-night-market/ROADMAP.md) | Night Market | In Progress (P2 → P3) | `night-market/gate-G1-pass` (local) | G2 checks green (iPad XCUITest 3/3, Mac scripted); G2 tag + P3 next |
 | 2 | 12 | [`12-murmuration`](games/12-murmuration/ROADMAP.md) | Murmuration | Not Started | — | — |
 | 3 | 02 | [`02-orrery`](games/02-orrery/ROADMAP.md) | Orrery | Not Started | — | — |
 | 4 | 14 | [`14-beacon-coast`](games/14-beacon-coast/ROADMAP.md) | Beacon Coast | Not Started | — | — |
@@ -62,11 +62,11 @@ If Xcode 27.2 or an iOS 26-or-later runtime is missing and cannot be installed w
 
 ## Needs the Maintainer
 
-Fallback only: used when `gh` is not authenticated (see "Issues for the Maintainer" in `ROADMAP.md`). Otherwise every item is a GitHub issue labeled `needs-maintainer`. Format: `[needs-maintainer] [<slug> or program] [blocked or question, if any] Title — what is needed, why, what was done locally, and what happens next.` The maintainer answers by adding an indented line under the item.
+Items are GitHub issues labeled `needs-maintainer` (the gh token is issues-only; the list below links them):
 
-- [needs-maintainer] [night-market] [question] NM-P0.2 gate asks for ≥ 120 fps on Mac; the build machine's display is 60 Hz. — On-screen fps cannot exceed 60 here. Local substitute recorded in `games/04-night-market/docs/PERF.md`: per-frame CPU work p95 838 µs, ~10× inside the 8.33 ms 120 Hz frame budget (M6, macOS 27.2, Release); iPad simulator sustained 60.0 fps. Answer needed: accept the frame-budget substitution or supply a 120 Hz-capable Mac run.
-- [needs-maintainer] [program] [blocked] No GitHub token — maintainer items stay in this list. — Add `gh-token` so issues can be filed and tracked on GitHub.
-- [needs-maintainer] [program] [blocked] Push access to `Zyniker13/Geist` — the profile deploy key (`geist-deploy-key`) is registered to the old Seedvault repository, so GitHub denies pushes ("Permission to Zyniker13/Geist.git denied to deploy key"). Needed: a deploy key for `Zyniker13/Geist` (read/write) or equivalent. Local state: Night Market P0 complete, gates green, tag `night-market/gate-G0-pass` exists locally on main (65013b6); all commits wait to be pushed. Until fixed, work continues locally without CI.
+- [#7](https://github.com/Zyniker13/Geist/issues/7) [night-market/program] [blocked] Push access for the build agent's deploy key — commits and gate tags for P0/P1/P2 wait locally (clean fast-forward).
+- [#6](https://github.com/Zyniker13/Geist/issues/6) [night-market] [blocked] macOS automation grant so `NMUITestsMac` can run (headless TCC timeout). Until then, Mac evidence is the scripted-run path.
+- [#8](https://github.com/Zyniker13/Geist/issues/8) [night-market] [question] Confirm the 120 fps vs 60 Hz frame-budget substitution for NM-P0.2.
 
 ## Log
 
@@ -79,4 +79,5 @@ One line per meaningful step, newest last: date, phase or game and stage, what w
 - 2026-11-15: the build agent now owns every phase, P0–P10, of every game, with self-checked gates, local substitutes for owner-only steps, and maintainer items filed as GitHub issues (fallback: Needs the Maintainer). Toolchain set to Xcode 27.2 with 26.0 deployment targets.
 - 2026-11-15: Night Market P0 built on `night-market/phase/P0-setup`: config layer, 7 SwiftPM packages, core sim (SeededRNG/Fixed/FixedPoint2/Grid/Stall/Customer/Reducer/Tick/Spawner/FlowField/Movement/Service/Overflow/Scoring/Replay), app shell + debug overlay, tools, CI workflow, docs. Real bugs fixed: Fixed ÷ and description, FlowField Int overflow crash, SeededRNG.randomElement always-nil, Tick pause/speed. All gates green; G0 tag pending.
 - 2026-11-15: Night Market P0 complete — G0 evidence recorded in the game's docs/STATUS.md, tag `night-market/gate-G0-pass` created locally on main (65013b6). Push blocked: profile deploy key authenticates as the old Seedvault repo; needs-maintainer entries added (deploy key, GitHub token, 120fps-vs-60Hz question).
-- 2026-11-15: Night Market P1 rules engine built per R-1…R-17: flow fields ((tile, direction) Dijkstra, version-keyed cache), movement (density slowdown, integer moveToward), service/overflow/scoring, fixtures and rain. `Tools/sim` headless runner: full night ≤ 1.12 s CPU (target ≤ 1.5 s). Ten golden replays committed and bit-reproducible (ADR-0007 ordering). The 500-night sweep exposed two customer-stranding bugs (bridge moves; seats on erased walkways) — fixed TDD, ADR-0006 — and a map bug (plaza loop overwrote the row-12 canal; ADR-0008). Debug/Release hash parity achieved by sorted walkway hashing and removing Set iteration order from RNG paths. NMCore: 71 tests / 11 suites, line coverage 94.95%; lint clean in 52 files.
+- 2026-11-15: NMCore 71 tests (94.95% line coverage), 500-night sweep clean, Debug≡Release hashes — P1 merged and tagged `night-market/gate-G1-pass` (9637a24).
+- 2026-11-15: Night Market P2 vertical slice built: MarketScene Taipei render + autotile walkway painting (drag/two-finger erase), fixture tray, upgrade picker, results screen + heatmap, Mac mouse/keyboard input, NightScenario scripted rain, save/resume with exact-hash restore, 72-s slice recording. G2 green: iPad XCUITest 3/3 (full night, save/resume hash, 400-customer fps); Mac scripted runs to results + SAVE==HASH snapshot. Harness limits documented (ADR-0009); issues #6/#7/#8 filed. G2 tag next.

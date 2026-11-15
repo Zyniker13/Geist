@@ -1,8 +1,30 @@
 /// Xoshiro256** PRNG seeded through SplitMix64.
 ///
 /// Deterministic, thread-safe, and the sole source of randomness in Core, Content, and AI.
-public struct SeededRNG: Sendable {
+public struct SeededRNG: Sendable, Codable {
     public var state: (UInt64, UInt64, UInt64, UInt64)
+
+    private enum CodingKeys: String, CodingKey {
+        case s0, s1, s2, s3
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        state = (
+            try container.decode(UInt64.self, forKey: .s0),
+            try container.decode(UInt64.self, forKey: .s1),
+            try container.decode(UInt64.self, forKey: .s2),
+            try container.decode(UInt64.self, forKey: .s3)
+        )
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(state.0, forKey: .s0)
+        try container.encode(state.1, forKey: .s1)
+        try container.encode(state.2, forKey: .s2)
+        try container.encode(state.3, forKey: .s3)
+    }
 
     /// Create from a single UInt64 seed via SplitMix64.
     public init(seed: UInt64) {

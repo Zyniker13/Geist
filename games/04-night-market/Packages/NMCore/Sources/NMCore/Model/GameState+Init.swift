@@ -5,16 +5,19 @@ public struct GameStateOverrides: Sendable {
     public var stalls: [Stall]?
     public var fixtures: [Fixture]?
     public var walkwayBudget: Int?
+    public var rainSchedule: [RainShower]?
 
     public init(
         grid: Grid? = nil, gates: [Gate]? = nil, stalls: [Stall]? = nil,
-        fixtures: [Fixture]? = nil, walkwayBudget: Int? = nil
+        fixtures: [Fixture]? = nil, walkwayBudget: Int? = nil,
+        rainSchedule: [RainShower]? = nil
     ) {
         self.grid = grid
         self.gates = gates
         self.stalls = stalls
         self.fixtures = fixtures
         self.walkwayBudget = walkwayBudget
+        self.rainSchedule = rainSchedule
     }
 }
 
@@ -104,6 +107,7 @@ public extension GameState {
         let finalStalls = overrides.stalls ?? stalls
         let finalFixtures = overrides.fixtures ?? fixtures
         let finalBudget = overrides.walkwayBudget ?? 30
+        let finalRain = overrides.rainSchedule ?? rainSchedule
 
         return GameState(
             grid: finalGrid,
@@ -122,7 +126,7 @@ public extension GameState {
             contentVersion: contentVersion,
             speedMultiplier: 1,
             isPaused: false,
-            rainSchedule: rainSchedule,
+            rainSchedule: finalRain,
             pendingOffers: [],
             fieldVersion: 0,
             pathFields: PathFields()

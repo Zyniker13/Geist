@@ -18,12 +18,7 @@ All commands run with `set -o pipefail` semantics (`${PIPESTATUS[0]}` checked af
 - **xcodebuild test -scheme NM (UI smoke, iPad sim):** `** TEST SUCCEEDED **` — `Executed 1 test, with 0 failures`
 - **Tools/check-imports.sh:** clean — exit 0
 
-## P1 (Rules Engine Prototype) — in progress
-
-- **Started:** 2026-11-15
-- **Last done:** S1.1–S1.4 implemented and green (see below); awaiting final 500-night sweep + docs + commit
-- **Next:** G1 tag, then P2 (Core Loop Vertical Slice)
-- **Blocked on:** nothing local
+## P1 (Rules Engine Prototype) — COMPLETE, tagged `night-market/gate-G1-pass`
 
 ### S1.1 — Rules tests (R-1…R-17)
 - [x] `RulesTests.swift` + `RulesLateTests.swift` (split for lint body limit): one or more tests per rule ID R-1…R-17
@@ -64,6 +59,56 @@ All commands run with `set -o pipefail` semantics (`${PIPESTATUS[0]}` checked af
 - **Checkpoint hashes:** identical across two runs and Debug/Release builds — see Determinism above
 
 ### G1: PASS — tagged `night-market/gate-G1-pass`
+
+## P2 (Core Loop Vertical Slice) — COMPLETE pending tag
+
+- **Started:** 2026-11-15
+- **Last done:** S2.1–S2.5 built; G2 checks green on iPad (XCUITest) and Mac (scripted runs); docs written
+- **Next:** tag `night-market/gate-G2-pass`, then P3
+
+### S2.1 — Scene + primary interaction (NM-P2.1/P2.2/P2.3/P2.6)
+- [x] `MarketScene` (NMRender): Taipei map (ground checker, canals rows 7/12, plaza block, two west gates with arch art), six stall nodes with color/shape glyphs, lantern glow (additive), customers as colored dots; `rebuild(with:)` for restart/restore
+- [x] Walkway painting by drag, tile-snapped, 16-mask autotile atlas (`TileArt`); two-finger drag erases; budget counter (`budget-hud`)
+- [x] Tray: Lantern / Awning / Busker / Seats arms `placementTool`; tap places; long-press stall → queue/service stats sheet (`selectStall(nearScenePoint:)`)
+- [x] Mac input (NM-P2.6): `MacMarketView` left-drag paints, right-drag erases, space pauses, 1/2/3 speeds; iOS uses `MapInputCatcher` (transparent touch view; SKView presentation-only)
+
+### S2.2 — HUD/picker/results (NM-P2.4/P2.5)
+- [x] HUD: clock, score, walkway budget, customer count, speed chips, pause/save buttons; `publishHud` throttled to ~10 Hz (every-frame publish starved SpriteKit under load)
+- [x] Hour-boundary upgrade picker (`offer-button`/`upgrade-picker`); results screen with served count, survival verdict, final score, heatmap layer, next-night button
+
+### S2.3 — Challenge source
+- [x] `NightScenario` (NMContent): `.taipeiSlice` pins one rain shower (startTick 3600, 1350 ticks) via `GameStateOverrides.rainSchedule`; `.clear`; 3 tests green. Scenarios pin weather/timing only — spawn pressure stays R-7 (rules-engine contract)
+
+### S2.4 — Save/resume
+- [x] `SaveData{state, rng, nightNumber, servesTotal, hash}` → Application Support/NightMarket/save.json (atomic); save()/resume()/deleteSave(); HUD save button; resume pauses the restored night
+- [x] Hash contract: the saved state's `StateHash.hex` equals the restored state's hash — verified in-process (see G2) and by NMCore `SaveResumeTests` round-trip
+
+### S2.5 — Recording
+- [x] `docs/media/slice.mp4` — 72 s simulator recording (1x speed, stress crowd + autolane + autochoose), H.264, 12.3 MB
+
+### G2 evidence (iPad, real XCUITest)
+
+```
+xcodebuild test -scheme NM -destination 'platform=iOS Simulator,name=iPad Pro 13-inch (M5)' \
+  -configuration Debug -only-testing:NMUITests
+EXIT=0  (** TEST SUCCEEDED **)
+  testFullNightToResults            passed (18.9 s)  # full night -> results screen, next-night button
+  testSaveResumeRestoresIdenticalHash passed (7.6 s) # save c1ebecbb… == restored hash, frozen while paused
+  testStressCrowdHoldsFrameRate     passed (11.9 s)  # 400-customer load, avg >= 50 fps (display cap 60)
+```
+- Full-suite `make test`: NMCore (71 tests) + NMContent + NMAI + NMUITests all passed; lint 0 violations.
+
+### G2 evidence (Mac, scripted runs — see docs/SLICE_ASSESSMENT.md for why)
+
+- Full night to results: `open -a NM-macOS.app --args -uitest-fast -uitest-fresh -uitest-autochoose -uitest-debug -uitest-shot /tmp/mac-results.png` → results screen "Night survived! / Served 0 customers / Final score 0" with Next night button, TICK 21,600 (screenshot `/tmp/mac-results.png`)
+- Save/resume: `-uitest-save-restart -uitest-autolane` run → paused at TICK 900, **SAVE `11de3037ecde737d` == HASH `11de3037ecde737d`**, Walkway 12/30 (screenshot `/tmp/mac-save.png`)
+- Mac XCUITest blocked by the automation-mode TCC timeout — maintainer issue #6; the test (`Tests/UITests/NMUITestsMac.swift`) is written and compiles
+
+### Harness notes (documented substitutions)
+
+- XCUITest launches start with an empty data view: cross-launch save restore is untestable in-harness; G2 exercises save→resume in-process; the real relaunch path verified manually via `simctl launch` (tick 8,100 + hash restored exactly)
+- Headless iPad sim cannot rotate while XCUITest stays portrait: checks are launch-arg-driven; map input goes through `MapInputCatcher`
+- `-uitest-*` affordances live in `GameController`/`GameScreen` (fast, fresh, paused, stress, autochoose, autosave, save-restart, autolane, debug, shot) — never set by gameplay
 
 
 ### S0.1 — Repo layout

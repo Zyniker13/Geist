@@ -23,10 +23,18 @@ Kept current at every gate. What a new engineer (or agent) needs to resume.
 
 ## P1 Rules Engine — state at G1
 
-- **Status:** S1.1–S1.4 complete; G1 evidence green (see docs/STATUS.md); tag pending the final sweep line.
+- **Status:** COMPLETE; G1 green; tagged `night-market/gate-G1-pass` (9637a24).
 - **Rules engine:** `GameState` immutable value with `rainSchedule`, `pendingOffers`, `fieldVersion`/`pathFields` cache. Flow fields are per-stall-color + gate Dijkstras over (tile, direction-of-arrival) states; edge costs base 10, dark +6 (no lantern within radius 3), rain-without-awning +12, busker −3, corner turn +2, floor 4. Movement descends the fields; density speeds 48/40/33/…/floor 12 (integer only); `moveToward` is Newton integer-sqrt.
 - **Edits never strand customers** (ADR-0006): `Reducer.relocateStranded(off:in:)` relocates after erase/bridge-move and retargets seat-seekers; the 500-night sweep enforced INV-1…INV-5.
 - **Headless sim:** `Tools/sim` (`--seed/--nights/--invariants/--invariant-sweep N/--golden N --golden-out DIR`). Full night ≈ 1.1 s CPU. Hot-path rule: use `Tile.forEachNeighbor` (allocation-free); never let `Set` iteration order reach the RNG.
 - **Golden replays:** `Packages/NMCore/Tests/NMCoreTests/GoldenReplays/` (10 nights, Bundle.module resource). Canonical replay semantics in ADR-0007: `chooseUpgrade` sorts first among same-tick actions; checkpoints hash after the advance and before the boundary choice; recordings contain applied actions only.
 - **Debug/Release parity:** sorted walkway hashing in `StateHash.digest` (ADR-0008); seed 42 hash identical in both configurations.
-- **Next:** P2 Core Loop Vertical Slice — `MarketScene` rendering, painting gestures, upgrade picker UI, results screen.
+
+## P2 Vertical Slice — state at G2
+
+- **Status:** S2.1–S2.5 complete; G2 checks green (iPad XCUITest 3/3; Mac scripted runs); tagged `night-market/gate-G2-pass`.
+- **Architecture of the slice:** `MarketScene` (NMRender) renders `GameState` snapshots into 6 layers (map/heat/walkway/fixture/stall/customer) with node pools; `GameController` (App/Shared) owns the 30 Hz tick loop, reducer calls, and HUD publishing (`publishHud` throttled ~10 Hz); `GameScreen` (SwiftUI) is HUD/tray/picker/results; `MapInputCatcher` (iOS) forwards map touches to the scene's programmatic drag API; `MacMarketView` (macOS) takes mouse/keyboard directly.
+- **Save/resume:** `SaveData{state, rng, nightNumber, servesTotal, hash}` → Application Support/NightMarket/save.json; the state hash includes `isPaused`, so saves taken while paused restore to the identical hash; `restart` re-applies `NightScenario.taipeiSlice.overrides`.
+- **UI-test affordances (`-uitest-*`):** fast/fresh/paused/stress/autochoose/autosave/save-restart/autolane/debug/shot — see ADR-0009 and `docs/STATUS.md` harness notes. Accessibility ids: pause-button, save-button, offer-button, upgrade-picker, results-screen, next-night-button, budget-hud, debug-{fps,tick,hash,savehash}.
+- **Known gaps:** Mac XCUITest blocked (issue #6); stall art is placeholder glyphs; upgrade offers are not context-aware; night number not surfaced in the HUD — all carried to P3 in `docs/SLICE_ASSESSMENT.md`.
+- **Next:** P3 Content and Systems — Bangkok/Marrakesh maps, all 8 upgrade kinds, rain visuals, content JSON + content-lint (see ROADMAP.md §P3).
