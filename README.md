@@ -8,3 +8,7 @@ A program of twenty-five original iOS games, built in one repository on a shared
 - `Engine/` holds the shared engine package (from phase P1).
 
 Every game is fully playable offline and collects no data.
+
+## License
+
+Copyright (c) 2026 The Geist Authors. All rights reserved. This repository is published for reference only; see `LICENSE`.

@@ -73,7 +73,6 @@ Steps only the maintainer can do, grouped by game, each with the stage that need
 
 ### Program
 
-- **P0/P1:** choose the license for original art, sound, and music (code is MIT OR Apache-2.0).
 - **G6 (every game):** set the real bundle identifier prefix and development team in the shared settings file, in place of the placeholders.
 
 ## Log
@@ -81,3 +80,4 @@ Steps only the maintainer can do, grouped by game, each with the stage that need
 One line per meaningful step, newest last: date, phase or game and stage, what was done, and the commit.
 
 - Program roadmap and status written; P0 not started.
+- Decision: the whole repository is all rights reserved and stays public for reference only (`LICENSE`); third-party assets and dependencies must be permissively licensed with attribution recorded, and nothing copyleft.
