@@ -14,6 +14,9 @@ public final class DebugState: ObservableObject {
     @Published public var stateHashHex: String = "-"
     /// Hex hash of the last completed save (UI-test save/resume assertion).
     @Published public var autosaveHash: String = "-"
+    /// Leaderboard/achievement posts fired for the last finished night
+    /// (NM-P7.1 evidence under UI tests).
+    @Published public var postsCount: Int = 0
 
     public init() {}
 }
@@ -65,6 +68,8 @@ struct DebugOverlay: View {
                 .accessibilityIdentifier("debug-hash")
             Text("SAVE \(debug.autosaveHash)").font(.system(.caption, design: .monospaced))
                 .accessibilityIdentifier("debug-savehash")
+            Text("POSTS \(debug.postsCount)").font(.system(.caption, design: .monospaced))
+                .accessibilityIdentifier("debug-posts")
         }
     }
 }

@@ -110,6 +110,24 @@ EXIT=0  (** TEST SUCCEEDED **)
 - Headless iPad sim cannot rotate while XCUITest stays portrait: checks are launch-arg-driven; map input goes through `MapInputCatcher`
 - `-uitest-*` affordances live in `GameController`/`GameScreen` (fast, fresh, paused, stress, autochoose, autosave, save-restart, autolane, debug, shot) — never set by gameplay
 
+## P7 (Platform Features) — COMPLETE, tagged `night-market/gate-G7-pass`
+
+- **Status:** complete; G7 self-checked 2026-11-15. Tag: `night-market/gate-G7-pass`. Sandbox verification of Game Center/iCloud and the Pencil hardware check are the maintainer's — issue **#9**; the gate is `SUBSTITUTED` per §8.2.
+- **Spec:** ROADMAP.md §P7 — Game Center (per-map + challenge leaderboards, 20 achievements), iCloud profile sync, Pencil hover/erase, Mac menus/resize/full-screen.
+
+### What was built
+- **NM-P7.1 Game Center:** `ScoresPosting` protocol; `GameCenterPoster` (real GameKit, compiled) and `MockPoster` (deterministic fake); `LeaderboardPlan.posts(for:)` maps a night to `nm.map.<id>` / `nm.challenge.daily` / `nm.challenge.weekly` posts (challenge context = the modifier id) + achievement ids (the 20 `AchievementCatalog` strings); the app posts on every `.nightEnded` and shows the count in the debug overlay (`debug-posts`), asserted non-zero by `testFullNightToResults`.
+- **NM-P7.2 iCloud:** `ProfileSyncing` with `ICloudSync` (NSUbiquitousKeyValueStore, profile ≪ 1 MB) and `MockSync`; `ProfileStore` writes through on every persist and restores from iCloud on first launch when the local file is missing.
+- **NM-P7.3 Pencil:** `PencilInputModel` (squeeze toggles erase; unit-tested without hardware) + `PencilBridge` (UIPencilInteraction squeeze + UIHoverGestureRecognizer hover → tile highlight); finger/pointer fallbacks unchanged.
+- **NM-P7.4 Mac:** `Game` menu (pause ⌘P, save ⌘S, new night ⇧⌘N, debug overlay ⇧⌘D) via NotificationCenter; window resize letterboxes the aspect-fit scene (already resize-safe); full screen available on the standard window.
+- **Entitlements:** `App/NM.entitlements` placeholders (game-center + ubiquity-kvstore) on the iOS target; the macOS target cannot carry them without a provisioning profile (issue #9).
+
+### G7 gate evidence (self-checked; SUBSTITUTED per §8.2 / issue #9)
+- **Posts fire:** `testFullNightToResults` asserts the debug overlay's `POSTS` row is non-zero at the results screen (mock poster under `-uitest`); passed 145 s (`/tmp/p7-uitest.log`).
+- **iCloud round-trip:** `MockSync` byte-for-byte profile JSON round-trip + `ProfileStore` write-through/restore (NMPlatform 11/11 green, `/tmp/platform-test5.log`).
+- **Real-sandbox steps left to the maintainer:** Game Center sandbox posting, iCloud account round-trip, Pencil hardware check — issue #9.
+- **make lint** exit 0; iOS (`/tmp/iosb23.log`) + macOS (`/tmp/macb13.log`) builds green.
+
 ## P6 (Aesthetics and Audio) — COMPLETE, tagged `night-market/gate-G6-pass`
 
 - **Status:** complete; G6 self-checked 2026-11-15. Tag: `night-market/gate-G6-pass`.

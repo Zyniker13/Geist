@@ -1,6 +1,5 @@
 /// NMPlatformTests — tests for platform types.
 import Testing
-import Testing
 @testable import NMPlatform
 
 @Suite("Platform Tests")
