@@ -1,0 +1,52 @@
+disabled_rules:
+  - trailing_whitespace
+  - todo
+  - identifier_name  # single-letter vars common in math/game code
+  - cyclomatic_complexity
+  - function_body_length
+  - large_tuple  # Xoshiro state is a 4-tuple, used throughout
+  - trailing_comma  # swift-format adds trailing commas to multiline literals; formatter wins
+
+excluded:
+  - Packages/NMCore/.build
+  - Packages/NMContent/.build
+  - Packages/NMAI/.build
+  - Packages/NMRender/.build
+  - Packages/NMAudio/.build
+  - Packages/NMPlatform/.build
+  - Packages/NMMeta/.build
+  - .build
+  - DerivedData
+  - Pods
+
+opt_in_rules:
+  - explicit_init
+  - fatal_error_message
+  - overridden_super_call
+  - private_action
+  - prohibited_super_call
+  - vertical_parameter_alignment_on_call
+
+line_length:
+  warning: 200
+  error: 300
+
+type_body_length:
+  warning: 400
+  error: 600
+
+file_length:
+  warning: 1000
+  error: 1500
+
+custom_rules:
+  banned_random:
+    name: "Banned random"
+    regex: '(SystemRandomNumberGenerator|\\bInt\\.random\\(in:\\))'
+    message: "Use SeededRNG only; SystemRandomNumberGenerator and Int.random(in:) are banned in Core, Content, and AI."
+    severity: error
+  banned_date_uuid:
+    name: "Banned Date/UUID"
+    regex: '\\bDate\\(\\)\\b|\\bUUID\\(\\)'
+    message: "Date() and UUID() are banned in Core, Content, and AI."
+    severity: error

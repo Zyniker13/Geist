@@ -1,0 +1,9 @@
+#!/bin/bash
+# content-lint — validate content JSON (maps, stalls, upgrades) against the schemas.
+# Skeleton for P0; filled in as content lands in Resources/Content.
+set -o pipefail
+
+cd "$(dirname "$0")/.."
+
+echo "content-lint: no content files yet (P0 skeleton) — nothing to validate"
+exit 0

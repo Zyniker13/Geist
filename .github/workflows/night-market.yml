@@ -1,0 +1,91 @@
+# Night Market CI
+name: night-market
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'games/04-night-market/**'
+      - '.github/workflows/night-market.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'games/04-night-market/**'
+      - '.github/workflows/night-market.yml'
+
+jobs:
+  lint:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Setup Swift
+        uses: swift-actions/setup-swift@7591e4f04c00624cb043783da51a7fd6ee0a6bf6 # v2
+        with:
+          swift-version: '6.0'
+      - name: Install tools
+        run: |
+          brew install --overwrite xcodegen swiftlint swift-format 2>/dev/null || true
+      - name: SwiftLint
+        working-directory: games/04-night-market
+        run: swiftlint --strict --config .swiftlint.yml
+      - name: swift-format
+        working-directory: games/04-night-market
+        run: swift-format lint --recursive Packages/ App/ Tests/ --configuration .swift-format
+
+  test:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Setup Swift
+        uses: swift-actions/setup-swift@7591e4f04c00624cb043783da51a7fd6ee0a6bf6 # v2
+        with:
+          swift-version: '6.0'
+      - name: Install tools
+        run: |
+          brew install --overwrite xcodegen swiftlint swift-format 2>/dev/null || true
+      - name: Generate project
+        working-directory: games/04-night-market
+        run: xcodegen generate --spec project.yml
+      - name: Swift test (Core)
+        working-directory: games/04-night-market
+        run: swift test --package-path Packages/NMCore
+      - name: Swift test (Content)
+        working-directory: games/04-night-market
+        run: swift test --package-path Packages/NMContent
+      - name: Swift test (AI)
+        working-directory: games/04-night-market
+        run: swift test --package-path Packages/NMAI
+
+  build-ios:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Setup Swift
+        uses: swift-actions/setup-swift@7591e4f04c00624cb043783da51a7fd6ee0a6bf6 # v2
+        with:
+          swift-version: '6.0'
+      - name: Install tools
+        run: |
+          brew install --overwrite xcodegen swiftlint swift-format 2>/dev/null || true
+      - name: Build iOS
+        working-directory: games/04-night-market
+        run: |
+          xcodegen generate --spec project.yml
+          xcodebuild build -scheme NM -destination 'generic/platform=iOS Simulator' -configuration Debug
+
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Setup Swift
+        uses: swift-actions/setup-swift@7591e4f04c00624cb043783da51a7fd6ee0a6bf6 # v2
+        with:
+          swift-version: '6.0'
+      - name: Install tools
+        run: |
+          brew install --overwrite xcodegen swiftlint swift-format 2>/dev/null || true
+      - name: Build macOS
+        working-directory: games/04-night-market
+        run: |
+          xcodegen generate --spec project.yml
+          xcodebuild build -scheme NM-macOS -destination 'platform=macOS' -configuration Debug

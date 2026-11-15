@@ -1,0 +1,105 @@
+name: NightMarket
+
+options:
+  configFiles:
+    Debug: Config/Bundle.xcconfig
+    Release: Config/Bundle.xcconfig
+
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    IPHONEOS_DEPLOYMENT_TARGET: "26.0"
+    MACOSX_DEPLOYMENT_TARGET: "26.0"
+
+packages:
+  NMCore:
+    path: Packages/NMCore
+  NMContent:
+    path: Packages/NMContent
+  NMAI:
+    path: Packages/NMAI
+  NMRender:
+    path: Packages/NMRender
+  NMAudio:
+    path: Packages/NMAudio
+  NMPlatform:
+    path: Packages/NMPlatform
+  NMMeta:
+    path: Packages/NMMeta
+
+targets:
+  NM:
+    type: application
+    platform: iOS
+    configFiles:
+      Debug: Config/Bundle.xcconfig
+      Release: Config/Bundle.xcconfig
+    sources:
+      - path: App/iOS
+      - path: App/Shared
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: $(GEIST_BUNDLE_ID)
+        SWIFT_EMIT_LOC_STRINGS: YES
+        GENERATE_INFOPLIST_FILE: YES
+    dependencies:
+      - package: NMCore
+      - package: NMContent
+      - package: NMAI
+      - package: NMRender
+      - package: NMAudio
+      - package: NMPlatform
+      - package: NMMeta
+
+  NM-macOS:
+    type: application
+    platform: macOS
+    configFiles:
+      Debug: Config/Bundle.xcconfig
+      Release: Config/Bundle.xcconfig
+    sources:
+      - path: App/macOS
+      - path: App/Shared
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: $(GEIST_BUNDLE_ID)
+        SWIFT_EMIT_LOC_STRINGS: YES
+        GENERATE_INFOPLIST_FILE: YES
+    dependencies:
+      - package: NMCore
+      - package: NMContent
+      - package: NMAI
+      - package: NMRender
+      - package: NMAudio
+      - package: NMPlatform
+      - package: NMMeta
+
+  NMUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    configFiles:
+      Debug: Config/Bundle.xcconfig
+      Release: Config/Bundle.xcconfig
+    sources:
+      - path: Tests/UITests
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: $(GEIST_BUNDLE_ID).tests
+        GENERATE_INFOPLIST_FILE: YES
+    dependencies:
+      - target: NM
+
+schemes:
+  NM:
+    build:
+      targets:
+        NM: all
+    test:
+      targets:
+        - NMUITests
+  NM-macOS:
+    build:
+      targets:
+        NM-macOS: all
+    test:
+      targets: []
