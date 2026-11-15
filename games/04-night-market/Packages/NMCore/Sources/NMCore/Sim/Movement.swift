@@ -118,9 +118,10 @@ public enum Movement {
         return (s, events)
     }
 
-    /// Queue capacity: 6 plus waiting gate customers attributed to this stall (R-12).
+    /// Queue capacity: 6 plus the stall's upgrade bonus plus waiting gate
+    /// customers attributed to this stall (R-12, ADR-0010).
     public static func queueCapacity(for stall: Stall, in state: GameState) -> Int {
-        6 + Overflow.attributedWaiting(for: stall, in: state)
+        6 + stall.queueCapacityBonus + Overflow.attributedWaiting(for: stall, in: state)
     }
 
     /// Density slowdown (R-11): base 48 units/tick; on a tile with n customers,

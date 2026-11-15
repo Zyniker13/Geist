@@ -1,0 +1,40 @@
+{
+  "steps": [
+    {
+      "id": "welcome",
+      "title": "Welcome to the night market",
+      "text": "Customers arrive through the gates on the west edge. They need walkways to reach the stalls.",
+      "advance": "tap-next"
+    },
+    {
+      "id": "paint",
+      "title": "Paint a walkway",
+      "text": "Drag from the open gate to the plaza to build a path. Each tile costs budget.",
+      "advance": "paint"
+    },
+    {
+      "id": "stalls",
+      "title": "Stalls serve the crowd",
+      "text": "Tap a stall to see its queue and service stats. Long queues overflow and cost score.",
+      "advance": "tap-stall"
+    },
+    {
+      "id": "fixtures",
+      "title": "Light and comfort",
+      "text": "Use the tray to place lanterns (light speeds walking) and awnings (dry shelter in rain).",
+      "advance": "place"
+    },
+    {
+      "id": "upgrades",
+      "title": "Hourly choices",
+      "text": "At each hour you pick one of two upgrades: budget, lanterns, bridges, seating, and more.",
+      "advance": "hour"
+    },
+    {
+      "id": "goal",
+      "title": "Survive to dawn",
+      "text": "Keep overflow warnings down until 06:00. The results screen shows how you did.",
+      "advance": "tap-next"
+    }
+  ]
+}

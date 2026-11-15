@@ -30,6 +30,9 @@ open class MarketScene: SKScene {
     private let stallLayer = SKNode()
     let customerLayer = SKNode()
     private let heatLayer = SKNode()
+    /// Rain visuals (NM-P3.3): dim overlay plus falling streaks.
+    private let rainLayer = SKNode()
+    private var rainStreaks: [SKShapeNode] = []
 
     // Node pools
     var customerNodes: [Int: SKNode] = [:]
@@ -94,7 +97,54 @@ open class MarketScene: SKScene {
         addChild(fixtureLayer)
         addChild(stallLayer)
         addChild(customerLayer)
+        addChild(rainLayer)
+        rainLayer.isHidden = true
         drawMap(state)
+    }
+
+    /// Builds the fixed rain streak pool once: short vertical dashes whose
+    /// positions cycle deterministically with the tick (no render RNG).
+    private func buildRain(width: CGFloat, height: CGFloat) {
+        guard rainStreaks.isEmpty else { return }
+        let streak = CGMutablePath()
+        streak.move(to: CGPoint(x: 0, y: 0))
+        streak.addLine(to: CGPoint(x: -2, y: -14))
+        streak.closeSubpath()
+        for index in 0..<36 {
+            let node = SKShapeNode(path: streak)
+            node.strokeColor = SKColor(red: 0.62, green: 0.78, blue: 0.95, alpha: 0.55)
+            node.lineWidth = 1.5
+            node.position = CGPoint(
+                x: CGFloat(index % 9) * width / 9 + width / 18,
+                y: height - CGFloat(index / 9) * height / 4 - height / 8
+            )
+            node.zPosition = 500
+            rainLayer.addChild(node)
+            rainStreaks.append(node)
+        }
+    }
+
+    /// Rain visuals: a dim blue overlay and cycling streaks while raining;
+    /// hidden otherwise. Purely visual — never touches simulation state.
+    private func syncRain(_ state: GameState, raining: Bool) {
+        rainLayer.isHidden = !raining
+        guard raining else { return }
+        let width = CGFloat(gridWidth) * tileWidth
+        let height = CGFloat(gridHeight) * tileWidth
+        if rainStreaks.isEmpty {
+            let dim = SKSpriteNode(color: SKColor(red: 0.15, green: 0.22, blue: 0.38, alpha: 0.28), size: CGSize(width: width, height: height))
+            dim.position = CGPoint(x: width / 2, y: height / 2)
+            dim.zPosition = 490
+            dim.name = "rain-dim"
+            rainLayer.addChild(dim)
+            buildRain(width: width, height: height)
+        }
+        // Cycle streaks downward by the tick; 24 ticks per full drop cycle.
+        let tick = state.clock.tick
+        for (index, node) in rainStreaks.enumerated() {
+            let phase = (tick + index * 7) % 24
+            node.position.y = height - CGFloat(index / 9) * height / 4 - CGFloat(phase) * (height / 30)
+        }
     }
 
     /// Draws ground, canals, plaza, and gates into mapLayer. Layers must
@@ -185,6 +235,7 @@ open class MarketScene: SKScene {
         syncStalls(state)
         syncFixtures(state)
         syncCustomers(state)
+        syncRain(state, raining: state.weather.isRaining)
     }
 
     private func syncWalkways(_ state: GameState) {

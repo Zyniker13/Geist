@@ -99,18 +99,19 @@ public enum Tick {
     }
 }
 
-/// The P1 upgrade catalog: two offers drawn by seed at each hour boundary.
-/// Effects apply in P5; the catalog only fixes identity and the draw (R-5).
+/// The P3 upgrade catalog: one offer per kind (G3 counts); the draw is
+/// seeded (R-5). `Resources/Content/upgrades.json` mirrors these weights for
+/// content-lint and the daily-challenge layer.
 public enum UpgradeCatalog {
     public static let all: [UpgradeOffer] = [
-        UpgradeOffer(id: "budget-6", kind: .extraWalkwayBudget(6)),
-        UpgradeOffer(id: "budget-10", kind: .extraWalkwayBudget(10)),
-        UpgradeOffer(id: "lantern", kind: .extraLantern),
+        UpgradeOffer(id: "budget-20", kind: .extraWalkwayBudget(20)),
+        UpgradeOffer(id: "lanterns-2", kind: .extraLanterns(2)),
         UpgradeOffer(id: "awning", kind: .extraAwning),
         UpgradeOffer(id: "busker", kind: .extraBusker),
-        UpgradeOffer(id: "seats-3", kind: .extraSeats(3)),
-        UpgradeOffer(id: "service-10", kind: .fasterService(10)),
-        UpgradeOffer(id: "service-20", kind: .fasterService(20)),
+        UpgradeOffer(id: "bridge", kind: .extraBridge),
+        UpgradeOffer(id: "seating", kind: .extraSeating),
+        UpgradeOffer(id: "cooks-20", kind: .fasterService(20)),
+        UpgradeOffer(id: "queue-2", kind: .extraQueue(2)),
     ]
 
     /// Draw 2 distinct offers by seed.

@@ -118,7 +118,7 @@ public enum Overflow {
             var stall = s.stalls[idx]
             guard stall.isOpen else { continue }
 
-            let capacity = 6 + attributedWaiting(for: stall, in: s)
+            let capacity = 6 + stall.queueCapacityBonus + attributedWaiting(for: stall, in: s)
             if stall.queue.count > capacity {
                 stall.overflowTimer += 1
                 events.append(.overflowWarning(stall.id, progress: stall.overflowTimer))

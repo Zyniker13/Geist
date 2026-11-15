@@ -20,6 +20,7 @@ struct RulesFixtureAndInvariantTests {
     @Test("R-14 paint consumes budget per new tile; over-budget is rejected atomically")
     func r14PaintBudget() throws {
         var state = GameState.initial(seed: 42)
+        state.fixtureStock = FixtureStock(lantern: 5, awning: 5, busker: 5, bridge: 5, seating: 5)
         var rng = SeededRNG(seed: 14)
         var tiles: [Tile] = []
         for col in 0..<29 { tiles.append(Tile(col: col, row: 3)) }
@@ -37,6 +38,7 @@ struct RulesFixtureAndInvariantTests {
     @Test("R-14 erase refunds fully and relocates customers off erased tiles")
     func r14Erase() throws {
         var state = GameState.initial(seed: 42)
+        state.fixtureStock = FixtureStock(lantern: 5, awning: 5, busker: 5, bridge: 5, seating: 5)
         var rng = SeededRNG(seed: 14)
         let tile = Tile(col: 5, row: 5)
         (state, _) = try Reducer.apply(.paintWalkway([tile]), to: state, rng: &rng)
@@ -57,6 +59,7 @@ struct RulesFixtureAndInvariantTests {
     @Test("R-14 erasing the walkway under a seat sends seat-seekers to the exit, never onto open tiles")
     func r14SeatSeekerNotStranded() throws {
         var state = GameState.initial(seed: 42)
+        state.fixtureStock = FixtureStock(lantern: 5, awning: 5, busker: 5, bridge: 5, seating: 5)
         var rng = SeededRNG(seed: 14)
         let tile = Tile(col: 5, row: 5)
         (state, _) = try Reducer.apply(.paintWalkway([tile]), to: state, rng: &rng)
@@ -83,6 +86,7 @@ struct RulesFixtureAndInvariantTests {
     @Test("R-11/R-14 seat walking never leaves traversable tiles")
     func r14SeatWalkStaysTraversable() throws {
         var state = GameState.initial(seed: 42)
+        state.fixtureStock = FixtureStock(lantern: 5, awning: 5, busker: 5, bridge: 5, seating: 5)
         var rng = SeededRNG(seed: 14)
         // Seeker on a walkway; seat on the plaza across un-walked ground, so
         // the straight line to the seat would cross non-traversable tiles.
@@ -117,6 +121,7 @@ struct RulesFixtureAndInvariantTests {
     @Test("R-14/R-15 moving a bridge relocates customers stranded on the old span")
     func r15BridgeMoveRelocatesStranded() throws {
         var state = GameState.initial(seed: 42)
+        state.fixtureStock = FixtureStock(lantern: 5, awning: 5, busker: 5, bridge: 5, seating: 5)
         var rng = SeededRNG(seed: 15)
         // Bridge from (13,7) east spans (14,7), (15,7), (16,7).
         (state, _) = try Reducer.apply(.placeFixture(.bridge(length: 3), Tile(col: 13, row: 7)), to: state, rng: &rng)
@@ -138,6 +143,7 @@ struct RulesFixtureAndInvariantTests {
     @Test("R-15 lantern radius is fixed at 3; busker at 2; awning covers 3×3")
     func r15CanonicalKinds() throws {
         var state = GameState.initial(seed: 42)
+        state.fixtureStock = FixtureStock(lantern: 5, awning: 5, busker: 5, bridge: 5, seating: 5)
         var rng = SeededRNG(seed: 15)
         // Place on plaza tiles (traversable).
         let tile = Tile(col: 13, row: 8)
@@ -161,6 +167,7 @@ struct RulesFixtureAndInvariantTests {
     @Test("R-15 bridge must span 1–3 water tiles in a straight line")
     func r15Bridge() throws {
         var state = GameState.initial(seed: 42)
+        state.fixtureStock = FixtureStock(lantern: 5, awning: 5, busker: 5, bridge: 5, seating: 5)
         var rng = SeededRNG(seed: 15)
         // Canal runs cols 14..<17 on row 7. A bridge from (13,7) east spans 3 water tiles
         // and lands on ground at (17,7).
@@ -223,6 +230,7 @@ struct RulesFixtureAndInvariantTests {
     @Test("R-17 rain starts and ends per schedule and raises events")
     func r17RainTicks() throws {
         var state = GameState.initial(seed: 42)
+        state.fixtureStock = FixtureStock(lantern: 5, awning: 5, busker: 5, bridge: 5, seating: 5)
         // Force a known shower.
         state.rainSchedule = [RainShower(startTick: 3600, durationTicks: 100)]
         state.fieldVersion = 0
@@ -254,6 +262,7 @@ struct RulesFixtureAndInvariantTests {
     @Test("INV-1 walkway tiles used never exceed budget")
     func inv1Budget() throws {
         var state = GameState.initial(seed: 42)
+        state.fixtureStock = FixtureStock(lantern: 5, awning: 5, busker: 5, bridge: 5, seating: 5)
         var rng = SeededRNG(seed: 1)
         var allTiles: [Tile] = []
         for col in 0..<32 { for row in 0..<20 { allTiles.append(Tile(col: col, row: row)) } }
@@ -282,6 +291,7 @@ struct RulesFixtureAndInvariantTests {
     @Test("INV-2 customers are on traversable tiles; no customer in two queues")
     func inv2Customers() throws {
         var state = GameState.initial(seed: 42)
+        state.fixtureStock = FixtureStock(lantern: 5, awning: 5, busker: 5, bridge: 5, seating: 5)
         var rng = SeededRNG(seed: 2)
         var paint: [Tile] = []
         for col in 0...12 { paint.append(Tile(col: col, row: 9)) }
@@ -313,6 +323,7 @@ struct RulesFixtureAndInvariantTests {
     @Test("INV-3 score is non-decreasing across a run")
     func inv3ScoreMonotonic() throws {
         var state = GameState.initial(seed: 42)
+        state.fixtureStock = FixtureStock(lantern: 5, awning: 5, busker: 5, bridge: 5, seating: 5)
         var rng = SeededRNG(seed: 3)
         var paint: [Tile] = []
         for col in 0...12 { paint.append(Tile(col: col, row: 9)) }
@@ -333,6 +344,7 @@ struct RulesFixtureAndInvariantTests {
     @Test("INV-4 flow fields reach stalls via best-neighbor descent")
     func inv4FieldConsistency() throws {
         var state = GameState.initial(seed: 42)
+        state.fixtureStock = FixtureStock(lantern: 5, awning: 5, busker: 5, bridge: 5, seating: 5)
         var rng = SeededRNG(seed: 4)
         var paint: [Tile] = []
         for col in 0...12 { paint.append(Tile(col: col, row: 9)) }

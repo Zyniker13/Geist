@@ -64,6 +64,31 @@ final class NMUITests: XCTestCase {
 
     // MARK: - G2 checks
 
+    /// G3: the six-step tutorial shows step 1, advances on Next, and
+    /// dismisses after the final step.
+    func testTutorialAdvancesThroughSixSteps() throws {
+        let app = launch("-uitest-tutorial", "-uitest-paused", "-uitest-fresh")
+        let card = app.descendants(matching: .any)["tutorial-card"]
+        XCTAssertTrue(card.waitForExistence(timeout: 10), "tutorial card did not appear")
+        let next = app.descendants(matching: .any)["tutorial-next"]
+        XCTAssertTrue(next.waitForExistence(timeout: 5), "tutorial Next button missing")
+        // Advance through all six steps; the sixth Next dismisses the card.
+        for step in 1...6 {
+            let label = card.staticTexts.element(boundBy: 0)
+            XCTAssertTrue(label.exists, "step \(step) label missing")
+            next.tap()
+        }
+        var gone = !card.exists
+        var waited = 0.0
+        while !gone, waited < 5 {
+            Thread.sleep(forTimeInterval: 0.2)
+            waited += 0.2
+            gone = !card.exists
+        }
+        XCTAssertTrue(gone, "tutorial card should dismiss after the last step")
+        app.terminate()
+    }
+
     func testFullNightToResults() throws {
         let app = launch("-uitest-fast", "-uitest-fresh", "-uitest-autochoose")
         paintLane(app: app, row: 9)

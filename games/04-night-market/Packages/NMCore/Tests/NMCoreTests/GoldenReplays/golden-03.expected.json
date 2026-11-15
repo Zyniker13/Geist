@@ -1,17 +1,17 @@
 {
   "checkpoints" : [
-    "1fb73ff74aade5ab",
-    "893f7f54f14e627e",
-    "33ac8c4d327d61a6",
-    "5a128a21b7c803a5",
-    "0a225eabb511f9e5",
-    "4b047084e6dce75e",
-    "732ffbc2925be382",
-    "2fe82c4274a30ec5",
-    "4d5823e4459202a8",
-    "2fe0d24d1d0554d5",
-    "22ce36a746c9cb2d",
-    "b21711466c8a5e61"
+    "72da42a2f46f63ef",
+    "9c8741b748ac0268",
+    "3aad0862ddf4ee3f",
+    "4dd1c3682183cb4c",
+    "19166edf21d475fb",
+    "dac633db07140ed9",
+    "9638e692c67eeec4",
+    "0a100b9307f6c3c6",
+    "da360ce28d707c30",
+    "d398536c6f2bf3a5",
+    "8fba5aa5e61ace64",
+    "52a3518763383a37"
   ],
-  "finalHash" : "b21711466c8a5e61"
+  "finalHash" : "52a3518763383a37"
 }

@@ -24,11 +24,31 @@ public struct UpgradeOffer: Codable, Sendable, Equatable, Hashable, Identifiable
 
 public enum UpgradeKind: Codable, Sendable, Equatable, Hashable {
     case extraWalkwayBudget(Int)
-    case extraLantern
+    case extraLanterns(Int)
     case extraAwning
     case extraBusker
-    case extraSeats(Int)
-    case fasterService(Int)  // percent reduction in serviceTicks
+    case extraBridge
+    case extraSeating
+    case fasterService(Int)  // percent reduction, applied to the busiest stall
+    case extraQueue(Int)  // capacity added to the busiest stall
+}
+
+/// Placeable-fixture tokens granted by upgrades and consumed by placement
+/// (ADR-0010). R-3's starting lanterns are placed directly, not stocked.
+public struct FixtureStock: Codable, Sendable, Equatable, Hashable {
+    public var lantern: Int
+    public var awning: Int
+    public var busker: Int
+    public var bridge: Int
+    public var seating: Int
+
+    public init(lantern: Int = 0, awning: Int = 0, busker: Int = 0, bridge: Int = 0, seating: Int = 0) {
+        self.lantern = lantern
+        self.awning = awning
+        self.busker = busker
+        self.bridge = bridge
+        self.seating = seating
+    }
 }
 
 /// The position of a customer or a queue entry, in sub-tile units.

@@ -154,6 +154,10 @@ public enum Reducer {
             guard let direction = bridgeDirection(from: tile, length: length, in: state) else {
                 throw .invalidFixture("bridge must span 1–3 water tiles in a straight line")
             }
+            guard state.fixtureStock.bridge > 0 else {
+                throw .illegalAction("no bridge token; earn one from an upgrade")
+            }
+            state.fixtureStock.bridge -= 1
             let fixture = Fixture(
                 id: state.nextFixtureID, kind: canonical, position: tile,
                 radius: canonical.defaultRadius, direction: direction
@@ -164,8 +168,34 @@ public enum Reducer {
             return (state, [])
         }
 
-        // Non-bridge fixtures stand on traversable tiles.
+        // Non-bridge fixtures stand on traversable tiles and consume a token
+        // of their kind (ADR-0010); R-3's starting lanterns bypass this by
+        // being created directly in initialisation.
         guard state.isTraversable(tile) else { throw .invalidPosition }
+        switch canonical {
+        case .lantern:
+            guard state.fixtureStock.lantern > 0 else {
+                throw .illegalAction("no lantern token; earn one from an upgrade")
+            }
+            state.fixtureStock.lantern -= 1
+        case .awning:
+            guard state.fixtureStock.awning > 0 else {
+                throw .illegalAction("no awning token; earn one from an upgrade")
+            }
+            state.fixtureStock.awning -= 1
+        case .busker:
+            guard state.fixtureStock.busker > 0 else {
+                throw .illegalAction("no busker token; earn one from an upgrade")
+            }
+            state.fixtureStock.busker -= 1
+        case .seat:
+            guard state.fixtureStock.seating > 0 else {
+                throw .illegalAction("no seating token; earn one from an upgrade")
+            }
+            state.fixtureStock.seating -= 1
+        case .bridge:
+            break
+        }
         let fixture = Fixture(
             id: state.nextFixtureID, kind: canonical, position: tile, radius: canonical.defaultRadius
         )
@@ -244,18 +274,39 @@ public enum Reducer {
         state.pendingOffers = []  // choosing one offer dismisses both (1 of 2)
         state.isPaused = false
 
-        // Effects (P5 finalizes tuning; P1 applies the immediate, safe ones).
+        // Effects (P3: all eight kinds are real; ADR-0010).
         switch offer.kind {
         case .extraWalkwayBudget(let amount):
             state.walkwayBudget += amount
+        case .extraLanterns(let count):
+            state.fixtureStock.lantern += count
+        case .extraAwning:
+            state.fixtureStock.awning += 1
+        case .extraBusker:
+            state.fixtureStock.busker += 1
+        case .extraBridge:
+            state.fixtureStock.bridge += 1
+        case .extraSeating:
+            state.fixtureStock.seating += 1
         case .fasterService(let percent):
-            for idx in state.stalls.indices {
-                state.stalls[idx].serviceTicks = max(
-                    30, state.stalls[idx].serviceTicks - state.stalls[idx].serviceTicks * percent / 100)
-            }
-        case .extraLantern, .extraAwning, .extraBusker, .extraSeats:
-            break  // grants a placeable fixture token; applied in P5
+            let target = Reducer.busiestStall(in: state)
+            let ticks = state.stalls[target].serviceTicks
+            state.stalls[target].serviceTicks = max(30, ticks - ticks * percent / 100)
+        case .extraQueue(let capacity):
+            let target = Reducer.busiestStall(in: state)
+            state.stalls[target].queueCapacityBonus += capacity
         }
         return (state, [])
+    }
+
+    /// The busiest stall: longest queue, ties broken by lowest id. Targets the
+    /// "one stall" upgrades (faster cooks, extra queue).
+    static func busiestStall(in state: GameState) -> Int {
+        var best = 0
+        for (index, stall) in state.stalls.enumerated()
+        where stall.queue.count > state.stalls[best].queue.count {
+            best = index
+        }
+        return best
     }
 }

@@ -1,0 +1,12 @@
+{
+  "upgrades": [
+    { "id": "budget-20", "kind": "budget", "amount": 20, "weight": 20 },
+    { "id": "lanterns-2", "kind": "lanterns", "amount": 2, "weight": 15 },
+    { "id": "awning", "kind": "awning", "amount": 1, "weight": 12 },
+    { "id": "busker", "kind": "busker", "amount": 1, "weight": 10 },
+    { "id": "bridge", "kind": "bridge", "amount": 1, "weight": 8 },
+    { "id": "seating", "kind": "seating", "amount": 1, "weight": 10 },
+    { "id": "cooks-20", "kind": "faster_cooks", "amount": 20, "weight": 15 },
+    { "id": "queue-2", "kind": "extra_queue", "amount": 2, "weight": 10 }
+  ]
+}

@@ -20,9 +20,10 @@ test: gen
 lint:
 	swiftlint --strict --config .swiftlint.yml
 	swift-format lint --recursive Packages/ App/ --configuration .swift-format
+	./Tools/content-lint
 
 content-lint:
-	swift run --package-path Tools/content-lint content-lint Resources/Content/
+	./Tools/content-lint
 
 snapshot: gen
 	xcodebuild test -scheme NM -destination 'platform=iOS Simulator,name=iPad Pro 13-inch (M5)' -configuration Debug -only-testing:Snapshots

@@ -48,6 +48,10 @@ public final class GameController: NSObject, ObservableObject, MarketSceneDelega
         self.seed = seed
         // The slice uses the scripted scenario (S2.3): rain pinned at 20:00.
         state = GameState.initial(seed: seed, overrides: NightScenario.taipeiSlice.overrides)
+        // Calm first night (NM-P3.4): slower spawn ramp; set before any tick.
+        if ProcessInfo.processInfo.arguments.contains("-uitest-calm") {
+            state.calmFirstNight = true
+        }
         rng = SeededRNG(seed: seed)
         heatmap = Array(repeating: 0, count: state.grid.width * state.grid.height)
         scene = MarketScene(state: state)
