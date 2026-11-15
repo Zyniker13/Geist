@@ -6,7 +6,7 @@ Each game roadmap lives in a sibling folder at `../NN-<slug>/ROADMAP.md`, indexe
 
 | File | Purpose |
 | --- | --- |
-| `_CONVENTIONS.md` | Shared rules for every game: roles and sign-off, fixed tech stack, repo layout, coding and determinism standards, testing, CI, performance budgets, the phase and gate model, standard tasks, handoff package, and effort units. **Read first. It overrides nothing in a game file, and a game file overrides it only where it says so explicitly.** |
+| `_CONVENTIONS.md` | Shared rules for every game: roles and sign-off, fixed tech stack, repo layout, coding and determinism standards, testing, CI, performance budgets, the phase and gate model, standard tasks, handoff package, and effort units. **Read first. It wins over a game file on process, stack, standards, and gates. A game file wins on game-specific facts (rules, content, modules) and overrides this file only where it says so explicitly.** |
 | `_TEMPLATE.md` | The section structure every roadmap follows (sections 0–13). Use it for any new game. |
 | `../NN-<slug>/ROADMAP.md` | One roadmap per game (01–25), numbered in the order of the concepts Page. |
 | `README.md` | This file. |

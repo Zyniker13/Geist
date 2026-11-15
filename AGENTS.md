@@ -2,13 +2,19 @@
 
 This guide is for whoever works in this repository, human or agent. Read `ROADMAP.md` (the program roadmap) and `STATUS.md` (where the program stands) first, then the current game's `games/NN-<slug>/ROADMAP.md` and `STATUS.md`.
 
+## Precedence
+
+Where this file conflicts with the game roadmap set, the set governs. The set is `games/_shared/_CONVENTIONS.md`, `games/_shared/_TEMPLATE.md`, and each `games/NN-<slug>/ROADMAP.md`. The same rule applies to conflicts with `ROADMAP.md`, `STATUS.md`, and `docs/game-roadmap-template.md`. See [Precedence](ROADMAP.md#precedence).
+
+The set governs on phases P0–P10 and gates G0–G10, including the GLM hard stops at G2 and G5; the technology stack; iPad-first platforms (iOS, iPadOS, and macOS); the online and privacy choices; the premium universal-purchase default; and the suggested build order (Orrery, Night Market, or Murmuration first). `docs/game-roadmap-template.md` is superseded by `games/_shared/_TEMPLATE.md`.
+
 ## Priorities
 
 A game that works and is fun, then stability and data safety, then privacy and accessibility, then launch polish, then extra content. Never ship a change that can lose or corrupt a player's saved progress.
 
 ## Rules
 
-- Follow the phases, stages, and [Transition Protocol](ROADMAP.md#transition-protocol) in `ROADMAP.md`. Plan review is capped at three passes for the program and three per game.
+- Follow phases P0–P10 and gates G0–G10 in `games/_shared/_CONVENTIONS.md`, including the GLM hard stops at G2 and G5. Where `ROADMAP.md` differs, the game roadmap set governs; see [Precedence](ROADMAP.md#precedence). Plan review is capped at three passes for the program and three per game.
 - Run the game's `scripts/check.sh` before every push, and the global `scripts/check.sh` before pushing an engine change or closing out a game. Each runs what CI runs; keep them in step.
 - Every change that alters behavior comes with tests, and every bug fix starts with a regression test. Never skip or disable a test to get green.
 - Keep shared logic in the engine package under `Engine/` and game-specific logic in the game's folder. An engine change must keep every game that has reached G2 green.

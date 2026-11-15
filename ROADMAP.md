@@ -2,9 +2,24 @@
 
 Geist is a program of **twenty-five original iOS games** built in one repository on one shared Swift engine. Each game lives in its own folder under `games/`, has its own roadmap, status, checks, and version tags, and ships on its own. This file is the **program roadmap**: it says how the whole program runs, in what order, to what standard, and how work moves from one game to the next without stopping.
 
-Read this file and `STATUS.md` first, every time. `STATUS.md` says exactly where the program stands; this file says what to do next. Each game's own `games/NN-<slug>/ROADMAP.md` says what that game is.
+Read this file and `STATUS.md` first, every time. `STATUS.md` says exactly where the program stands; this file says what to do next. Each game's own `games/NN-<slug>/ROADMAP.md` says what that game is. On a conflict with the game roadmap set, the set governs; see [Precedence](#precedence).
 
 Priorities, in order, when they conflict: **a game that works and is fun, then stability and data safety, then privacy and accessibility, then launch polish, then extra content.** A finished, launch-ready small game beats an unfinished large one.
+
+## Precedence
+
+The owner ruled that the game roadmap set controls. Where this file, `AGENTS.md`, `STATUS.md`, or `docs/game-roadmap-template.md` conflicts with that set, the set governs. The set is `games/_shared/_CONVENTIONS.md`, `games/_shared/_TEMPLATE.md`, and each `games/NN-<slug>/ROADMAP.md`.
+
+The set governs on:
+
+- phases P0–P10 and gates G0–G10, including the GLM hard stops at G2 and G5
+- the technology stack in `games/_shared/_CONVENTIONS.md`
+- iPad-first platforms (iOS, iPadOS, and macOS)
+- the online and privacy choices in `games/_shared/_CONVENTIONS.md`
+- the premium universal-purchase default
+- the suggested build order: start with an Approachable, solo-indie roadmap (Orrery, Night Market, or Murmuration)
+
+`games/_shared/_TEMPLATE.md` is the game-roadmap template. `docs/game-roadmap-template.md` is superseded. A game roadmap wins on that game's design. `games/_shared/_CONVENTIONS.md` wins over a game roadmap on process, stack, standards, and gates, except where that roadmap says so explicitly. The queue table in `STATUS.md` stays as listed; build order follows the suggestion above when this file and that table disagree.
 
 ## How the Program Runs
 
@@ -26,7 +41,7 @@ ROADMAP.md                 this file: the program roadmap
 STATUS.md                  program status: the single place to resume from
 AGENTS.md                  rules for working in the repository
 docs/
-  game-roadmap-template.md the contract every game roadmap meets
+  game-roadmap-template.md superseded by games/_shared/_TEMPLATE.md
   decisions/               program-wide decision records (NNNN-title.md)
   handoffs/                one close-out note per finished or parked game
 Engine/                    the shared Swift package (GeistKit), from P1
@@ -52,7 +67,7 @@ scripts/
 
 ## The Game Roadmap Contract
 
-Each game's roadmap is written separately and placed at `games/NN-<slug>/ROADMAP.md`. If a roadmap arrives somewhere else (for example a single file under `roadmaps/` or `games/`), move it into its own folder with `git mv`, keeping its text, and add it to the queue in `STATUS.md`. The full template is `docs/game-roadmap-template.md`. A game roadmap meets the contract when it has all of these sections:
+Each game's roadmap is written separately and placed at `games/NN-<slug>/ROADMAP.md`. If a roadmap arrives somewhere else (for example a single file under `roadmaps/` or `games/`), move it into its own folder with `git mv`, keeping its text, and add it to the queue in `STATUS.md`. The template in force is `games/_shared/_TEMPLATE.md`. `docs/game-roadmap-template.md` is superseded. The section list below is the earlier contract; where it differs from the set, the set governs (see [Precedence](#precedence)). A game roadmap met that earlier contract when it had all of these sections:
 
 1. **Pitch.** One paragraph: what the game is and why it is fun.
 2. **Core Loop.** What the player does, second to second and session to session.
@@ -70,7 +85,7 @@ Each game's roadmap is written separately and placed at `games/NN-<slug>/ROADMAP
 The program never stalls on a thin or missing roadmap.
 
 - **A section is missing or vague:** fill it during G0 with the smallest choice that fits the pitch, mark the filled text with "(filled in G0)", and record anything significant as a decision in the game's `docs/decisions/`.
-- **The roadmap conflicts with this file:** this file wins on process, quality, privacy, and licensing; the game roadmap wins on design. Record the resolution.
+- **The roadmap conflicts with this file:** the game roadmap set governs. See [Precedence](#precedence). Record the resolution.
 - **The roadmap is missing entirely when its turn comes:** skip to the next game in the queue that has one, and note it in `STATUS.md`. If none of the remaining games has a roadmap, spend the time on [Program Work Between Games](#program-work-between-games), then check again.
 - **The roadmap changes after work starts:** pull it, compare, and fold the change in at the next stage boundary. A change to a game that is already launch-ready reopens it at the stage the change affects.
 
