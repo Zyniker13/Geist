@@ -15,6 +15,7 @@ public enum Event: Codable, Sendable, Equatable, Hashable {
     case stallOpened(Int)
     case gateOpened(Int)
     case served(CustomerID, StallColor)
+    case customersLeft(Int)
     case overflowWarning(Int, progress: Int)
     case rainStarted
     case rainEnded

@@ -1,62 +1,131 @@
-/// Game state initialisation.
+/// Optional overrides for tests and tools that need a custom map or start set.
+public struct GameStateOverrides: Sendable {
+    public var grid: Grid?
+    public var gates: [Gate]?
+    public var stalls: [Stall]?
+    public var fixtures: [Fixture]?
+    public var walkwayBudget: Int?
+
+    public init(
+        grid: Grid? = nil, gates: [Gate]? = nil, stalls: [Stall]? = nil,
+        fixtures: [Fixture]? = nil, walkwayBudget: Int? = nil
+    ) {
+        self.grid = grid
+        self.gates = gates
+        self.stalls = stalls
+        self.fixtures = fixtures
+        self.walkwayBudget = walkwayBudget
+    }
+}
+
+/// Game state initialisation (R-1, R-2, R-3, R-6, R-17).
+///
+/// R-3 start: 2 stalls open (seeded positions from zones), 1 gate active,
+/// walkway budget 30 tiles, 2 lanterns, 0 awnings, 0 buskers.
 public extension GameState {
-    /// Create initial game state from a seed.
-    static func initial(seed: UInt64, contentVersion: String = "0.0.0") -> GameState {
-        // Build a default 32×20 grid
+    static func initial(
+        seed: UInt64, contentVersion: String = "0.0.0", overrides: GameStateOverrides = .init()
+    ) -> GameState {
+        var rng = SeededRNG(seed: seed)
+
+        // Build a default 32×20 grid (R-1)
         var tiles: [TileType] = Array(repeating: .ground, count: 32 * 20)
-        // Add some water features (canals)
-        for col in 10..<22 {
-            tiles[7 * 32 + col] = .water(.canal)
-            tiles[12 * 32 + col] = .water(.canal)
-        }
-        // Add plaza area
+        // Plaza first; canals are applied after so they cut through it (R-1).
         for row in 8..<13 {
             for col in 12..<20 {
                 tiles[row * 32 + col] = .plaza
             }
         }
-
+        // Canals are 3 tiles wide so a single R-15 bridge (1–3 tiles) can cross.
+        for row in [7, 12] {
+            for col in 14..<17 {
+                tiles[row * 32 + col] = .water(.canal)
+            }
+        }
         let grid = Grid(tiles: tiles)
 
-        // Gates at edges
+        // Gates: gate 0 active at 18:00; gate 1 opens at 21:00 (R-6).
         let gates: [Gate] = [
             Gate(id: 0, position: Tile(col: 0, row: 9)),
-            Gate(id: 1, position: Tile(col: 0, row: 10)),
+            Gate(id: 1, position: Tile(col: 0, row: 10), opensAtTick: 3 * 1800),
         ]
 
-        // Stalls
-        let stallPositions: [Tile] = [
-            Tile(col: 13, row: 9), Tile(col: 15, row: 9),
-            Tile(col: 17, row: 9), Tile(col: 13, row: 11),
-            Tile(col: 15, row: 11), Tile(col: 17, row: 11),
-        ]
+        // Stall candidates on the plaza, seeded shuffle for positions from zones (R-3, R-6).
+        var candidatePositions: [Tile] = []
+        for row in [9, 11] {
+            for col in stride(from: 13, through: 17, by: 2) {
+                candidatePositions.append(Tile(col: col, row: row))
+            }
+        }
+        rng.shuffle(&candidatePositions)
 
-        let stalls: [Stall] = StallColor.allCases.enumerated().map { idx, color in
-            Stall(
-                id: idx,
-                color: color,
-                position: stallPositions[idx],
-                serviceTicks: 90
+        // Two stalls open at start; the rest scheduled across hours 2–5 with
+        // seeded jitter of up to 300 ticks (R-6).
+        var stalls: [Stall] = []
+        for (idx, color) in StallColor.allCases.enumerated() {
+            let position = candidatePositions[idx]
+            if idx < 2 {
+                stalls.append(Stall(id: idx, color: color, position: position, serviceTicks: 90))
+            } else {
+                let base = (idx) * 1800  // hour boundaries for idx 2..5
+                let jitter = Int(rng.next(upperBound: 601)) - 300
+                let openTick = max(1, base + jitter)
+                stalls.append(
+                    Stall(
+                        id: idx, color: color, position: position, serviceTicks: 90,
+                        scheduledOpenTick: openTick
+                    )
+                )
+            }
+        }
+
+        // Two starting lanterns on plaza tiles (R-3).
+        let lanternSpots = [Tile(col: 14, row: 10), Tile(col: 17, row: 10)]
+        var fixtures: [Fixture] = []
+        for (i, spot) in lanternSpots.enumerated() {
+            fixtures.append(
+                Fixture(id: i, kind: .lantern(radius: 3), position: spot, radius: 3)
             )
         }
 
+        // Rain schedule: 0–3 showers, 90–180 s each (2700–5400 ticks), never
+        // before 19:00 (tick 3600); showers are sequential with a gap (R-17).
+        let showerCount = Int(rng.next(upperBound: 4))
+        var rainSchedule: [RainShower] = []
+        var cursor = 3600 + Int(rng.next(upperBound: 1801))
+        for _ in 0..<showerCount {
+            let duration = 2700 + Int(rng.next(upperBound: 2701))
+            rainSchedule.append(RainShower(startTick: cursor, durationTicks: duration))
+            cursor += duration + Int(rng.next(upperBound: 1801))
+        }
+
+        let finalGrid = overrides.grid ?? grid
+        let finalGates = overrides.gates ?? gates
+        let finalStalls = overrides.stalls ?? stalls
+        let finalFixtures = overrides.fixtures ?? fixtures
+        let finalBudget = overrides.walkwayBudget ?? 30
+
         return GameState(
-            grid: grid,
-            stalls: stalls,
-            gates: gates,
-            fixtures: [],
+            grid: finalGrid,
+            stalls: finalStalls,
+            gates: finalGates,
+            fixtures: finalFixtures,
             customers: [],
             weather: .clear,
             clock: Clock(tick: 0),
             walkwayTiles: [],
-            walkwayBudget: 640,
+            walkwayBudget: finalBudget,
             usedBudget: 0,
             score: 0,
             nextCustomerID: 0,
-            nextFixtureID: 0,
+            nextFixtureID: finalFixtures.count,
             contentVersion: contentVersion,
             speedMultiplier: 1,
-            isPaused: false
+            isPaused: false,
+            rainSchedule: rainSchedule,
+            pendingOffers: [],
+            fieldVersion: 0,
+            pathFields: PathFields()
         )
     }
 }
