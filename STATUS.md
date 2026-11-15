@@ -4,13 +4,21 @@ This file is the single place to resume the program from. Keep every field below
 
 - **Current game:** none yet
 - **Phase:** none
-- **Last done:** program roadmap reconciled with the game roadmap set
+- **Last done:** program and game roadmaps updated: the build agent owns P0–P10 of every game and never stops
 - **Next step:** environment check (see below), then Night Market (`games/04-night-market/`) P0: read `games/_shared/_CONVENTIONS.md` and `games/04-night-market/ROADMAP.md` in full, then task S0.1 on branch `night-market/phase/P0-setup`
 - **Blocked on:** nothing
 
 ## Environment Check
 
-Do this once, before the first game's P0, and record the output here: `xcodebuild -version` (must be Xcode 26.x, `_CONVENTIONS.md` §2), `xcrun simctl list runtimes` and `xcrun simctl list devicetypes` (an iOS 26 runtime plus the simulators the snapshot and UI tests need: a 13-inch iPad Pro, an 11-inch iPad, and a 6.9-inch iPhone; `_CONVENTIONS.md` §5 and §6), `swift --version`, and `brew --version`. Install missing command-line tools with `brew install`. If Xcode 26 or the iOS 26 simulator runtime is missing and cannot be installed without an administrator, add it to **Needs the Maintainer**; no game can start until it is fixed.
+Do this once, before the first game's P0, and record the output here:
+
+- `xcodebuild -version` must report Xcode 27.2 (`_CONVENTIONS.md` §2).
+- `xcrun simctl list runtimes` must show an available iOS simulator runtime of version 26 or later.
+- `xcrun simctl list devices available` must include the simulators named in "Environment" in `ROADMAP.md`.
+- `swift --version`, `brew --version`, `xcodegen --version`, `swiftlint version`, and `swift-format --version`; install missing tools with `brew install`.
+- `gh auth status`: if it fails, file maintainer items with the fallback in "Issues for the Maintainer" in `ROADMAP.md`.
+
+If Xcode 27.2 or an iOS 26-or-later runtime is missing and cannot be installed without an administrator, file it as a `program` maintainer item; no game can build until it is fixed.
 
 - not yet run
 
@@ -46,21 +54,13 @@ Do this once, before the first game's P0, and record the output here: `xcodebuil
 | 24 | 05 | [`05-dispatch`](games/05-dispatch/ROADMAP.md) | Dispatch | Not Started | — | — |
 | 25 | 07 | [`07-meridian`](games/07-meridian/ROADMAP.md) | Meridian | Not Started | — | — |
 
-**Totals:** 0 handed off at G5, 0 waiting on others, 0 in progress, 25 not started.
-
-## Waiting on Others
-
-Each game that cannot move, with exactly what it waits for (for example "G2: REVIEW: GROK and REVIEW: MAHLER in `games/04-night-market/docs/STATUS.md`"). The build agent never writes these reviews.
-
-- none
+**Totals:** 0 done, 0 in progress, 25 not started.
 
 ## Needs the Maintainer
 
-Decisions or steps only the maintainer can do. Adding an item never stops other games.
+Fallback only: used when `gh` is not authenticated (see "Issues for the Maintainer" in `ROADMAP.md`). Otherwise every item is a GitHub issue labeled `needs-maintainer`. Format: `[needs-maintainer] [<slug> or program] [blocked or question, if any] Title — what is needed, why, what was done locally, and what happens next.` The maintainer answers by adding an indented line under the item.
 
-- **Bundle identifier prefix:** every roadmap uses the placeholder `com.zyniker.<slug>` (`_CONVENTIONS.md` §2). Confirm or replace it before P7. The build agent keeps the placeholder.
-- **Reviews:** every game stops at G2 for `REVIEW: GROK` and `REVIEW: MAHLER`, and at G5 for `REVIEW: CLAUDE`, `REVIEW: GROK`, and `REVIEW: MAHLER`. Games resume only when those entries are recorded in the game's `docs/STATUS.md`.
-- **Open questions:** each roadmap's §13 lists questions with defaults. The build agent uses the defaults; answer any you want changed in the game's `docs/OPEN_QUESTIONS.md`.
+- none
 
 ## Log
 
@@ -69,4 +69,5 @@ One line per meaningful step, newest last: date, phase or game and stage, what w
 - Program roadmap and status written.
 - Decision: the whole repository is all rights reserved and stays public for reference only (`LICENSE`); third-party assets and dependencies must be permissively licensed with attribution recorded, and nothing copyleft.
 - 2026-11-15: placed the twenty-five game roadmaps at `games/NN-<slug>/ROADMAP.md` and listed them in the queue. Build order not set.
-- 2026-11-15: reconciled the program files with the game roadmap set (`games/_shared/`). The build agent does P0–P5 of each game, honors every stop per game, and moves to the next game; build order set in `ROADMAP.md`, Night Market first. Superseded program docs (the old template, shared engine, stages G0–G6, and launch gate) removed.
+- 2026-11-15: reconciled the program files with the game roadmap set (`games/_shared/`); build order set in `ROADMAP.md`, Night Market first; superseded program docs removed.
+- 2026-11-15: the build agent now owns every phase, P0–P10, of every game, with self-checked gates, local substitutes for owner-only steps, and maintainer items filed as GitHub issues (fallback: Needs the Maintainer). Toolchain set to Xcode 27.2 with 26.0 deployment targets.

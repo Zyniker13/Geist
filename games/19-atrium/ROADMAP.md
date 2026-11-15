@@ -2,7 +2,7 @@
 
 > Build a vertical solarpunk arcology where every new floor steals sunlight and air from the gardens below.
 
-Read [`_CONVENTIONS.md`](../_shared/_CONVENTIONS.md) v1.0 in full before starting. This roadmap only adds what is specific to Atrium.
+Read [`_CONVENTIONS.md`](../_shared/_CONVENTIONS.md) v2.0 in full before starting. This roadmap only adds what is specific to Atrium.
 
 ## 0. Metadata
 
@@ -10,7 +10,7 @@ Read [`_CONVENTIONS.md`](../_shared/_CONVENTIONS.md) v1.0 in full before startin
 | --- | --- |
 | Game number and slug | 19 · `atrium` |
 | Code prefix | `ATR` (packages `ATRCore`, `ATRContent`, `ATRAI`, `ATRRender`, `ATRAudio`, `ATRPlatform`, `ATRMeta`) |
-| Bundle ID (placeholder) | `com.zyniker.atrium` |
+| Bundle ID | `GEIST_BUNDLE_ID` build setting, set by the maintainer (`_CONVENTIONS.md` §2) |
 | Subgenre | Vertical city builder with roguelite runs |
 | Difficulty tier | Intermediate |
 | Scope | Small team |
@@ -18,7 +18,7 @@ Read [`_CONVENTIONS.md`](../_shared/_CONVENTIONS.md) v1.0 in full before startin
 | Renderer | RealityKit (3D) via `RealityView`, plus a Metal 4 compute pass for the light-bake visualization texture (`ATRRender/LightBake`) |
 | Players | Solo only |
 | Simulation | Turn-based days; light and air are solved per day on an integer voxel grid in Core |
-| Conventions | [`_CONVENTIONS.md`](../_shared/_CONVENTIONS.md) v1.0 (read first) |
+| Conventions | [`_CONVENTIONS.md`](../_shared/_CONVENTIONS.md) v2.0 (read first) |
 
 ## 1. Summary and Design Pillars
 
@@ -255,7 +255,7 @@ No opponent; AI provides bots for sims and the charter generator and verifier.
 
 ## 8. Phases, Tasks, and Gates
 
-### P0 Setup (Owner: GLM)
+### P0 Setup
 
 Standard tasks S0.1–S0.7.
 
@@ -271,7 +271,7 @@ Checks:
 Sign-off: GLM-SELF
 ```
 
-### P1 Rules Engine Prototype (Owner: GLM)
+### P1 Rules Engine Prototype
 
 Standard tasks S1.1–S1.4.
 
@@ -292,7 +292,7 @@ Checks:
 Sign-off: GLM-SELF
 ```
 
-### P2 Core Loop Vertical Slice (Owner: GLM)
+### P2 Core Loop Vertical Slice
 
 Standard tasks S2.1–S2.5. Slice scope: coast site, 12 modules, 5 cornerstones, 1 charter, 30 days.
 
@@ -302,7 +302,7 @@ Standard tasks S2.1–S2.5. Slice scope: coast site, 12 modules, 5 cornerstones,
 - **ATR-P2.4 Dusk playback.** Sun sweep (6 s, skippable) with light bands; residents arrive and leave as small figures.
 - **ATR-P2.5 Charter panel and results screen.**
 
-Slice checks: a new player understands why a farm is underproducing using the light lens within one minute (Mahler); preview deltas match Core (test).
+Slice checks: a new player understands why a farm is underproducing using the light lens within one minute (playtest; `_CONVENTIONS.md` §8.2); preview deltas match Core (test).
 
 ```
 GATE G2 — Vertical Slice
@@ -312,12 +312,10 @@ Checks:
   [ ] ≥ 60 fps in tower view at 150 modules on iPad simulator
   [ ] Save and resume to identical hash
   [ ] docs/media/slice.mp4 recorded
-  [ ] REVIEW: GROK — does every placement feel like a trade-off?
-  [ ] REVIEW: MAHLER — beautiful and fun enough to continue?
-Sign-off: REVIEW: GROK + MAHLER · 🛑 GLM STOP
+Sign-off: GLM-SELF
 ```
 
-### P3 Content and Systems (Owner: GLM)
+### P3 Content and Systems
 
 - **ATR-P3.1** 28 modules, 5 cultures, 30 cornerstones, 24 charter goals, events.
 - **ATR-P3.2** Canyon and ruin sites; procedural site variants.
@@ -329,11 +327,10 @@ GATE G3 — Content and Systems
 Checks:
   [ ] Counts: 28 modules, 3 sites, 5 cultures, 30 cornerstones, 24 goals
   [ ] content-lint 0 errors; tutorial UI test passes
-  [ ] REVIEW: CLAUDE (async)
-Sign-off: GLM-SELF + REVIEW: CLAUDE (async)
+Sign-off: GLM-SELF
 ```
 
-### P4 AI Opponents (Owner: GLM)
+### P4 AI Opponents
 
 - **ATR-P4.1** BuilderBot greedy and planner; incremental solve caches.
 - **ATR-P4.2** `make balance` → `docs/BALANCE.md`.
@@ -345,7 +342,7 @@ Checks:
 Sign-off: GLM-SELF
 ```
 
-### P5 Meta and Replayability (Owner: GLM)
+### P5 Meta and Replayability
 
 - **ATR-P5.1** Daily Site (date-derived site variant, charter, and deck); one ranked attempt.
 - **ATR-P5.2** Unlocks: sites and cultures by charter wins; module cards join the starter pool through progression. All earnable.
@@ -353,16 +350,15 @@ Sign-off: GLM-SELF
 - **ATR-P5.4** Stats and charter history.
 
 ```
-GATE G5 — Meta and Replayability (Final GLM Handoff)
+GATE G5 — Meta and Replayability
 Checks:
   [ ] Daily Site deterministic and verified for 60 dates
   [ ] All standard tests and coverage thresholds pass
   [ ] docs/HANDOFF.md complete
-  [ ] REVIEW: CLAUDE + GROK + MAHLER
-Sign-off: REVIEW: CLAUDE + GROK + MAHLER · 🛑 GLM FINAL STOP
+Sign-off: GLM-SELF
 ```
 
-### P6 Aesthetics and Audio Pass (Owner: GROK + CLAUDE)
+### P6 Aesthetics and Audio Pass
 
 - **ATR-P6.1** Final module kit (ceramic, copper, glass, foliage) with dressing variants; physically based materials.
 - **ATR-P6.2** Light-bake visualization via Metal (smooth lightmap from Core values) and sky gradients through the day.
@@ -372,13 +368,12 @@ Sign-off: REVIEW: CLAUDE + GROK + MAHLER · 🛑 GLM FINAL STOP
 ```
 GATE G6 — Aesthetics
 Checks:
-  [ ] Pillar 2 test: 20 random planner towers rendered; Mahler and Grok rate ≥ 15 as "architectural"
+  [ ] Pillar 2 test: 20 random planner towers rendered and saved to `docs/media/`; GLM rates ≥ 15 as "architectural" in its self-assessment; human rating playtest; `_CONVENTIONS.md` §8.2)
   [ ] 120 fps on iPad Pro (M4) at 300 modules; 60 fps on A16
-  [ ] REVIEW: MAHLER
-Sign-off: REVIEW: MAHLER
+Sign-off: GLM-SELF
 ```
 
-### P7 Platform Features (Owner: CLAUDE)
+### P7 Platform Features
 
 - **ATR-P7.1 Pencil.** Sketch a vertical stroke to queue a light-well chain; hover previews a placement's light delta; squeeze toggles the lens.
 - **ATR-P7.2 Game Center.** Daily leaderboard, achievements, challenges.
@@ -390,11 +385,10 @@ GATE G7 — Platform
 Checks:
   [ ] Pencil queue produces the same Actions as manual placement (test)
   [ ] Game Center sandbox and iCloud round trips
-  [ ] REVIEW: GROK
-Sign-off: REVIEW: GROK
+Sign-off: GLM-SELF
 ```
 
-### P8 Polish, Accessibility, and Performance (Owner: CLAUDE)
+### P8 Polish, Accessibility, and Performance
 
 - **ATR-P8.1** Lenses color-blind safe (light as brightness, air as animated particles, load as hatch).
 - **ATR-P8.2** VoiceOver floor-by-floor navigation; cell readouts.
@@ -405,21 +399,19 @@ Sign-off: REVIEW: GROK
 GATE G8 — Polish
 Checks:
   [ ] Budgets met on real devices; accessibility audit clean
-  [ ] REVIEW: GROK + MAHLER
-Sign-off: REVIEW: GROK + MAHLER
+Sign-off: GLM-SELF
 ```
 
-### P9 Beta and TestFlight (Owner: GROK + CLAUDE)
+### P9 Beta and TestFlight
 
 ```
 GATE G9 — Beta
 Checks:
-  [ ] Internal TestFlight (Mahler creates records); crash-free ≥ 99.5%; thermal never "serious" in 30 min on A16
-  [ ] REVIEW: MAHLER
-Sign-off: REVIEW: MAHLER
+  [ ] Internal TestFlight; crash-free ≥ 99.5%; thermal never "serious" in 30 min on A16
+Sign-off: GLM-SELF
 ```
 
-### P10 Release Prep (Owner: CLAUDE + GROK)
+### P10 Release Prep
 
 Standard P10 tasks; the preview is a slow orbit around a finished tower through a full day.
 
@@ -427,25 +419,24 @@ Standard P10 tasks; the preview is a slow orbit around a finished tower through 
 GATE G10 — Release
 Checks:
   [ ] RC full CI green; metadata, privacy, and age-rating drafts reviewed
-  [ ] REVIEW: MAHLER (submits)
-Sign-off: REVIEW: MAHLER
+Sign-off: GLM-SELF
 ```
 
-## 9. Handoff to Grok and Claude
+## 9. Fragile Areas and Priorities
 
 - **Fragile areas:** light solver performance and cache invalidation; load cascades (R-16, R-34); preview/solve parity.
-- **Rendering:** auto-dressing quality is the single biggest lever for pillar 2; Claude owns the kit pipeline, Grok directs.
-- **First tasks:** Claude — real module kit and RealityKit performance on A16; Grok — charter tuning and cornerstone variety.
+- **Rendering:** auto-dressing quality is the single biggest lever for pillar 2; the kit pipeline deserves the most care.
+- **Priorities for P6–P10:** real module kit and RealityKit performance on A16; charter tuning and cornerstone variety.
 
 ## 10. Risks and Mitigations
 
 | Risk | Likelihood | Impact | Mitigation | Owner |
 | --- | --- | --- | --- | --- |
-| 3D scope too large for a small team | Medium | High | Small kit with dressing variants; no free-form geometry | CLAUDE |
+| 3D scope too large for a small team | Medium | High | Small kit with dressing variants; no free-form geometry | GLM |
 | Light solve slow on A16 | Medium | Medium | Incremental columns, caches, 12 samples only | GLM |
-| Towers look like boxes | Medium | High | Auto-dressing, Townscaper lessons, P6 pillar test | GROK + CLAUDE |
+| Towers look like boxes | Medium | High | Auto-dressing, Townscaper lessons, P6 pillar test | GLM |
 | Systems feel opaque | Medium | Medium | Preview deltas and lenses | GLM |
-| Thermal on long sessions | Low | Medium | 60 fps cap option on A16; static scenes idle | CLAUDE |
+| Thermal on long sessions | Low | Medium | 60 fps cap option on A16; static scenes idle | GLM |
 
 ## 11. Out of Scope
 
@@ -465,17 +456,17 @@ Sign-off: REVIEW: MAHLER
 | P3 Content and Systems | GLM | 10–14 |
 | P4 Bots | GLM | 4–6 |
 | P5 Meta | GLM | 4–6 |
-| P6 Aesthetics and Audio | GROK + CLAUDE | 18–26 |
-| P7 Platform | CLAUDE | 4–6 |
-| P8 Polish | CLAUDE | 6–8 |
-| P9 Beta | GROK + CLAUDE | 6–10 |
-| P10 Release | CLAUDE + GROK | 2–4 |
+| P6 Aesthetics and Audio | GLM | 18–26 |
+| P7 Platform | GLM | 4–6 |
+| P8 Polish | GLM | 6–8 |
+| P9 Beta | GLM | 6–10 |
+| P10 Release | GLM | 2–4 |
 | **Total** | | **77–112** |
 
-## 13. Open Questions for Mahler
+## 13. Open Questions
 
 1. 3D (RealityKit) as specified, or a 2.5D isometric fallback to cut scope? **Default:** 3D.
 2. Should there be an endless sandbox at launch? **Default:** no (post-launch).
 3. Run length 30 days? **Default:** yes.
 4. Gallery sharing (export an image) in v1.0? **Default:** yes, image export via the share sheet only (no online gallery).
-5. Price? **Default:** Mahler decides in P10.
+5. Price? **Default:** the maintainer decides; GLM leaves the price unset.

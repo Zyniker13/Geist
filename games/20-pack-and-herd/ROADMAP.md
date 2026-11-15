@@ -2,7 +2,7 @@
 
 > An asymmetric predator-and-prey duel across a mountain valley, with one player as the wolf pack and the other as the elk herd.
 
-Read [`_CONVENTIONS.md`](../_shared/_CONVENTIONS.md) v1.0 in full before starting. This roadmap only adds what is specific to Pack & Herd.
+Read [`_CONVENTIONS.md`](../_shared/_CONVENTIONS.md) v2.0 in full before starting. This roadmap only adds what is specific to Pack & Herd.
 
 ## 0. Metadata
 
@@ -10,14 +10,14 @@ Read [`_CONVENTIONS.md`](../_shared/_CONVENTIONS.md) v1.0 in full before startin
 | --- | --- |
 | Game number and slug | 20 · `pack-and-herd` |
 | Code prefix | `PKH` (packages `PKHCore`, `PKHContent`, `PKHAI`, `PKHRender`, `PKHAudio`, `PKHPlatform`, `PKHMeta`) |
-| Bundle ID (placeholder) | `com.zyniker.pack-and-herd` |
+| Bundle ID | `GEIST_BUNDLE_ID` build setting, set by the maintainer (`_CONVENTIONS.md` §2) |
 | Subgenre | Asymmetric hidden-information tactics |
 | Difficulty tier | Intermediate |
 | Scope | Solo-indie |
 | Session length | 20–30 min (one year: 4 seasons × 3 turns) |
 | Renderer | SpriteKit (2D) with a woodcut-print shader (`SKShader` for carved line texture and paper grain) |
 | Players | Solo vs AI (either side), local pass-and-play with hidden information; no online play in v1.0 |
-| Conventions | [`_CONVENTIONS.md`](../_shared/_CONVENTIONS.md) v1.0 (read first) |
+| Conventions | [`_CONVENTIONS.md`](../_shared/_CONVENTIONS.md) v2.0 (read first) |
 
 ## 1. Summary and Design Pillars
 
@@ -260,7 +260,7 @@ Hidden information on both sides: AI uses ISMCTS over determinized states sample
 
 ## 8. Phases, Tasks, and Gates
 
-### P0 Setup (Owner: GLM)
+### P0 Setup
 
 Standard tasks S0.1–S0.7.
 
@@ -274,7 +274,7 @@ Checks:
 Sign-off: GLM-SELF
 ```
 
-### P1 Rules Engine Prototype (Owner: GLM)
+### P1 Rules Engine Prototype
 
 Standard tasks S1.1–S1.4.
 
@@ -296,7 +296,7 @@ Checks:
 Sign-off: GLM-SELF
 ```
 
-### P2 Core Loop Vertical Slice (Owner: GLM)
+### P2 Core Loop Vertical Slice
 
 Standard tasks S2.1–S2.5. Slice scope: `high_meadow`, full year, easy AI on both sides (play either), pass-and-play.
 
@@ -314,12 +314,10 @@ Checks:
   [ ] Render cannot access GameState (compile-time module boundary test)
   [ ] Pass-and-play hand-over hides the board and blurs snapshots
   [ ] docs/media/slice.mp4 recorded
-  [ ] REVIEW: GROK — do the two sides feel distinct? Is inference rewarding?
-  [ ] REVIEW: MAHLER — fun enough to continue?
-Sign-off: REVIEW: GROK + MAHLER · 🛑 GLM STOP
+Sign-off: GLM-SELF
 ```
 
-### P3 Content and Systems (Owner: GLM)
+### P3 Content and Systems
 
 - **PKH-P3.1** 8 valleys with par values; `ValleyGenerator` (river by downhill walk, forest clusters, ridges, den placement constraints).
 - **PKH-P3.2** Two tutorials (one per side), 5 short lessons each.
@@ -330,11 +328,10 @@ GATE G3 — Content and Systems
 Checks:
   [ ] 8 valleys; content-lint 0 errors; tutorials pass UI tests
   [ ] Post-game full-information replay matches the recorded game hash
-  [ ] REVIEW: CLAUDE (async)
-Sign-off: GLM-SELF + REVIEW: CLAUDE (async)
+Sign-off: GLM-SELF
 ```
 
-### P4 AI Opponents (Owner: GLM)
+### P4 AI Opponents
 
 - **PKH-P4.1** Belief model and determinizer; test that sampled positions are always consistent with the Observation history (no sample places an enemy in a hex observed empty this turn).
 - **PKH-P4.2** ISMCTS tiers and personalities.
@@ -350,7 +347,7 @@ Checks:
 Sign-off: GLM-SELF
 ```
 
-### P5 Meta and Replayability (Owner: GLM)
+### P5 Meta and Replayability
 
 - **PKH-P5.1** Daily Valley: date-derived procedural valley; player plays both sides vs hard AI (two scores combined).
 - **PKH-P5.2** Seasonal modifiers (e.g., `mild_winter`, `drought_summer`, `big_litter`) selectable or random.
@@ -358,16 +355,15 @@ Sign-off: GLM-SELF
 - **PKH-P5.4** Stats per side.
 
 ```
-GATE G5 — Meta and Replayability (Final GLM Handoff)
+GATE G5 — Meta and Replayability
 Checks:
   [ ] Daily valleys deterministic for 60 dates; par computed for each in CI
   [ ] All standard tests and coverage thresholds pass
   [ ] docs/HANDOFF.md complete
-  [ ] REVIEW: CLAUDE + GROK + MAHLER
-Sign-off: REVIEW: CLAUDE + GROK + MAHLER · 🛑 GLM FINAL STOP
+Sign-off: GLM-SELF
 ```
 
-### P6 Aesthetics and Audio Pass (Owner: GROK + CLAUDE)
+### P6 Aesthetics and Audio Pass
 
 - **PKH-P6.1** Final woodcut art for terrain, animals, snow states, and season palettes (still black, bone, and one red).
 - **PKH-P6.2** Print-press transitions; hunt vignettes (abstract, non-graphic).
@@ -376,11 +372,10 @@ Sign-off: REVIEW: CLAUDE + GROK + MAHLER · 🛑 GLM FINAL STOP
 ```
 GATE G6 — Aesthetics
 Checks:
-  [ ] REVIEW: MAHLER
-Sign-off: REVIEW: MAHLER
+Sign-off: GLM-SELF
 ```
 
-### P7 Platform Features (Owner: CLAUDE)
+### P7 Platform Features
 
 - **PKH-P7.1 Pencil.** Annotate the map with private notes per side (stored in that side's observation history, hidden on hand-over); hover previews paths and hunt odds.
 - **PKH-P7.2 Game Center.** Daily leaderboard, achievements per side, challenges.
@@ -392,11 +387,10 @@ GATE G7 — Platform
 Checks:
   [ ] Notes never visible to the other side (UI test)
   [ ] Game Center sandbox and iCloud round trips
-  [ ] REVIEW: GROK
-Sign-off: REVIEW: GROK
+Sign-off: GLM-SELF
 ```
 
-### P8 Polish, Accessibility, and Performance (Owner: CLAUDE)
+### P8 Polish, Accessibility, and Performance
 
 - **PKH-P8.1** Visibility encoded by texture as well as tone (gray ink plus stipple for unseen).
 - **PKH-P8.2** VoiceOver: unit summaries, band contents, odds readouts.
@@ -406,22 +400,20 @@ Sign-off: REVIEW: GROK
 GATE G8 — Polish
 Checks:
   [ ] Budgets met on real devices; accessibility audit clean
-  [ ] REVIEW: GROK + MAHLER
-Sign-off: REVIEW: GROK + MAHLER
+Sign-off: GLM-SELF
 ```
 
-### P9 Beta and TestFlight (Owner: GROK + CLAUDE)
+### P9 Beta and TestFlight
 
 ```
 GATE G9 — Beta
 Checks:
-  [ ] Internal TestFlight (Mahler creates records); crash-free ≥ 99.5%
+  [ ] Internal TestFlight; crash-free ≥ 99.5%
   [ ] Tester win rates by side within 40–60% vs medium AI
-  [ ] REVIEW: MAHLER
-Sign-off: REVIEW: MAHLER
+Sign-off: GLM-SELF
 ```
 
-### P10 Release Prep (Owner: CLAUDE + GROK)
+### P10 Release Prep
 
 Standard P10 tasks; age rating draft notes non-graphic predation; preview shows a tracking sequence and a hunt from both perspectives.
 
@@ -429,22 +421,21 @@ Standard P10 tasks; age rating draft notes non-graphic predation; preview shows 
 GATE G10 — Release
 Checks:
   [ ] RC full CI green; metadata, privacy, and age-rating drafts reviewed
-  [ ] REVIEW: MAHLER (submits)
-Sign-off: REVIEW: MAHLER
+Sign-off: GLM-SELF
 ```
 
-## 9. Handoff to Grok and Claude
+## 9. Fragile Areas and Priorities
 
 - **Fragile areas:** the Observation boundary (any leak breaks the game); belief-model consistency; par values per valley after any rule change (rerun `make par`).
-- **First tasks:** Grok — side balance and hunt odds feel; Claude — privacy overlay audit and AI performance on A16.
+- **Priorities for P6–P10:** side balance and hunt odds feel; privacy overlay audit and AI performance on A16.
 
 ## 10. Risks and Mitigations
 
 | Risk | Likelihood | Impact | Mitigation | Owner |
 | --- | --- | --- | --- | --- |
-| One side dominates | Medium | High | Par normalization and sims per valley | GLM → GROK |
-| Hidden info feels like guessing | Medium | High | Scent ages, tracking, last-seen markers, post-game reveal | GROK |
-| Predation upsetting for some players | Low | Medium | Abstract woodcut vignettes; no blood; age rating honest | GROK |
+| One side dominates | Medium | High | Par normalization and sims per valley | GLM |
+| Hidden info feels like guessing | Medium | High | Scent ages, tracking, last-seen markers, post-game reveal | GLM |
+| Predation upsetting for some players | Low | Medium | Abstract woodcut vignettes; no blood; age rating honest | GLM |
 | ISMCTS too slow | Medium | Medium | Action abstraction, adaptive iterations | GLM |
 
 ## 11. Out of Scope
@@ -464,17 +455,17 @@ Sign-off: REVIEW: MAHLER
 | P3 Content and Systems | GLM | 5–8 |
 | P4 AI | GLM | 8–12 |
 | P5 Meta | GLM | 3–5 |
-| P6 Aesthetics and Audio | GROK + CLAUDE | 8–12 |
-| P7 Platform | CLAUDE | 3–5 |
-| P8 Polish | CLAUDE | 4–6 |
-| P9 Beta | GROK + CLAUDE | 5–8 |
-| P10 Release | CLAUDE + GROK | 2–3 |
+| P6 Aesthetics and Audio | GLM | 8–12 |
+| P7 Platform | GLM | 3–5 |
+| P8 Polish | GLM | 4–6 |
+| P9 Beta | GLM | 5–8 |
+| P10 Release | GLM | 2–3 |
 | **Total** | | **55–83** |
 
-## 13. Open Questions for Mahler
+## 13. Open Questions
 
 1. One year per game (12 turns)? **Default:** yes, with a two-year "long" setting.
 2. Online async play post-launch? **Default:** not in v1.0.
 3. Daily Valley as both sides combined? **Default:** yes.
 4. Should players name wolves and elk? **Default:** auto-named with optional renaming in the field journal.
-5. Price? **Default:** Mahler decides in P10.
+5. Price? **Default:** the maintainer decides; GLM leaves the price unset.

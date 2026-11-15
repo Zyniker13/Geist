@@ -6,14 +6,14 @@
 | --- | --- |
 | Game number and slug | 02 · `orrery` |
 | Code prefix | `OR` (packages `ORCore`, `ORContent`, `ORAI`, `ORRender`, `ORAudio`, `ORPlatform`, `ORMeta`) |
-| Bundle ID (placeholder) | `com.zyniker.orrery` |
+| Bundle ID | `GEIST_BUNDLE_ID` build setting, set by the maintainer (`_CONVENTIONS.md` §2) |
 | Subgenre | Two-player abstract strategy |
 | Difficulty tier | Approachable to learn, deep to master |
 | Scope | Solo-indie |
 | Session length | 5–15 minutes |
 | Renderer | RealityKit (3D brass orrery) with a SpriteKit 2D "schematic" fallback view |
 | Players | Solo vs AI; local pass-and-play; async online via GameKit turn-based matches |
-| Conventions | [`_CONVENTIONS.md`](../_shared/_CONVENTIONS.md) v1.0 (read first) |
+| Conventions | [`_CONVENTIONS.md`](../_shared/_CONVENTIONS.md) v2.0 (read first) |
 
 ## 1. Summary and Design Pillars
 
@@ -135,7 +135,7 @@ Targets (Hard vs Hard, 2,000 games per variant): first-player win rate 48–52% 
 
 ## 8. Phases, Tasks, and Gates
 
-### P0 Setup (Owner: GLM)
+### P0 Setup
 - Standard tasks S0.1–S0.7.
 - OR-P0.1 `Angle48` type with arithmetic and tests. Acceptance: wraparound tests for ±1…±96.
 
@@ -146,7 +146,7 @@ Checks:
 Sign-off: GLM-SELF
 ```
 
-### P1 Rules Engine Prototype (Owner: GLM)
+### P1 Rules Engine Prototype
 - Standard tasks S1.1–S1.4.
 - OR-P1.1 Rotation and slot-angle math (R-1 to R-3, R-7).
 - OR-P1.2 Actions, ko, and pass (R-5, R-6, R-8).
@@ -162,7 +162,7 @@ Checks:
 Sign-off: GLM-SELF
 ```
 
-### P2 Core Loop Vertical Slice (Owner: GLM)
+### P2 Core Loop Vertical Slice
 - Standard tasks S2.1–S2.5.
 - OR-P2.1 `SchematicScene` (2D top-down) fully playable: tap a slot to place; drag a ring to nudge (snaps to slot steps).
 - OR-P2.2 Future preview: drag a time scrubber (or two-finger twist on the board) to show ring positions 1–3 rounds ahead as ghosted planets; lines that would align glow.
@@ -176,11 +176,10 @@ Checks:
   [ ] UI test completes a full game vs Apprentice in schematic and 3D views on iPad and Mac
   [ ] Future preview matches Core's simulated positions for 1–3 rounds (test compares rendered slot angles to Core)
   [ ] Resume mid-game to identical hash
-Sign-off: REVIEW: GROK + REVIEW: MAHLER
-🛑 GLM STOP
+Sign-off: GLM-SELF
 ```
 
-### P3 Content and Systems (Owner: GLM)
+### P3 Content and Systems
 - OR-P3.1 Eight variants (§5) with variant select and a rules card per variant.
 - OR-P3.2 Tutorial: 6 interactive lessons (place, rotate, line, capture, opposite-side capture, Grand Alignment) from `tutorial.json`.
 - OR-P3.3 Pass-and-play with optional board rotation per player on iPad.
@@ -191,10 +190,10 @@ GATE G3 — Content and Systems
 Checks:
   [ ] 8 variants pass content-lint and 1,000-game sims each
   [ ] Tutorial UI test passes
-Sign-off: GLM-SELF; REVIEW: CLAUDE async
+Sign-off: GLM-SELF
 ```
 
-### P4 AI Opponents (Owner: GLM)
+### P4 AI Opponents
 - OR-P4.1 Full alpha-beta with TT, ordering, and iterative deepening; four tiers.
 - OR-P4.2 Puzzle solver and generator (`Tools/sim puzzles --count 500`).
 - OR-P4.3 Balance report per variant in `docs/BALANCE.md`.
@@ -209,7 +208,7 @@ Checks:
 Sign-off: GLM-SELF
 ```
 
-### P5 Meta and Replayability (Owner: GLM)
+### P5 Meta and Replayability
 - OR-P5.1 Daily puzzle and daily match with local history and streaks.
 - OR-P5.2 AI ladder: 12 named opponents with escalating tiers and variants; beating one unlocks the next and a cosmetic (enamel color).
 - OR-P5.3 Eight more variants (16 total); seeded variant mode.
@@ -221,11 +220,10 @@ Checks:
   [ ] Daily content identical across devices for 30 simulated dates; 400 days precomputed
   [ ] 16 variants pass sims; ladder completes in a scripted UI test with a debug "auto-win" flag
   [ ] Coverage thresholds met; docs/HANDOFF.md complete
-Sign-off: REVIEW: CLAUDE + GROK + MAHLER
-🛑 GLM FINAL STOP
+Sign-off: GLM-SELF
 ```
 
-### P6 Aesthetics and Audio Pass (Owner: GROK + CLAUDE)
+### P6 Aesthetics and Audio Pass
 - OR-P6.1 Final PBR brass, enamel, and walnut materials; depth of field; image-based lighting.
 - OR-P6.2 Mechanical motion curves; capture tray animation.
 - OR-P6.3 Clockwork, chime, and celesta audio; ring-pitch mapping.
@@ -235,10 +233,10 @@ GATE G6 — Aesthetics
 Checks:
   [ ] 3D view hits 120 fps on iPad Pro M4 with DOF on; 60 fps on iPad (A16) with DOF auto-reduced
   [ ] Snapshot set approved
-Sign-off: REVIEW: MAHLER
+Sign-off: GLM-SELF
 ```
 
-### P7 Platform Features (Owner: CLAUDE)
+### P7 Platform Features
 - OR-P7.1 Game Center: leaderboards (Daily puzzle time, Daily match score, Ladder progress), 24 achievements, daily challenge.
 - OR-P7.2 Turn-based async matches with variant choice.
 - OR-P7.3 iCloud sync of profile, ladder, and in-progress games.
@@ -250,10 +248,10 @@ GATE G7 — Platform
 Checks:
   [ ] Async match between two sandbox accounts completes
   [ ] iCloud round-trip iPad ↔ Mac
-Sign-off: REVIEW: GROK
+Sign-off: GLM-SELF
 ```
 
-### P8 Polish, Accessibility, and Performance (Owner: CLAUDE)
+### P8 Polish, Accessibility, and Performance
 - OR-P8.1 VoiceOver: slots announced as "Ring 2, angle 3 o'clock, empty"; rotor for lines with 2 of your planets.
 - OR-P8.2 Players distinguished by shape (cobalt round, ivory faceted) as well as color.
 - OR-P8.3 Reduce Motion: instant rotations with a cross-fade.
@@ -263,7 +261,7 @@ GATE G8 — Polish
 Checks:
   [ ] Performance budgets (§7 of conventions); cold start < 2.0 s
   [ ] VoiceOver game completion UI test passes
-Sign-off: REVIEW: GROK + REVIEW: MAHLER
+Sign-off: GLM-SELF
 ```
 
 ### P9 Beta and TestFlight / P10 Release Prep
@@ -273,26 +271,26 @@ Sign-off: REVIEW: GROK + REVIEW: MAHLER
 GATE G9 — Beta
 Checks:
   [ ] Crash-free ≥ 99.5%; no S1/S2 issues
-Sign-off: REVIEW: MAHLER
+Sign-off: GLM-SELF
 GATE G10 — Release
 Checks:
   [ ] Store assets approved; final CI green
-Sign-off: REVIEW: MAHLER (Mahler submits)
+Sign-off: GLM-SELF
 ```
 
-## 9. Handoff to Grok and Claude
+## 9. Fragile Areas and Priorities
 
 - Fragile areas: R-13 ordering of post-rotation alignments; Zobrist table must be regenerated if state layout changes.
-- First pickups: CLAUDE — RealityKit performance and materials; GROK — variant balance and puzzle curation.
+- Priorities for P6–P10: RealityKit performance and materials; variant balance and puzzle curation.
 
 ## 10. Risks and Mitigations
 
 | Risk | Likelihood | Impact | Mitigation | Owner |
 | --- | --- | --- | --- | --- |
-| First-player advantage | Medium | High | Tie-break, reserve tweaks, and sims per variant | GROK |
+| First-player advantage | Medium | High | Tie-break, reserve tweaks, and sims per variant | GLM |
 | Rotation hard to visualize | High | High | Future scrubber, glow lines, and tutorial | GLM |
-| 3D view hurts battery | Medium | Medium | Schematic view default on Low Power Mode | CLAUDE |
-| Solved by strong engines | Low | Low | Variants and seeded speeds | GROK |
+| 3D view hurts battery | Medium | Medium | Schematic view default on Low Power Mode | GLM |
+| Solved by strong engines | Low | Low | Variants and seeded speeds | GLM |
 
 ## 11. Out of Scope
 
@@ -308,14 +306,14 @@ Real-time mode; more than 2 players; online chat; physical-product tie-ins; Visi
 | P3 | GLM | 4–6 |
 | P4 | GLM | 6–9 |
 | P5 | GLM | 5–7 |
-| P6 | GROK + CLAUDE | 8–12 |
-| P7 | CLAUDE | 5–8 |
-| P8 | CLAUDE | 4–6 |
-| P9 | GROK + CLAUDE | 5–8 |
-| P10 | CLAUDE + GROK | 2–3 |
+| P6 | GLM | 8–12 |
+| P7 | GLM | 5–8 |
+| P8 | GLM | 4–6 |
+| P9 | GLM | 5–8 |
+| P10 | GLM | 2–3 |
 | **Total** | | **51–76** |
 
-## 13. Open Questions for Mahler
+## 13. Open Questions
 
 1. Should the 3D view or the schematic view be the default? Default: 3D on iPad Pro and Mac, schematic elsewhere.
 2. Should Vision Pro be considered? Default: out of scope for v1.

@@ -6,14 +6,14 @@
 | --- | --- |
 | Game number and slug | 03 · `fugue` |
 | Code prefix | `FG` (packages `FGCore`, `FGContent`, `FGAI`, `FGRender`, `FGAudio`, `FGPlatform`, `FGMeta`) |
-| Bundle ID (placeholder) | `com.zyniker.fugue` |
+| Bundle ID | `GEIST_BUNDLE_ID` build setting, set by the maintainer (`_CONVENTIONS.md` §2) |
 | Subgenre | Roguelite deckbuilder |
 | Difficulty tier | Deep |
 | Scope | Small team |
 | Session length | 30–60 minute runs; 3–5 minute encounters |
 | Renderer | SpriteKit (2D score and cards) |
 | Players | Solo |
-| Conventions | [`_CONVENTIONS.md`](../_shared/_CONVENTIONS.md) v1.0 (read first) |
+| Conventions | [`_CONVENTIONS.md`](../_shared/_CONVENTIONS.md) v2.0 (read first) |
 
 ## 1. Summary and Design Pillars
 
@@ -141,7 +141,7 @@ There is no symmetric opponent. P4 builds:
 
 ## 8. Phases, Tasks, and Gates
 
-### P0 Setup (Owner: GLM)
+### P0 Setup
 - Standard tasks S0.1–S0.7.
 - FG-P0.1 Audio spike: schedule a 4-voice, 8-beat measure via `AVAudioUnitSampler` with a placeholder General MIDI sound bank; measure scheduling jitter. Acceptance: onset jitter < 2 ms (logged).
 
@@ -153,7 +153,7 @@ Checks:
 Sign-off: GLM-SELF
 ```
 
-### P1 Rules Engine Prototype (Owner: GLM)
+### P1 Rules Engine Prototype
 - Standard tasks S1.1–S1.4.
 - FG-P1.1 Music model (R-1 to R-3) with key/mode realization tests for all 7 modes.
 - FG-P1.2 Resolution (R-8 to R-12) with ≥ 60 table tests built from textbook examples (correct suspensions, parallel fifths, and bass fourths).
@@ -170,7 +170,7 @@ Checks:
 Sign-off: GLM-SELF
 ```
 
-### P2 Core Loop Vertical Slice (Owner: GLM)
+### P2 Core Loop Vertical Slice
 - Standard tasks S2.1–S2.5.
 - FG-P2.1 `ScoreScene`: four lanes as staves, beat grid, Theme motif shown in its lane, intent icon above.
 - FG-P2.2 Drag a card from the hand into a lane; it snaps to the earliest legal beat under the finger; a live overlay colors each beat's intervals (blue consonant, crimson dissonant, gold when it would resolve) and shows projected damage before you release.
@@ -184,11 +184,10 @@ Checks:
   [ ] UI test plays a full Movement to the Boss result on iPad and Mac with scripted placements
   [ ] Projected damage shown before release equals actual resolved damage (test over 500 random placements)
   [ ] Audio plays without dropouts during resolution (no buffer underruns logged)
-Sign-off: REVIEW: GROK (does theory-as-synergy create interesting choices?) + REVIEW: MAHLER (does it sound and feel good?)
-🛑 GLM STOP
+Sign-off: GLM-SELF
 ```
 
-### P3 Content and Systems (Owner: GLM)
+### P3 Content and Systems
 - FG-P3.1 Author 80 phrases, 20 Themes, 15 Marginalia, and 10 Patron events to G3 counts; content-lint checks ranges and IDs.
 - FG-P3.2 Luthier shop (buy, remove card, upgrade), Cadence node, Modulation node.
 - FG-P3.3 Full map UI with node icons and path preview.
@@ -201,10 +200,10 @@ Checks:
   [ ] G3 content counts present; content-lint 0 errors
   [ ] Each Effect case has ≥ 2 tests
   [ ] Tutorial UI test passes
-Sign-off: GLM-SELF; REVIEW: CLAUDE async
+Sign-off: GLM-SELF
 ```
 
-### P4 AI Opponents (Owner: GLM)
+### P4 AI Opponents
 - FG-P4.1 Theme scripts for all Themes with branching tests.
 - FG-P4.2 Greedy and Beam autoplayers; `Tools/sim runs --bot beam N=2000`.
 - FG-P4.3 Balance report and one tuning pass to targets in §6.
@@ -218,7 +217,7 @@ Checks:
 Sign-off: GLM-SELF
 ```
 
-### P5 Meta and Replayability (Owner: GLM)
+### P5 Meta and Replayability
 - FG-P5.1 Add Romantic, Minimalist, and Jazz composers; reach G5 content counts.
 - FG-P5.2 Ascension 1–10; unlock flow (composers unlock by first win or by Movement 2 reaches).
 - FG-P5.3 Daily subject mode with local leaderboard.
@@ -232,11 +231,10 @@ Checks:
   [ ] Exported MIDI re-imports into the test harness and matches the symbolic score note for note
   [ ] Daily seed identical across devices for 30 dates
   [ ] Coverage thresholds; docs/HANDOFF.md complete
-Sign-off: REVIEW: CLAUDE + GROK + MAHLER
-🛑 GLM FINAL STOP
+Sign-off: GLM-SELF
 ```
 
-### P6 Aesthetics and Audio Pass (Owner: GROK + CLAUDE)
+### P6 Aesthetics and Audio Pass
 - FG-P6.1 Final engraved staves, card frames, and gold-leaf shader for resolutions.
 - FG-P6.2 Final sample library, reverb, and per-composer instrument tweaks (harpsichord continuo for Baroque, piano for Romantic, marimba for Minimalist, upright bass and brushes for Jazz).
 - FG-P6.3 Ambient between-node music generated from the player's best phrases.
@@ -246,10 +244,10 @@ GATE G6 — Aesthetics
 Checks:
   [ ] Peak ≤ −1 dBFS; no audible clicks at note boundaries (offline render analysis)
   [ ] Snapshot set approved
-Sign-off: REVIEW: MAHLER
+Sign-off: GLM-SELF
 ```
 
-### P7 Platform Features (Owner: CLAUDE)
+### P7 Platform Features
 - FG-P7.1 Game Center: Daily leaderboard, highest ascension per composer, 30 achievements, daily challenge.
 - FG-P7.2 iCloud run and profile sync (mid-run saves at node boundaries and measure boundaries).
 - FG-P7.3 Pencil: draw an ornament (trill, mordent, or turn) on a note via gesture recognition for cards with the `ornament` tag; hover previews intervals.
@@ -260,10 +258,10 @@ GATE G7 — Platform
 Checks:
   [ ] iCloud round-trip mid-run iPad ↔ Mac
   [ ] Export shares on iPad and Mac
-Sign-off: REVIEW: GROK
+Sign-off: GLM-SELF
 ```
 
-### P8 Polish, Accessibility, and Performance (Owner: CLAUDE)
+### P8 Polish, Accessibility, and Performance
 - FG-P8.1 Interval colors paired with shapes (circle consonant, triangle dissonant, star resolved).
 - FG-P8.2 VoiceOver reads projected results ("Beat 3: fifth, consonant"); a "theory hints" toggle.
 - FG-P8.3 Hearing accessibility: every audio cue has a visual counterpart; subtitles for Patron events.
@@ -273,29 +271,29 @@ GATE G8 — Polish
 Checks:
   [ ] Perf budgets; cold start < 2.0 s; audio latency < 20 ms on iPad (A16)
   [ ] VoiceOver completes the tutorial
-Sign-off: REVIEW: GROK + REVIEW: MAHLER
+Sign-off: GLM-SELF
 ```
 
 ### P9 Beta and TestFlight / P10 Release Prep
 - Standard P9 and P10 tasks. FG-P9.1 Two balance passes using opt-in run-summary exports.
 
 ```
-GATE G9 — Beta: crash-free ≥ 99.5%; no S1/S2 · Sign-off: REVIEW: MAHLER
-GATE G10 — Release: assets approved; CI green · Sign-off: REVIEW: MAHLER (Mahler submits)
+GATE G9 — Beta: crash-free ≥ 99.5%; no S1/S2 · Sign-off: GLM-SELF
+GATE G10 — Release: assets approved; CI green · Sign-off: GLM-SELF
 ```
 
-## 9. Handoff to Grok and Claude
+## 9. Fragile Areas and Priorities
 
 - Fragile areas: interval rules in `Resolution.swift` are the heart of the game; any change requires updating textbook tests; audio scheduling thread safety.
-- First pickups: GROK — card design pass and composer identity; CLAUDE — audio engine robustness and export.
+- Priorities for P6–P10: card design pass and composer identity; audio engine robustness and export.
 
 ## 10. Risks and Mitigations
 
 | Risk | Likelihood | Impact | Mitigation | Owner |
 | --- | --- | --- | --- | --- |
-| Theory feels like homework | Medium | High | Visual overlays, projected damage, no jargon in core UI | GROK |
-| Optimal play sounds bad | Medium | High | Rules tuned so high Harmony requires voice-leading; listening tests at G2 | GROK |
-| Sample library licensing | Low | High | CC0 library only; ADR with license text | CLAUDE |
+| Theory feels like homework | Medium | High | Visual overlays, projected damage, no jargon in core UI | GLM |
+| Optimal play sounds bad | Medium | High | Rules tuned so high Harmony requires voice-leading; listening tests at G2 | GLM |
+| Sample library licensing | Low | High | CC0 library only; ADR with license text | GLM |
 | Combinatorial placement slows autoplayers | Medium | Medium | Pruning and beam search; run sims on Mac | GLM |
 
 ## 11. Out of Scope
@@ -312,14 +310,14 @@ Free composition sandbox; multiplayer; user-imported samples; notation editing b
 | P3 | GLM | 14–20 |
 | P4 | GLM | 8–12 |
 | P5 | GLM | 14–20 |
-| P6 | GROK + CLAUDE | 15–20 |
-| P7 | CLAUDE | 6–9 |
-| P8 | CLAUDE | 6–9 |
-| P9 | GROK + CLAUDE | 10–15 |
-| P10 | CLAUDE + GROK | 3–5 |
+| P6 | GLM | 15–20 |
+| P7 | GLM | 6–9 |
+| P8 | GLM | 6–9 |
+| P9 | GLM | 10–15 |
+| P10 | GLM | 3–5 |
 | **Total** | | **101–143** |
 
-## 13. Open Questions for Mahler
+## 13. Open Questions
 
 1. Should real music-theory terms appear in the UI? Default: plain-language labels with theory terms in a toggleable glossary.
 2. Include 12-tone or modal-jazz composers later? Default: post-launch.

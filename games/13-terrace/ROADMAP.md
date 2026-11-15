@@ -6,14 +6,14 @@
 | --- | --- |
 | Game number and slug | 13 · `terrace` |
 | Code prefix | `TR` (packages `TRCore`, `TRContent`, `TRAI`, `TRRender`, `TRAudio`, `TRPlatform`, `TRMeta`) |
-| Bundle ID (placeholder) | `com.zyniker.terrace` |
+| Bundle ID | `GEIST_BUNDLE_ID` build setting, set by the maintainer (`_CONVENTIONS.md` §2) |
 | Subgenre | Cooperative-competitive builder (real-time, pausable) |
 | Difficulty tier | Approachable |
 | Scope | Small team |
 | Session length | 15–45 minutes |
 | Renderer | RealityKit (3D isometric diorama) with a Metal water surface shader |
 | Players | Solo with AI villages |
-| Conventions | [`_CONVENTIONS.md`](../_shared/_CONVENTIONS.md) v1.0 (read first) |
+| Conventions | [`_CONVENTIONS.md`](../_shared/_CONVENTIONS.md) v2.0 (read first) |
 
 ## 1. Summary and Design Pillars
 
@@ -131,7 +131,7 @@ Targets (Autoplanner, 500 challenge runs per mountain): median challenge score w
 
 ## 8. Phases, Tasks, and Gates
 
-### P0 Setup (Owner: GLM)
+### P0 Setup
 - Standard tasks S0.1–S0.7.
 - TR-P0.1 Spike: RealityKit heightmap mesh (64×64) with chunk rebuild ≤ 8 ms and a water material; 120 fps on Mac.
 
@@ -139,7 +139,7 @@ Targets (Autoplanner, 500 challenge runs per mountain): median challenge score w
 GATE G0 — Setup: standard checks; mesh spike logged · Sign-off: GLM-SELF
 ```
 
-### P1 Rules Engine Prototype (Owner: GLM)
+### P1 Rules Engine Prototype
 - Standard tasks S1.1–S1.4.
 - TR-P1.1 Heightmap, carve, channel, sluice, walls, and labor (R-1 to R-5).
 - TR-P1.2 Water CA, rain, evaporation, and outflow (R-6 to R-8) with conservation tests (INV-1).
@@ -155,7 +155,7 @@ Checks:
 Sign-off: GLM-SELF
 ```
 
-### P2 Core Loop Vertical Slice (Owner: GLM)
+### P2 Core Loop Vertical Slice
 - Standard tasks S2.1–S2.5.
 - TR-P2.1 Diorama view with orbit (one-finger drag on empty sky or two-finger rotate), pinch zoom, and tap-to-inspect.
 - TR-P2.2 Carve by dragging across terrain (preview outline of the flattened area and Labor cost), channel tool, and sluice placement and toggling.
@@ -169,27 +169,26 @@ Checks:
   [ ] UI test plays one full year with scripted tools on iPad and Mac
   [ ] Water accounting overlay matches INV-1 in debug builds
   [ ] 60 fps on iPad simulator while water flows over the whole mountain
-Sign-off: REVIEW: GROK (is sharing water a meaningful dilemma?) + REVIEW: MAHLER (is it soothing and beautiful?)
-🛑 GLM STOP
+Sign-off: GLM-SELF
 ```
 
-### P3 Content and Systems (Owner: GLM)
+### P3 Content and Systems
 - TR-P3.1 Three mountains, four personalities, and six festivals.
 - TR-P3.2 Monsoon/drought warnings and erosion visuals; retaining walls.
 - TR-P3.3 Tutorial (7 steps) and the village ledger panel.
 
 ```
-GATE G3 — Content and Systems: counts; content-lint 0 errors; tutorial UI test · Sign-off: GLM-SELF; REVIEW: CLAUDE async
+GATE G3 — Content and Systems: counts; content-lint 0 errors; tutorial UI test · Sign-off: GLM-SELF
 ```
 
-### P4 AI Opponents (Owner: GLM)
+### P4 AI Opponents
 - TR-P4.1 Village AI, negotiation, and Autoplanner; balance report.
 
 ```
 GATE G4 — AI: 500 runs per mountain with 0 crashes; budgets met; targets met or ADR · Sign-off: GLM-SELF
 ```
 
-### P5 Meta and Replayability (Owner: GLM)
+### P5 Meta and Replayability
 - TR-P5.1 Procedural mountain generator (validated: spring reaches outflow; each village has ≥ 6 flat-able cells of farmland); six handmade mountains.
 - TR-P5.2 Ten challenge scenarios; eight personalities; twelve festivals.
 - TR-P5.3 Photo mode (hide UI, time-of-day slider, depth of field) and 20 achievements.
@@ -199,56 +198,55 @@ GATE G5 — Meta and Replayability
 Checks:
   [ ] 500 generated mountains pass validation and Autoplanner sims
   [ ] Coverage thresholds; docs/HANDOFF.md complete
-Sign-off: REVIEW: CLAUDE + GROK + MAHLER
-🛑 GLM FINAL STOP
+Sign-off: GLM-SELF
 ```
 
-### P6 Aesthetics and Audio Pass (Owner: GROK + CLAUDE)
+### P6 Aesthetics and Audio Pass
 - TR-P6.1 Final terrain materials, water reflections, mist, time-of-day lighting, and villager animation.
-- TR-P6.2 Original gamelan-inspired score (composed for the game; cultural consultant recommended, Mahler decides) and water ambience scaled by flow.
+- TR-P6.2 Original gamelan-inspired score (composed for the game; cultural consultant recommended; filed as a maintainer item) and water ambience scaled by flow.
 
 ```
-GATE G6 — Aesthetics: snapshots approved; 120 fps on iPad Pro M4 · Sign-off: REVIEW: MAHLER
+GATE G6 — Aesthetics: snapshots approved; 120 fps on iPad Pro M4 · Sign-off: GLM-SELF
 ```
 
-### P7 Platform Features (Owner: CLAUDE)
+### P7 Platform Features
 - TR-P7.1 Pencil: sketch channels and terrace outlines with hover previews of flattened height; squeeze switches tools.
 - TR-P7.2 Game Center challenge leaderboards and 20 achievements; iCloud save sync for cozy worlds.
 - TR-P7.3 Mac menus, shortcuts, and window resizing; photo mode export to Photos (with permission prompt).
 
 ```
-GATE G7 — Platform: iCloud round-trip of a cozy world; photo export works · Sign-off: REVIEW: GROK
+GATE G7 — Platform: iCloud round-trip of a cozy world; photo export works · Sign-off: GLM-SELF
 ```
 
-### P8 Polish, Accessibility, and Performance (Owner: CLAUDE)
+### P8 Polish, Accessibility, and Performance
 - TR-P8.1 Water depth readable without color (contour lines option); field stage icons.
 - TR-P8.2 VoiceOver panels for fields, villages, and schedule; Reduce Motion removes camera drift and mist animation.
 - TR-P8.3 Battery: a 30 fps cozy option for long sessions.
 
 ```
-GATE G8 — Polish: perf budgets for 3D (memory < 1.5 GB); cold start < 2.0 s · Sign-off: REVIEW: GROK + MAHLER
+GATE G8 — Polish: perf budgets for 3D (memory < 1.5 GB); cold start < 2.0 s · Sign-off: GLM-SELF
 ```
 
 ### P9 Beta and TestFlight / P10 Release Prep
 - Standard tasks.
 
 ```
-GATE G9 — Beta: crash-free ≥ 99.5%; no S1/S2 · Sign-off: REVIEW: MAHLER
-GATE G10 — Release: assets approved · Sign-off: REVIEW: MAHLER (Mahler submits)
+GATE G9 — Beta: crash-free ≥ 99.5%; no S1/S2 · Sign-off: GLM-SELF
+GATE G10 — Release: assets approved · Sign-off: GLM-SELF
 ```
 
-## 9. Handoff to Grok and Claude
+## 9. Fragile Areas and Priorities
 
 - Fragile areas: water CA conservation and performance, chunked mesh rebuilds, and temple schedule edge cases.
-- First pickups: CLAUDE — rendering and water material; GROK — village personalities and festival design.
+- Priorities for P6–P10: rendering and water material; village personalities and festival design.
 
 ## 10. Risks and Mitigations
 
 | Risk | Likelihood | Impact | Mitigation | Owner |
 | --- | --- | --- | --- | --- |
-| Cultural sensitivity (Balinese subak inspiration) | Medium | Medium | Fictional setting, original music, respectful research and consultant | MAHLER |
+| Cultural sensitivity (Balinese subak inspiration) | Medium | Medium | Fictional setting, original music, respectful research and consultant | GLM |
 | Water sim too slow on older iPads | Medium | High | 64×64 cap, sorted CA in tight loops, profiling in P0 | GLM |
-| Too low-stakes for strategy players | Medium | Medium | Challenge mode with scored dilemmas | GROK |
+| Too low-stakes for strategy players | Medium | Medium | Challenge mode with scored dilemmas | GLM |
 
 ## 11. Out of Scope
 
@@ -264,13 +262,13 @@ Crops other than rice in v1; multiplayer; real-world locations; full village man
 | P3 | GLM | 6–9 |
 | P4 | GLM | 5–8 |
 | P5 | GLM | 8–12 |
-| P6 | GROK + CLAUDE | 15–22 |
-| P7 | CLAUDE | 5–7 |
-| P8 | CLAUDE | 5–8 |
-| P9 | GROK + CLAUDE | 6–10 |
-| P10 | CLAUDE + GROK | 2–4 |
+| P6 | GLM | 15–22 |
+| P7 | GLM | 5–7 |
+| P8 | GLM | 5–8 |
+| P9 | GLM | 6–10 |
+| P10 | GLM | 2–4 |
 | **Total** | | **75–112** |
 
-## 13. Open Questions for Mahler
+## 13. Open Questions
 
 1. Should the setting be explicitly Balinese or a fictional terraced culture? Default: fictional, inspired by several terrace traditions.

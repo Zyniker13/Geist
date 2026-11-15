@@ -6,14 +6,14 @@
 | --- | --- |
 | Game number and slug | 08 · `hollow-crown` |
 | Code prefix | `HC` (packages `HCCore`, `HCContent`, `HCAI`, `HCRender`, `HCAudio`, `HCPlatform`, `HCMeta`) |
-| Bundle ID (placeholder) | `com.zyniker.hollow-crown` |
+| Bundle ID | `GEIST_BUNDLE_ID` build setting, set by the maintainer (`_CONVENTIONS.md` §2) |
 | Subgenre | Dynastic card-driven strategy |
 | Difficulty tier | Deep |
 | Scope | Small team |
 | Session length | 45–60 minutes |
 | Renderer | SpriteKit (2D manuscript page, cards, and family tree) |
 | Players | Solo vs AI houses |
-| Conventions | [`_CONVENTIONS.md`](../_shared/_CONVENTIONS.md) v1.0 (read first) |
+| Conventions | [`_CONVENTIONS.md`](../_shared/_CONVENTIONS.md) v2.0 (read first) |
 
 ## 1. Summary and Design Pillars
 
@@ -136,14 +136,14 @@ Targets (Autoplayer vs Normal rivals, 2,000 games): median total seasons 26–34
 
 ## 8. Phases, Tasks, and Gates
 
-### P0 Setup (Owner: GLM)
+### P0 Setup
 - Standard tasks S0.1–S0.7.
 
 ```
 GATE G0 — Setup: standard checks · Sign-off: GLM-SELF
 ```
 
-### P1 Rules Engine Prototype (Owner: GLM)
+### P1 Rules Engine Prototype
 - Standard tasks S1.1–S1.4.
 - HC-P1.1 People, genetics, education, and health (R-4 to R-7).
 - HC-P1.2 Reign and season structure, cards, and effects interpreter (R-8 to R-10).
@@ -159,7 +159,7 @@ Checks:
 Sign-off: GLM-SELF
 ```
 
-### P2 Core Loop Vertical Slice (Owner: GLM)
+### P2 Core Loop Vertical Slice
 - Standard tasks S2.1–S2.5.
 - HC-P2.1 Manuscript page layout: family tree (marginalia), realm map (12 provinces), hand of cards, and resource bar.
 - HC-P2.2 Drag a card onto a person, province, or house to target it; invalid targets dim during drag; an effect preview shows expected changes before release.
@@ -173,21 +173,20 @@ Checks:
   [ ] UI test completes 7 generations with scripted plays on iPad and Mac
   [ ] Effect previews equal actual effects for deterministic cards (test over all cards)
   [ ] Save/resume identical hash
-Sign-off: REVIEW: GROK (do generations feel connected?) + REVIEW: MAHLER
-🛑 GLM STOP
+Sign-off: GLM-SELF
 ```
 
-### P3 Content and Systems (Owner: GLM)
+### P3 Content and Systems
 - HC-P3.1 G3 card, event, trait, and goal counts; content-lint checks every effect key and condition.
 - HC-P3.2 Council panel, character sheets, and opinion web (SwiftUI panels).
 - HC-P3.3 Wars UI (campaign tracker), intrigue UI (plots with secrecy meters).
 - HC-P3.4 Tutorial: an abridged 2-generation guided game (10 steps).
 
 ```
-GATE G3 — Content and Systems: counts; content-lint 0 errors; tutorial UI test · Sign-off: GLM-SELF; REVIEW: CLAUDE async
+GATE G3 — Content and Systems: counts; content-lint 0 errors; tutorial UI test · Sign-off: GLM-SELF
 ```
 
-### P4 AI Opponents (Owner: GLM)
+### P4 AI Opponents
 - HC-P4.1 Rival house AI and council AI with personalities and difficulties.
 - HC-P4.2 Autoplayer and balance report.
 
@@ -200,7 +199,7 @@ Checks:
 Sign-off: GLM-SELF
 ```
 
-### P5 Meta and Replayability (Owner: GLM)
+### P5 Meta and Replayability
 - HC-P5.1 12 starting houses, 3 cultures with name tables, G5 content counts.
 - HC-P5.2 Dynasty gallery: each finished game saved as an illuminated family tree with the Chronicle.
 - HC-P5.3 Unlocks (houses and Legacy pools unlock by achievements) and 25 achievements.
@@ -211,54 +210,53 @@ Checks:
   [ ] G5 counts pass content-lint and sims
   [ ] Gallery renders 50 saved dynasties without memory > 400 MB
   [ ] Coverage thresholds; docs/HANDOFF.md complete
-Sign-off: REVIEW: CLAUDE + GROK + MAHLER
-🛑 GLM FINAL STOP
+Sign-off: GLM-SELF
 ```
 
-### P6 Aesthetics and Audio Pass (Owner: GROK + CLAUDE)
+### P6 Aesthetics and Audio Pass
 - HC-P6.1 Illumination art: borders, historiated initials, roundel portraits (procedural portrait composer from layered parts by traits).
 - HC-P6.2 Music and SFX.
 
 ```
-GATE G6 — Aesthetics: snapshots approved; portraits reflect traits (test) · Sign-off: REVIEW: MAHLER
+GATE G6 — Aesthetics: snapshots approved; portraits reflect traits (test) · Sign-off: GLM-SELF
 ```
 
-### P7 Platform Features (Owner: CLAUDE)
+### P7 Platform Features
 - HC-P7.1 Pencil: inscribe heir names by handwriting (Scribble into the name field) and annotate the chronicle margins; hover to preview card effects.
 - HC-P7.2 Game Center achievements and a "highest Legacy" leaderboard per house; iCloud saves.
 - HC-P7.3 Mac menus and shortcuts; resizable window with a two-page spread at wide sizes.
 
 ```
-GATE G7 — Platform: iCloud round-trip; Scribble works in name fields · Sign-off: REVIEW: GROK
+GATE G7 — Platform: iCloud round-trip; Scribble works in name fields · Sign-off: GLM-SELF
 ```
 
-### P8 Polish, Accessibility, and Performance (Owner: CLAUDE)
+### P8 Polish, Accessibility, and Performance
 - HC-P8.1 VoiceOver for cards, tree navigation by relationship, and panels; Dynamic Type for all text panels.
 - HC-P8.2 Card text legibility on iPhone (minimum 13 pt equivalent).
 
 ```
-GATE G8 — Polish: perf budgets; VoiceOver completes a generation · Sign-off: REVIEW: GROK + MAHLER
+GATE G8 — Polish: perf budgets; VoiceOver completes a generation · Sign-off: GLM-SELF
 ```
 
 ### P9 Beta and TestFlight / P10 Release Prep
 - Standard tasks.
 
 ```
-GATE G9 — Beta: crash-free ≥ 99.5%; no S1/S2 · Sign-off: REVIEW: MAHLER
-GATE G10 — Release: assets approved · Sign-off: REVIEW: MAHLER (Mahler submits)
+GATE G9 — Beta: crash-free ≥ 99.5%; no S1/S2 · Sign-off: GLM-SELF
+GATE G10 — Release: assets approved · Sign-off: GLM-SELF
 ```
 
-## 9. Handoff to Grok and Claude
+## 9. Fragile Areas and Priorities
 
 - Fragile areas: effects interpreter, succession edge cases (no heirs, regencies), and opinion propagation.
-- First pickups: GROK — card and event writing, Legacy goals, and house flavor; CLAUDE — panel architecture and portrait composer.
+- Priorities for P6–P10: card and event writing, Legacy goals, and house flavor; panel architecture and portrait composer.
 
 ## 10. Risks and Mitigations
 
 | Risk | Likelihood | Impact | Mitigation | Owner |
 | --- | --- | --- | --- | --- |
-| Feels like a lite Crusader Kings | Medium | Medium | Fixed 7 generations, card play, and Legacy goals as distinct identity | GROK |
-| Text-heavy UI on iPhone | High | Medium | iPad-first; iPhone gets condensed card faces | CLAUDE |
+| Feels like a lite Crusader Kings | Medium | Medium | Fixed 7 generations, card play, and Legacy goals as distinct identity | GLM |
+| Text-heavy UI on iPhone | High | Medium | iPad-first; iPhone gets condensed card faces | GLM |
 | Run length drifts beyond an hour | Medium | Medium | Sim-tuned death and reign limits | GLM |
 
 ## 11. Out of Scope
@@ -275,14 +273,14 @@ Real-time play; multiplayer; detailed tactical battles; open-ended sandbox beyon
 | P3 | GLM | 14–20 |
 | P4 | GLM | 8–12 |
 | P5 | GLM | 10–14 |
-| P6 | GROK + CLAUDE | 15–22 |
-| P7 | CLAUDE | 5–8 |
-| P8 | CLAUDE | 6–9 |
-| P9 | GROK + CLAUDE | 8–12 |
-| P10 | CLAUDE + GROK | 3–4 |
+| P6 | GLM | 15–22 |
+| P7 | GLM | 5–8 |
+| P8 | GLM | 6–9 |
+| P9 | GLM | 8–12 |
+| P10 | GLM | 3–4 |
 | **Total** | | **91–131** |
 
-## 13. Open Questions for Mahler
+## 13. Open Questions
 
 1. Setting: generic medieval Europe, or a fictional realm? Default: fictional realm with European flavor plus two other cultures in G5.
 2. Should faith systems reference real religions? Default: no; fictional faiths.

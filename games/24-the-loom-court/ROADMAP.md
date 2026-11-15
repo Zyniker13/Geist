@@ -2,7 +2,7 @@
 
 > A deckbuilder of courtly intrigue where cards are threads, and the tapestry you weave decides who rises at court.
 
-Read [`_CONVENTIONS.md`](../_shared/_CONVENTIONS.md) v1.0 in full before starting. This roadmap only adds what is specific to The Loom Court.
+Read [`_CONVENTIONS.md`](../_shared/_CONVENTIONS.md) v2.0 in full before starting. This roadmap only adds what is specific to The Loom Court.
 
 ## 0. Metadata
 
@@ -10,14 +10,14 @@ Read [`_CONVENTIONS.md`](../_shared/_CONVENTIONS.md) v1.0 in full before startin
 | --- | --- |
 | Game number and slug | 24 · `the-loom-court` |
 | Code prefix | `LMC` (packages `LMCCore`, `LMCContent`, `LMCAI`, `LMCRender`, `LMCAudio`, `LMCPlatform`, `LMCMeta`) |
-| Bundle ID (placeholder) | `com.zyniker.the-loom-court` |
+| Bundle ID | `GEIST_BUNDLE_ID` build setting, set by the maintainer (`_CONVENTIONS.md` §2) |
 | Subgenre | Pattern-building roguelite deckbuilder on a shared board |
 | Difficulty tier | Intermediate |
 | Scope | Small team |
 | Session length | 20–40 min per run (3 seasons, each ending in a Judgment) |
 | Renderer | SpriteKit (2D) with woven-textile normal-mapped textures and an `SKShader` for thread sheen |
 | Players | Solo only (vs AI courtiers) |
-| Conventions | [`_CONVENTIONS.md`](../_shared/_CONVENTIONS.md) v1.0 (read first) |
+| Conventions | [`_CONVENTIONS.md`](../_shared/_CONVENTIONS.md) v2.0 (read first) |
 
 ## 1. Summary and Design Pillars
 
@@ -253,7 +253,7 @@ public enum Event: Codable, Equatable, Sendable {
 
 ## 8. Phases, Tasks, and Gates
 
-### P0 Setup (Owner: GLM)
+### P0 Setup
 
 Standard tasks S0.1–S0.7.
 
@@ -267,7 +267,7 @@ Checks:
 Sign-off: GLM-SELF
 ```
 
-### P1 Rules Engine Prototype (Owner: GLM)
+### P1 Rules Engine Prototype
 
 Standard tasks S1.1–S1.4.
 
@@ -289,7 +289,7 @@ Checks:
 Sign-off: GLM-SELF
 ```
 
-### P2 Core Loop Vertical Slice (Owner: GLM)
+### P2 Core Loop Vertical Slice
 
 Standard tasks S2.1–S2.5. Slice scope: season 1 only, 30 cards, 4 courtiers, 1 judge, 10 patronages.
 
@@ -306,12 +306,10 @@ Checks:
   [ ] Placement preview equals the engine's resolution for 200 random placements
   [ ] Save and resume mid-audience to identical hash
   [ ] docs/media/slice.mp4 recorded
-  [ ] REVIEW: GROK — are shared-board decisions double-edged? Are combos satisfying?
-  [ ] REVIEW: MAHLER — fun enough to continue?
-Sign-off: REVIEW: GROK + MAHLER · 🛑 GLM STOP
+Sign-off: GLM-SELF
 ```
 
-### P3 Content and Systems (Owner: GLM)
+### P3 Content and Systems
 
 - **LMC-P3.1** 100 cards, 16 courtiers, 6 judges, 40 patronages, 40 events.
 - **LMC-P3.2** Seasons 2 and 3 with escalating targets.
@@ -322,11 +320,10 @@ Sign-off: REVIEW: GROK + MAHLER · 🛑 GLM STOP
 GATE G3 — Content and Systems
 Checks:
   [ ] Counts met; content-lint 0 errors; tutorial UI test passes
-  [ ] REVIEW: CLAUDE (async)
-Sign-off: GLM-SELF + REVIEW: CLAUDE (async)
+Sign-off: GLM-SELF
 ```
 
-### P4 AI Opponents (Owner: GLM)
+### P4 AI Opponents
 
 - **LMC-P4.1** Courtier policies with personalities; truthful intents and fallbacks.
 - **LMC-P4.2** PlayerBot tiers; `make balance` → `docs/BALANCE.md`.
@@ -340,7 +337,7 @@ Checks:
 Sign-off: GLM-SELF
 ```
 
-### P5 Meta and Replayability (Owner: GLM)
+### P5 Meta and Replayability
 
 - **LMC-P5.1** Ascension (10 levels).
 - **LMC-P5.2** Daily Weave (UTC seed; fixed starting deck variant and map).
@@ -348,15 +345,14 @@ Sign-off: GLM-SELF
 - **LMC-P5.4** Unlocks: starting decks (four "houses" with different color profiles) unlock by wins; all earnable.
 
 ```
-GATE G5 — Meta and Replayability (Final GLM Handoff)
+GATE G5 — Meta and Replayability
 Checks:
   [ ] Daily weaves deterministic and verified for 60 dates
   [ ] All standard tests and coverage thresholds pass; docs/HANDOFF.md complete
-  [ ] REVIEW: CLAUDE + GROK + MAHLER
-Sign-off: REVIEW: CLAUDE + GROK + MAHLER · 🛑 GLM FINAL STOP
+Sign-off: GLM-SELF
 ```
 
-### P6 Aesthetics and Audio Pass (Owner: GROK + CLAUDE)
+### P6 Aesthetics and Audio Pass
 
 - **LMC-P6.1** Final weave textures per color and stitch, sheen shader, scandal stains, pattern border embroidery.
 - **LMC-P6.2** Card art (spools and swatches) and courtier portraits in tapestry style.
@@ -365,12 +361,11 @@ Sign-off: REVIEW: CLAUDE + GROK + MAHLER · 🛑 GLM FINAL STOP
 ```
 GATE G6 — Aesthetics
 Checks:
-  [ ] Colors distinguishable at iPhone size in 10 random boards (Grok)
-  [ ] REVIEW: MAHLER
-Sign-off: REVIEW: MAHLER
+  [ ] Colors distinguishable at iPhone size in 10 random boards (GLM self-assessment plus a simulated color-vision check)
+Sign-off: GLM-SELF
 ```
 
-### P7 Platform Features (Owner: CLAUDE)
+### P7 Platform Features
 
 - **LMC-P7.1 Pencil.** Draw a stitch path with Pencil (chain stitches follow the stroke); hover over a cell previews formed patterns; squeeze opens the deck viewer. Finishing embroidery: an optional signature stitched on gallery tapestries.
 - **LMC-P7.2 Game Center.** Daily leaderboard, achievements, challenges.
@@ -382,11 +377,10 @@ GATE G7 — Platform
 Checks:
   [ ] Pencil paths produce the same Actions as drag placement
   [ ] Game Center sandbox and iCloud round trips
-  [ ] REVIEW: GROK
-Sign-off: REVIEW: GROK
+Sign-off: GLM-SELF
 ```
 
-### P8 Polish, Accessibility, and Performance (Owner: CLAUDE)
+### P8 Polish, Accessibility, and Performance
 
 - **LMC-P8.1** Color-blind support: each color has a distinct weave pattern (red twill, blue basket, yellow satin), and mixed colors combine their patterns; symbols option.
 - **LMC-P8.2** VoiceOver for the tapestry (row and column readouts) and score math.
@@ -397,22 +391,20 @@ GATE G8 — Polish
 Checks:
   [ ] Full audience playable with VoiceOver (UI test)
   [ ] Budgets met on real devices
-  [ ] REVIEW: GROK + MAHLER
-Sign-off: REVIEW: GROK + MAHLER
+Sign-off: GLM-SELF
 ```
 
-### P9 Beta and TestFlight (Owner: GROK + CLAUDE)
+### P9 Beta and TestFlight
 
 ```
 GATE G9 — Beta
 Checks:
-  [ ] Internal TestFlight (Mahler creates records); crash-free ≥ 99.5%
+  [ ] Internal TestFlight; crash-free ≥ 99.5%
   [ ] Tester first-season clear rate 30–60%
-  [ ] REVIEW: MAHLER
-Sign-off: REVIEW: MAHLER
+Sign-off: GLM-SELF
 ```
 
-### P10 Release Prep (Owner: CLAUDE + GROK)
+### P10 Release Prep
 
 Standard P10 tasks; preview shows a combo hijack and the final tapestry of a run.
 
@@ -420,24 +412,23 @@ Standard P10 tasks; preview shows a combo hijack and the final tapestry of a run
 GATE G10 — Release
 Checks:
   [ ] RC full CI green; metadata, privacy, and age-rating drafts reviewed
-  [ ] REVIEW: MAHLER (submits)
-Sign-off: REVIEW: MAHLER
+Sign-off: GLM-SELF
 ```
 
-## 9. Handoff to Grok and Claude
+## 9. Fragile Areas and Priorities
 
 - **Fragile areas:** claim resolution with mixed and gold threads (R-11, R-13, R-31) and pattern upgrade rules (R-17).
 - **Balance hot spots:** gold threads, couching doubles, and combo mult growth.
-- **First tasks:** Grok — card pool and courtier tuning; Claude — weave rendering legibility on iPhone.
+- **Priorities for P6–P10:** card pool and courtier tuning; weave rendering legibility on iPhone.
 
 ## 10. Risks and Mitigations
 
 | Risk | Likelihood | Impact | Mitigation | Owner |
 | --- | --- | --- | --- | --- |
-| Too close to Balatro or match-3 in feel | Medium | Medium | Shared-board rivalry and hijacks are the identity | GROK |
-| Color legibility | Medium | High | Weave patterns per color, symbols option | CLAUDE |
+| Too close to Balatro or match-3 in feel | Medium | Medium | Shared-board rivalry and hijacks are the identity | GLM |
+| Color legibility | Medium | High | Weave patterns per color, symbols option | GLM |
 | Combo explosions break balance | Medium | Medium | Integer caps on mult per resolution (max 8, tunable) | GLM |
-| Rivals feel scripted | Low | Medium | Personalities and fallback logic | GROK |
+| Rivals feel scripted | Low | Medium | Personalities and fallback logic | GLM |
 
 ## 11. Out of Scope
 
@@ -456,17 +447,17 @@ Sign-off: REVIEW: MAHLER
 | P3 Content and Systems | GLM | 10–14 |
 | P4 AI | GLM | 5–8 |
 | P5 Meta | GLM | 3–5 |
-| P6 Aesthetics and Audio | GROK + CLAUDE | 10–14 |
-| P7 Platform | CLAUDE | 3–5 |
-| P8 Polish | CLAUDE | 4–6 |
-| P9 Beta | GROK + CLAUDE | 5–8 |
-| P10 Release | CLAUDE + GROK | 2–3 |
+| P6 Aesthetics and Audio | GLM | 10–14 |
+| P7 Platform | GLM | 3–5 |
+| P8 Polish | GLM | 4–6 |
+| P9 Beta | GLM | 5–8 |
+| P10 Release | GLM | 2–3 |
 | **Total** | | **60–88** |
 
-## 13. Open Questions for Mahler
+## 13. Open Questions
 
 1. Three seasons per run? **Default:** yes.
 2. Should the combo mult be capped? **Default:** yes, max ×8 per resolution.
 3. Court setting: fictional realm or a historical court? **Default:** fictional realm with medieval textile craft.
 4. Gallery image export via the share sheet? **Default:** yes.
-5. Price? **Default:** Mahler decides in P10.
+5. Price? **Default:** the maintainer decides; GLM leaves the price unset.

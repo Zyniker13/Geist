@@ -2,7 +2,7 @@
 
 > Grow a fungal network beneath an old-growth forest, trading nutrients with trees for sugar while rival molds creep in from the dark.
 
-Read [`_CONVENTIONS.md`](../_shared/_CONVENTIONS.md) v1.0 in full before starting. This roadmap only adds what is specific to Rootbound.
+Read [`_CONVENTIONS.md`](../_shared/_CONVENTIONS.md) v2.0 in full before starting. This roadmap only adds what is specific to Rootbound.
 
 ## 0. Metadata
 
@@ -10,7 +10,7 @@ Read [`_CONVENTIONS.md`](../_shared/_CONVENTIONS.md) v1.0 in full before startin
 | --- | --- |
 | Game number and slug | 22 · `rootbound` |
 | Code prefix | `RTB` (packages `RTBCore`, `RTBContent`, `RTBAI`, `RTBRender`, `RTBAudio`, `RTBPlatform`, `RTBMeta`) |
-| Bundle ID (placeholder) | `com.zyniker.rootbound` |
+| Bundle ID | `GEIST_BUNDLE_ID` build setting, set by the maintainer (`_CONVENTIONS.md` §2) |
 | Subgenre | Slow real-time strategy (pausable) on a growth network |
 | Difficulty tier | Intermediate |
 | Scope | Small team |
@@ -18,7 +18,7 @@ Read [`_CONVENTIONS.md`](../_shared/_CONVENTIONS.md) v1.0 in full before startin
 | Renderer | Metal 4 via `MTKView` for the whole soil board (instanced glowing threads, bloom); SwiftUI for HUD. No SpriteKit in gameplay (ADR-0003) |
 | Players | Solo vs 1–3 AI rival molds; campaign of forests |
 | Simulation | Fixed 10 ticks per second at 1× (slow RTS), 2× and 4× speed; integer math |
-| Conventions | [`_CONVENTIONS.md`](../_shared/_CONVENTIONS.md) v1.0 (read first) |
+| Conventions | [`_CONVENTIONS.md`](../_shared/_CONVENTIONS.md) v2.0 (read first) |
 
 ## 1. Summary and Design Pillars
 
@@ -263,7 +263,7 @@ public enum Event: Codable, Equatable, Sendable {
 
 ## 8. Phases, Tasks, and Gates
 
-### P0 Setup (Owner: GLM)
+### P0 Setup
 
 Standard tasks S0.1–S0.7.
 
@@ -278,7 +278,7 @@ Checks:
 Sign-off: GLM-SELF
 ```
 
-### P1 Rules Engine Prototype (Owner: GLM)
+### P1 Rules Engine Prototype
 
 Standard tasks S1.1–S1.4.
 
@@ -302,7 +302,7 @@ Checks:
 Sign-off: GLM-SELF
 ```
 
-### P2 Core Loop Vertical Slice (Owner: GLM)
+### P2 Core Loop Vertical Slice
 
 Standard tasks S2.1–S2.5. Slice scope: one forest, player species `velvet_cap`, one rival (`wanderer`), full year.
 
@@ -319,12 +319,10 @@ Checks:
   [ ] ≥ 60 fps in simulator with 1,500 edges; bloom on
   [ ] Save and resume mid-season to identical hash
   [ ] docs/media/slice.mp4 recorded
-  [ ] REVIEW: GROK — does topology matter? Are trees meaningful partners?
-  [ ] REVIEW: MAHLER — calm, beautiful, and fun enough to continue?
-Sign-off: REVIEW: GROK + MAHLER · 🛑 GLM STOP
+Sign-off: GLM-SELF
 ```
 
-### P3 Content and Systems (Owner: GLM)
+### P3 Content and Systems
 
 - **RTB-P3.1** 4 player species and 5 rival species; all events.
 - **RTB-P3.2** 8 campaign forests with escalating rival pressure; forest generator.
@@ -336,11 +334,10 @@ GATE G3 — Content and Systems
 Checks:
   [ ] Counts: 4 + 5 species, 8 forests, 20 mutations, 5 events
   [ ] content-lint 0 errors; tutorial UI test passes
-  [ ] REVIEW: CLAUDE (async)
-Sign-off: GLM-SELF + REVIEW: CLAUDE (async)
+Sign-off: GLM-SELF
 ```
 
-### P4 AI Opponents (Owner: GLM)
+### P4 AI Opponents
 
 - **RTB-P4.1** RivalDirector and RivalPlanner per behavior; four difficulty tiers.
 - **RTB-P4.2** PlayerBot tiers; `make balance` → `docs/BALANCE.md`.
@@ -353,7 +350,7 @@ Checks:
 Sign-off: GLM-SELF
 ```
 
-### P5 Meta and Replayability (Owner: GLM)
+### P5 Meta and Replayability
 
 - **RTB-P5.1** Campaign progression with mutations; unlock species by campaign milestones.
 - **RTB-P5.2** Daily Forest (procedural, UTC date seed, verified by strong bot winning ≥ 2 of 4).
@@ -361,15 +358,14 @@ Sign-off: GLM-SELF
 - **RTB-P5.4** Stats: longest network, trees saved, rivals eliminated.
 
 ```
-GATE G5 — Meta and Replayability (Final GLM Handoff)
+GATE G5 — Meta and Replayability
 Checks:
   [ ] Daily Forest deterministic and verified for 60 dates
   [ ] All standard tests and coverage thresholds pass; docs/HANDOFF.md complete
-  [ ] REVIEW: CLAUDE + GROK + MAHLER
-Sign-off: REVIEW: CLAUDE + GROK + MAHLER · 🛑 GLM FINAL STOP
+Sign-off: GLM-SELF
 ```
 
-### P6 Aesthetics and Audio Pass (Owner: GROK + CLAUDE)
+### P6 Aesthetics and Audio Pass
 
 - **RTB-P6.1** Final thread shading (core plus halo, flow pulses), soil textures, root art, rival looks distinct by shape as well as color.
 - **RTB-P6.2** Seasonal grading (spring green-tinted, winter frost sparkle on soil).
@@ -379,11 +375,10 @@ Sign-off: REVIEW: CLAUDE + GROK + MAHLER · 🛑 GLM FINAL STOP
 GATE G6 — Aesthetics
 Checks:
   [ ] 120 fps on iPad Pro (M4) at 3,000 edges; 60 fps on A16
-  [ ] REVIEW: MAHLER
-Sign-off: REVIEW: MAHLER
+Sign-off: GLM-SELF
 ```
 
-### P7 Platform Features (Owner: CLAUDE)
+### P7 Platform Features
 
 - **RTB-P7.1 Pencil.** Fine routing of threads with Pencil (more waypoints, precise curves); hover previews path cost; squeeze toggles lenses.
 - **RTB-P7.2 Game Center.** Daily Forest leaderboard, campaign achievements, challenges.
@@ -395,11 +390,10 @@ GATE G7 — Platform
 Checks:
   [ ] Pencil routes produce valid Actions identical to finger routes for the same waypoints
   [ ] Game Center sandbox and iCloud round trips
-  [ ] REVIEW: GROK
-Sign-off: REVIEW: GROK
+Sign-off: GLM-SELF
 ```
 
-### P8 Polish, Accessibility, and Performance (Owner: CLAUDE)
+### P8 Polish, Accessibility, and Performance
 
 - **RTB-P8.1** Rival identification by pattern and outline shape; colorblind palettes.
 - **RTB-P8.2** VoiceOver: tree list, colony status, fronts list with jump-to; slow-speed mode.
@@ -410,22 +404,20 @@ Sign-off: REVIEW: GROK
 GATE G8 — Polish
 Checks:
   [ ] Budgets and thermal targets met on real devices; accessibility audit clean
-  [ ] REVIEW: GROK + MAHLER
-Sign-off: REVIEW: GROK + MAHLER
+Sign-off: GLM-SELF
 ```
 
-### P9 Beta and TestFlight (Owner: GROK + CLAUDE)
+### P9 Beta and TestFlight
 
 ```
 GATE G9 — Beta
 Checks:
-  [ ] Internal TestFlight (Mahler creates records); crash-free ≥ 99.5%
+  [ ] Internal TestFlight; crash-free ≥ 99.5%
   [ ] Campaign forest 1–3 completion rates match targets
-  [ ] REVIEW: MAHLER
-Sign-off: REVIEW: MAHLER
+Sign-off: GLM-SELF
 ```
 
-### P10 Release Prep (Owner: CLAUDE + GROK)
+### P10 Release Prep
 
 Standard P10 tasks; preview is a time-lapse of a network spreading through a forest across a year.
 
@@ -433,24 +425,23 @@ Standard P10 tasks; preview is a time-lapse of a network spreading through a for
 GATE G10 — Release
 Checks:
   [ ] RC full CI green; metadata, privacy, and age-rating drafts reviewed
-  [ ] REVIEW: MAHLER (submits)
-Sign-off: REVIEW: MAHLER
+Sign-off: GLM-SELF
 ```
 
-## 9. Handoff to Grok and Claude
+## 9. Fragile Areas and Priorities
 
 - **Fragile areas:** diffusion stability with large stock differences (oscillation), conservation audit, front resolution with many contacts, and Metal renderer memory with large networks.
-- **First tasks:** Claude — renderer performance and thermal; Grok — rival behavior tuning and campaign pacing.
+- **Priorities for P6–P10:** renderer performance and thermal; rival behavior tuning and campaign pacing.
 
 ## 10. Risks and Mitigations
 
 | Risk | Likelihood | Impact | Mitigation | Owner |
 | --- | --- | --- | --- | --- |
-| Too slow or passive | Medium | High | Speed controls, rival arrival schedule, seasonal pressure | GROK |
+| Too slow or passive | Medium | High | Speed controls, rival arrival schedule, seasonal pressure | GLM |
 | Flow model opaque | Medium | Medium | Flow and fragility lenses, tutorial | GLM |
-| Metal-only renderer costly to build | Medium | Medium | Keep the visual vocabulary small; reuse a single thread shader | CLAUDE |
-| Thermal on long sessions | Medium | Medium | Adaptive bloom and 60 fps cap option | CLAUDE |
-| Rival AI unfair or dumb | Medium | Medium | Same rules as player; utility tuning in sims | GLM → GROK |
+| Metal-only renderer costly to build | Medium | Medium | Keep the visual vocabulary small; reuse a single thread shader | GLM |
+| Thermal on long sessions | Medium | Medium | Adaptive bloom and 60 fps cap option | GLM |
+| Rival AI unfair or dumb | Medium | Medium | Same rules as player; utility tuning in sims | GLM |
 
 ## 11. Out of Scope
 
@@ -469,17 +460,17 @@ Sign-off: REVIEW: MAHLER
 | P3 Content and Systems | GLM | 8–12 |
 | P4 AI | GLM | 7–10 |
 | P5 Meta | GLM | 4–6 |
-| P6 Aesthetics and Audio | GROK + CLAUDE | 12–16 |
-| P7 Platform | CLAUDE | 4–6 |
-| P8 Polish | CLAUDE | 5–8 |
-| P9 Beta | GROK + CLAUDE | 6–10 |
-| P10 Release | CLAUDE + GROK | 2–4 |
+| P6 Aesthetics and Audio | GLM | 12–16 |
+| P7 Platform | GLM | 4–6 |
+| P8 Polish | GLM | 5–8 |
+| P9 Beta | GLM | 6–10 |
+| P10 Release | GLM | 2–4 |
 | **Total** | | **73–106** |
 
-## 13. Open Questions for Mahler
+## 13. Open Questions
 
 1. Metal-only gameplay renderer (more control, more work) vs SpriteKit with shaders? **Default:** Metal-only.
 2. Campaign of 8 forests? **Default:** yes.
 3. Use real fungus species names for the player? **Default:** invented names with an in-game note on the real biology.
 4. Allow a fully paused "planning" mode where orders can be queued? **Default:** yes (pause allows all actions).
-5. Price? **Default:** Mahler decides in P10.
+5. Price? **Default:** the maintainer decides; GLM leaves the price unset.

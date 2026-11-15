@@ -6,14 +6,14 @@
 | --- | --- |
 | Game number and slug | 09 · `saltmarsh-concord` |
 | Code prefix | `SC` (packages `SCCore`, `SCContent`, `SCAI`, `SCRender`, `SCAudio`, `SCPlatform`, `SCMeta`) |
-| Bundle ID (placeholder) | `com.zyniker.saltmarsh-concord` |
+| Bundle ID | `GEIST_BUNDLE_ID` build setting, set by the maintainer (`_CONVENTIONS.md` §2) |
 | Subgenre | Ecological 4X (turn-based) |
 | Difficulty tier | Deep |
 | Scope | Small team |
 | Session length | 30–90 minutes |
 | Renderer | SpriteKit (2D hex map) with watercolor shaders |
 | Players | Solo vs AI biome; local pass-and-play (two biomes) |
-| Conventions | [`_CONVENTIONS.md`](../_shared/_CONVENTIONS.md) v1.0 (read first) |
+| Conventions | [`_CONVENTIONS.md`](../_shared/_CONVENTIONS.md) v2.0 (read first) |
 
 ## 1. Summary and Design Pillars
 
@@ -131,14 +131,14 @@ Targets (Autoplayer vs Normal AI, 1,000 games per biome pairing): each biome win
 
 ## 8. Phases, Tasks, and Gates
 
-### P0 Setup (Owner: GLM)
+### P0 Setup
 - Standard tasks S0.1–S0.7.
 
 ```
 GATE G0 — Setup: standard checks · Sign-off: GLM-SELF
 ```
 
-### P1 Rules Engine Prototype (Owner: GLM)
+### P1 Rules Engine Prototype
 - Standard tasks S1.1–S1.4.
 - SC-P1.1 Map, environment, seasons, and disturbances (R-1 to R-4).
 - SC-P1.2 Population dynamics in strict order (R-5 to R-8) with analytic tests (e.g. a lone producer approaches K; predator without prey starves on schedule).
@@ -154,7 +154,7 @@ Checks:
 Sign-off: GLM-SELF
 ```
 
-### P2 Core Loop Vertical Slice (Owner: GLM)
+### P2 Core Loop Vertical Slice
 - Standard tasks S2.1–S2.5.
 - SC-P2.1 `EstuaryScene` with salinity washes, depth shading, and population stipples per species color.
 - SC-P2.2 Seeding by dragging a species plate onto a tile (valid tiles glow; invalid tiles show the failing niche dimension); finger-paint mode seeds along a stroke spending Energy per tile.
@@ -168,21 +168,20 @@ Checks:
   [ ] UI test completes a 40-season game on iPad and Mac
   [ ] Season summary reasons match sim causes (test that each listed cause corresponds to a recorded Event)
   [ ] Save/resume identical hash
-Sign-off: REVIEW: GROK (is the ecosystem legible and strategic?) + REVIEW: MAHLER
-🛑 GLM STOP
+Sign-off: GLM-SELF
 ```
 
-### P3 Content and Systems (Owner: GLM)
+### P3 Content and Systems
 - SC-P3.1 Traits and era drafts; disturbances with warnings one season ahead.
 - SC-P3.2 Species plates (SwiftUI) with niche diagrams and notes.
 - SC-P3.3 Tutorial: 8 steps (niches, seeding, food chains, competition, dispersal, tides, eras, keystone).
 - SC-P3.4 Pass-and-play mode.
 
 ```
-GATE G3 — Content and Systems: counts; content-lint 0 errors incl. food-web connectivity; tutorial UI test · Sign-off: GLM-SELF; REVIEW: CLAUDE async
+GATE G3 — Content and Systems: counts; content-lint 0 errors incl. food-web connectivity; tutorial UI test · Sign-off: GLM-SELF
 ```
 
-### P4 AI Opponents (Owner: GLM)
+### P4 AI Opponents
 - SC-P4.1 Rival biome AI with three difficulties; Autoplayer; balance report.
 
 ```
@@ -194,7 +193,7 @@ Checks:
 Sign-off: GLM-SELF
 ```
 
-### P5 Meta and Replayability (Owner: GLM)
+### P5 Meta and Replayability
 - SC-P5.1 Mangrove and Kelp Reef biomes; G5 counts; 5 map templates.
 - SC-P5.2 Six scenarios with special goals (e.g. "restore a drained marsh", "survive a decade of storms").
 - SC-P5.3 Field journal (species discovered, plates unlocked by play) and 24 achievements.
@@ -206,55 +205,54 @@ Checks:
   [ ] All 6 biome pairings within 40–60% balance
   [ ] Weekly seed identical across devices for 8 weeks
   [ ] Coverage thresholds; docs/HANDOFF.md complete
-Sign-off: REVIEW: CLAUDE + GROK + MAHLER
-🛑 GLM FINAL STOP
+Sign-off: GLM-SELF
 ```
 
-### P6 Aesthetics and Audio Pass (Owner: GROK + CLAUDE)
+### P6 Aesthetics and Audio Pass
 - SC-P6.1 Watercolor shader, paper grain, and plates for all species.
 - SC-P6.2 Soundscape mixing by tile composition under the camera; season themes.
 
 ```
-GATE G6 — Aesthetics: snapshots approved · Sign-off: REVIEW: MAHLER
+GATE G6 — Aesthetics: snapshots approved · Sign-off: GLM-SELF
 ```
 
-### P7 Platform Features (Owner: CLAUDE)
+### P7 Platform Features
 - SC-P7.1 Pencil: paint seeding with pressure controlling stroke width (1–2 tiles); hover shows salinity, depth, and substrate; squeeze opens the species palette.
 - SC-P7.2 Game Center achievements, weekly leaderboard, iCloud saves.
 - SC-P7.3 Mac menus and shortcuts.
 
 ```
-GATE G7 — Platform: iCloud round-trip; Pencil paint and finger paint produce identical actions for identical tiles · Sign-off: REVIEW: GROK
+GATE G7 — Platform: iCloud round-trip; Pencil paint and finger paint produce identical actions for identical tiles · Sign-off: GLM-SELF
 ```
 
-### P8 Polish, Accessibility, and Performance (Owner: CLAUDE)
+### P8 Polish, Accessibility, and Performance
 - SC-P8.1 Species distinguished by stipple shape as well as color; high-contrast map mode.
 - SC-P8.2 VoiceOver tile descriptions and food-web lists.
 
 ```
-GATE G8 — Polish: perf budgets; VoiceOver completes the tutorial · Sign-off: REVIEW: GROK + MAHLER
+GATE G8 — Polish: perf budgets; VoiceOver completes the tutorial · Sign-off: GLM-SELF
 ```
 
 ### P9 Beta and TestFlight / P10 Release Prep
-- Standard tasks; SC-P9.1 an ecology-literate tester review for plausibility (Mahler approves testers).
+- Standard tasks; SC-P9.1 an ecology-literate tester review for plausibility (testers recruited by the maintainer; `_CONVENTIONS.md` §8.2).
 
 ```
-GATE G9 — Beta: crash-free ≥ 99.5%; no S1/S2 · Sign-off: REVIEW: MAHLER
-GATE G10 — Release: assets approved · Sign-off: REVIEW: MAHLER (Mahler submits)
+GATE G9 — Beta: crash-free ≥ 99.5%; no S1/S2 · Sign-off: GLM-SELF
+GATE G10 — Release: assets approved · Sign-off: GLM-SELF
 ```
 
-## 9. Handoff to Grok and Claude
+## 9. Fragile Areas and Priorities
 
 - Fragile areas: sim order and integer rounding; food-web connectivity validation.
-- First pickups: GROK — species design and biome asymmetry; CLAUDE — watercolor rendering and plate views.
+- Priorities for P6–P10: species design and biome asymmetry; watercolor rendering and plate views.
 
 ## 10. Risks and Mitigations
 
 | Risk | Likelihood | Impact | Mitigation | Owner |
 | --- | --- | --- | --- | --- |
-| Chaotic dynamics feel random | Medium | High | Damped equations, summaries with causes, and 1-season previews | GROK |
-| Ecology inaccuracies | Medium | Low | Fictionalized species; plausible rules; tester review | GROK |
-| Low perceived agency | Medium | Medium | Strong action set (restore, protect, adapt) and keystone tension | GROK |
+| Chaotic dynamics feel random | Medium | High | Damped equations, summaries with causes, and 1-season previews | GLM |
+| Ecology inaccuracies | Medium | Low | Fictionalized species; plausible rules; tester review | GLM |
+| Low perceived agency | Medium | Medium | Strong action set (restore, protect, adapt) and keystone tension | GLM |
 
 ## 11. Out of Scope
 
@@ -270,14 +268,14 @@ Human settlements; climate-change campaign narrative; real species names; multip
 | P3 | GLM | 10–14 |
 | P4 | GLM | 8–12 |
 | P5 | GLM | 10–14 |
-| P6 | GROK + CLAUDE | 15–22 (plus illustration) |
-| P7 | CLAUDE | 5–7 |
-| P8 | CLAUDE | 5–8 |
-| P9 | GROK + CLAUDE | 8–12 |
-| P10 | CLAUDE + GROK | 3–4 |
+| P6 | GLM | 15–22 (plus illustration) |
+| P7 | GLM | 5–7 |
+| P8 | GLM | 5–8 |
+| P9 | GLM | 8–12 |
+| P10 | GLM | 3–4 |
 | **Total** | | **86–123** |
 
-## 13. Open Questions for Mahler
+## 13. Open Questions
 
 1. Real or fictionalized species? Default: fictionalized with real-inspired behavior.
-2. Should conservation partners be considered (like Art of Fauna)? Default: Mahler's decision post-launch.
+2. Should conservation partners be considered (like Art of Fauna)? Default: no; the maintainer may decide post-launch.

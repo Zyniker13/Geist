@@ -6,14 +6,14 @@
 | --- | --- |
 | Game number and slug | 01 · `cartographers-gambit` |
 | Code prefix | `CG` (packages `CGCore`, `CGContent`, `CGAI`, `CGRender`, `CGAudio`, `CGPlatform`, `CGMeta`) |
-| Bundle ID (placeholder) | `com.zyniker.cartographers-gambit` |
+| Bundle ID | `GEIST_BUNDLE_ID` build setting, set by the maintainer (`_CONVENTIONS.md` §2) |
 | Subgenre | Asymmetric map-drawing wargame |
 | Difficulty tier | Deep |
 | Scope | Small team |
 | Session length | 20–40 minutes per match |
 | Renderer | SpriteKit (2D) plus Metal compute for ink-bleed texture generation |
 | Players | Solo vs AI; local pass-and-play; async online via GameKit turn-based matches (P7) |
-| Conventions | [`_CONVENTIONS.md`](../_shared/_CONVENTIONS.md) v1.0 (read first) |
+| Conventions | [`_CONVENTIONS.md`](../_shared/_CONVENTIONS.md) v2.0 (read first) |
 
 ## 1. Summary and Design Pillars
 
@@ -186,7 +186,7 @@ Targets (AI-vs-AI Hard vs Hard, 1,000 seeded games): Surveyor win rate 47–53%;
 
 ## 8. Phases, Tasks, and Gates
 
-### P0 Setup (Owner: GLM)
+### P0 Setup
 - Standard tasks S0.1–S0.7.
 - CG-P0.1 Create `Grid<T>` and `Cell` with Chebyshev/8-neighbor helpers. Acceptance: tests for bounds, neighbors at corners and edges.
 - CG-P0.2 Spike: Metal compute renders a 1536×1024 ink texture from a list of cell strokes. Deliverable: `InkTextureRenderer` prototype with a demo screen. Acceptance: 200 strokes regenerate in < 4 ms on M-series iPad simulator profile; recorded in `docs/PERF.md`.
@@ -199,7 +199,7 @@ Checks:
 Sign-off: GLM-SELF
 ```
 
-### P1 Rules Engine Prototype (Owner: GLM)
+### P1 Rules Engine Prototype
 - Standard tasks S1.1–S1.4.
 - CG-P1.1 Stroke rasterization and validation (R-7 to R-15) in `Strokes.swift`. Acceptance: tests for each restriction, including Surveyor 2-segment rule and width expansion edge cases at the board border.
 - CG-P1.2 Movement with deterministic A* (R-17 to R-20). Acceptance: golden path tests on 10 hand-built maps; path equality across runs.
@@ -218,7 +218,7 @@ Checks:
 Sign-off: GLM-SELF
 ```
 
-### P2 Core Loop Vertical Slice (Owner: GLM)
+### P2 Core Loop Vertical Slice
 - Standard tasks S2.1–S2.5.
 - CG-P2.1 `MapScene` with pan (two-finger), pinch zoom (0.5×–3×), and vellum placeholder.
 - CG-P2.2 Finger drawing: press-and-drag draws; a width dial (1–3) at the screen edge; live ink-cost badge follows the stroke; release commits; illegal strokes shake and refund.
@@ -234,11 +234,10 @@ Checks:
   [ ] Drawing → cost badge → commit → ink texture update is visible within 1 frame of release (debug overlay)
   [ ] Save mid-round, kill app, resume to identical state hash
   [ ] docs/media/slice.mp4 shows draw, order, march, combat, and capture
-Sign-off: REVIEW: GROK (decision space and stroke economy) + REVIEW: MAHLER (feel)
-🛑 GLM STOP — write docs/HANDOFF.md; resume only after PASS is recorded in docs/STATUS.md
+Sign-off: GLM-SELF
 ```
 
-### P3 Content and Systems (Owner: GLM)
+### P3 Content and Systems
 - CG-P3.1 Implement all 12 nib effect types and author 24 nibs in `nibs.json`. Acceptance: each effect has tests; content-lint clean.
 - CG-P3.2 Full nib draft UI (8 cards, snake order) with card art placeholders.
 - CG-P3.3 Romancer myth terrain (R-24) with distinct placeholder glyphs; playable as either faction.
@@ -255,10 +254,10 @@ Checks:
   [ ] Each nib effect type has ≥ 2 tests; CGCore coverage still ≥ 90%
   [ ] UI test: tutorial completes start to finish; pass-and-play match completes
   [ ] make sim N=1000 with random nib usage: 0 invariant violations
-Sign-off: GLM-SELF; REVIEW: CLAUDE async (architecture notes in docs/STATUS.md, non-blocking)
+Sign-off: GLM-SELF
 ```
 
-### P4 AI Opponents (Owner: GLM)
+### P4 AI Opponents
 - CG-P4.1 Candidate stroke generator (§7) with tests that each template produces legal strokes on 50 seeded maps.
 - CG-P4.2 Evaluator with weights in `ai_weights.json`; unit tests for each feature.
 - CG-P4.3 Easy, Medium, and Hard bots; difficulty select in the new-match screen.
@@ -275,7 +274,7 @@ Checks:
 Sign-off: GLM-SELF
 ```
 
-### P5 Meta and Replayability (Owner: GLM)
+### P5 Meta and Replayability
 - CG-P5.1 Daily map (§7) with a local best-score table and a share card image (rendered map thumbnail plus score).
 - CG-P5.2 Expand to 32 nibs and 5 map presets; nib unlocks by playing (8 starter nibs locked behind milestones defined in `unlocks.json`).
 - CG-P5.3 Profile and statistics (matches, wins by faction and difficulty, favorite nib, longest road drawn).
@@ -290,11 +289,10 @@ Checks:
   [ ] Replay viewer reproduces final hash for 20 golden replays
   [ ] Coverage: Core ≥ 90%, AI ≥ 75%, Meta ≥ 75%, overall ≥ 60%
   [ ] docs/HANDOFF.md complete per _CONVENTIONS §9
-Sign-off: REVIEW: CLAUDE (architecture) + REVIEW: GROK (balance, AI) + REVIEW: MAHLER (fun)
-🛑 GLM FINAL STOP — P6–P10 owned by Grok and Claude
+Sign-off: GLM-SELF
 ```
 
-### P6 Aesthetics and Audio Pass (Owner: GROK + CLAUDE)
+### P6 Aesthetics and Audio Pass
 - CG-P6.1 Final ink shader: bleed, pooling, paper grain, and hachure ridges; faction ink colors per §1.
 - CG-P6.2 Engraved army figures and landmark illustrations (7 landmark types: lighthouse, abbey, mill, fort, bridge-town, standing stones, and observatory).
 - CG-P6.3 Music in three layers (calm draw, tense orders, march) crossfaded by phase; quill scratch synthesized from stroke velocity.
@@ -305,10 +303,10 @@ GATE G6 — Aesthetics
 Checks:
   [ ] Snapshot set approved for 4 device sizes; palette matches §1 hex values (automated color sample test)
   [ ] Audio mix: no clipping (peak ≤ −1 dBFS), music ducks under SFX
-Sign-off: REVIEW: MAHLER
+Sign-off: GLM-SELF
 ```
 
-### P7 Platform Features (Owner: CLAUDE)
+### P7 Platform Features
 - CG-P7.1 Pencil pressure → width (pressure 0–0.33 → 1, 0.33–0.66 → 2, > 0.66 → 3, with hysteresis 0.05); hover shows the would-be stroke start and army path previews; squeeze opens the nib palette at the tip; double-tap toggles eraser.
 - CG-P7.2 Game Center: auth, 3 leaderboards (Daily score, Wins vs Hard, Longest win streak), 20 achievements, a Daily challenge bound to the daily leaderboard.
 - CG-P7.3 GameKit turn-based async matches (each Draw/Orders phase is a turn; orders hidden by encrypting order payloads until both commit — store a hash commitment first, reveal after).
@@ -321,10 +319,10 @@ Checks:
   [ ] Pencil features demonstrable on a real iPad Pro; finger fallback still completes every action (UI test)
   [ ] Async match completes between two sandbox Game Center accounts; commitment/reveal test proves orders cannot be read early
   [ ] iCloud sync round-trip iPad ↔ Mac with a conflict scenario resolves per policy
-Sign-off: REVIEW: GROK
+Sign-off: GLM-SELF
 ```
 
-### P8 Polish, Accessibility, and Performance (Owner: CLAUDE)
+### P8 Polish, Accessibility, and Performance
 - CG-P8.1 VoiceOver: map exploration by landmark and army; stroke drawing via an accessible "line tool" (choose start cell, end cell, and terrain from lists).
 - CG-P8.2 Color-blind safety: faction differences encoded by hatch pattern as well as hue.
 - CG-P8.3 Left-handed layout mirrors the width dial and confirm buttons; confirm actions never sit under the drawing wrist.
@@ -336,23 +334,23 @@ Checks:
   [ ] 120 fps on iPad Pro M4 during pan/zoom with 300 strokes; 60 fps on iPad (A16); cold start < 2.0 s
   [ ] VoiceOver user can complete the tutorial (scripted accessibility UI test)
   [ ] Accessibility audit (Xcode Accessibility Inspector) 0 critical issues
-Sign-off: REVIEW: GROK + REVIEW: MAHLER
+Sign-off: GLM-SELF
 ```
 
-### P9 Beta and TestFlight (Owner: GROK + CLAUDE)
-- CG-P9.1 Internal TestFlight build (Mahler creates the App Store Connect record).
+### P9 Beta and TestFlight
+- CG-P9.1 Internal TestFlight build.
 - CG-P9.2 Two balance passes from opt-in exported stats and AI sims; log every change in `docs/BALANCE.md`.
-- CG-P9.3 External TestFlight only after `MAHLER` approval.
+- CG-P9.3 External TestFlight is a maintainer item (`_CONVENTIONS.md` §8.2).
 
 ```
 GATE G9 — Beta
 Checks:
   [ ] Crash-free sessions ≥ 99.5% over ≥ 200 sessions
   [ ] No open S1/S2 issues
-Sign-off: REVIEW: MAHLER
+Sign-off: GLM-SELF
 ```
 
-### P10 Release Prep (Owner: CLAUDE + GROK)
+### P10 Release Prep
 - CG-P10.1 Screenshots (iPad 13", iPhone 6.9", Mac), a 30-second app preview, and metadata drafts.
 - CG-P10.2 Privacy label "Data Not Collected"; accessibility nutrition labels; age rating draft.
 - CG-P10.3 Release notes and press kit.
@@ -362,23 +360,23 @@ GATE G10 — Release
 Checks:
   [ ] All store assets present and approved
   [ ] Final build passes full CI and real-device perf
-Sign-off: REVIEW: MAHLER (Mahler submits)
+Sign-off: GLM-SELF
 ```
 
-## 9. Handoff to Grok and Claude
+## 9. Fragile Areas and Priorities
 
 - Fragile areas: stroke quantization (Render) vs rasterization (Core) — any change must keep golden replays; MCTS determinism; hidden-order commitment for async play.
-- First pickups: CLAUDE — refactor input pipeline into a testable `StrokeRecognizer`; GROK — nib balance, Romancer myth costs, and daily scoring.
+- Priorities for P6–P10: refactor input pipeline into a testable `StrokeRecognizer`; nib balance, Romancer myth costs, and daily scoring.
 
 ## 10. Risks and Mitigations
 
 | Risk | Likelihood | Impact | Mitigation | Owner |
 | --- | --- | --- | --- | --- |
-| Drawing on a small iPhone screen is imprecise | High | Medium | iPad-first; iPhone gets snap-to-cell assist and a zoom lens | CLAUDE |
-| Stroke space too large for good AI | Medium | High | Template-based candidates; Hard AI uses macro-actions | GLM/GROK |
-| Romancer myth terrain dominant | Medium | Medium | Sim targets and surcharge tuning | GROK |
-| Ink texture memory on older iPads | Low | Medium | Half-resolution texture fallback | CLAUDE |
-| Players find deterministic combat dry | Medium | Medium | Strong preview UI, readable outcomes, and replay viewer | GROK |
+| Drawing on a small iPhone screen is imprecise | High | Medium | iPad-first; iPhone gets snap-to-cell assist and a zoom lens | GLM |
+| Stroke space too large for good AI | Medium | High | Template-based candidates; Hard AI uses macro-actions | GLM |
+| Romancer myth terrain dominant | Medium | Medium | Sim targets and surcharge tuning | GLM |
+| Ink texture memory on older iPads | Low | Medium | Half-resolution texture fallback | GLM |
+| Players find deterministic combat dry | Medium | Medium | Strong preview UI, readable outcomes, and replay viewer | GLM |
 
 ## 11. Out of Scope
 
@@ -394,16 +392,15 @@ Real-time play; more than 2 players; map editor sharing; custom factions; voice 
 | P3 | GLM | 10–14 |
 | P4 | GLM | 10–15 |
 | P5 | GLM | 7–10 |
-| P6 | GROK + CLAUDE | 15–25 (plus art) |
-| P7 | CLAUDE | 10–14 |
-| P8 | CLAUDE | 8–12 |
-| P9 | GROK + CLAUDE | 10–15 |
-| P10 | CLAUDE + GROK | 4–6 |
+| P6 | GLM | 15–25 (plus art) |
+| P7 | GLM | 10–14 |
+| P8 | GLM | 8–12 |
+| P9 | GLM | 10–15 |
+| P10 | GLM | 4–6 |
 | **Total** | | **95–141** |
 
-## 13. Open Questions for Mahler
+## 13. Open Questions
 
-1. Reverse-DNS bundle prefix? Default: `com.zyniker`.
-2. Should async online play ship in v1.0? Default: yes (P7.3), cut first if P7 runs long.
-3. Price point? Default: none set; GLM never sets pricing.
-4. Historical flavor (named real places) or invented continent? Default: invented.
+1. Should async online play ship in v1.0? Default: yes (P7.3), cut first if P7 runs long.
+2. Price point? Default: none set; GLM never sets pricing.
+3. Historical flavor (named real places) or invented continent? Default: invented.

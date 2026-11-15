@@ -2,7 +2,7 @@
 
 > You are a minor hearth god competing with rival deities for a valley's faith, and you never command a single villager directly.
 
-Read [`_CONVENTIONS.md`](../_shared/_CONVENTIONS.md) v1.0 in full before starting. This roadmap only adds what is specific to Lesser Gods of the Vale.
+Read [`_CONVENTIONS.md`](../_shared/_CONVENTIONS.md) v2.0 in full before starting. This roadmap only adds what is specific to Lesser Gods of the Vale.
 
 ## 0. Metadata
 
@@ -10,14 +10,14 @@ Read [`_CONVENTIONS.md`](../_shared/_CONVENTIONS.md) v1.0 in full before startin
 | --- | --- |
 | Game number and slug | 17 · `lesser-gods-of-the-vale` |
 | Code prefix | `LGV` (packages `LGVCore`, `LGVContent`, `LGVAI`, `LGVRender`, `LGVAudio`, `LGVPlatform`, `LGVMeta`) |
-| Bundle ID (placeholder) | `com.zyniker.lesser-gods-of-the-vale` |
+| Bundle ID | `GEIST_BUNDLE_ID` build setting, set by the maintainer (`_CONVENTIONS.md` §2) |
 | Subgenre | Indirect 4X (influence without control), season-based turns |
 | Difficulty tier | Intermediate |
 | Scope | Small team |
 | Session length | 30–45 min (12 seasons over 3 years) |
 | Renderer | SpriteKit (2D) with a painterly gouache shader (`SKShader` paper grain and pigment bleed); no Metal compute |
 | Players | Solo vs 1–3 AI rival gods; local pass-and-play hot-seat for 2–4 humans |
-| Conventions | [`_CONVENTIONS.md`](../_shared/_CONVENTIONS.md) v1.0 (read first) |
+| Conventions | [`_CONVENTIONS.md`](../_shared/_CONVENTIONS.md) v2.0 (read first) |
 
 ## 1. Summary and Design Pillars
 
@@ -285,7 +285,7 @@ public enum Event: Codable, Equatable, Sendable {
 
 ## 8. Phases, Tasks, and Gates
 
-### P0 Setup (Owner: GLM)
+### P0 Setup
 
 Standard tasks S0.1–S0.7.
 
@@ -299,7 +299,7 @@ Checks:
 Sign-off: GLM-SELF
 ```
 
-### P1 Rules Engine Prototype (Owner: GLM)
+### P1 Rules Engine Prototype
 
 Standard tasks S1.1–S1.4.
 
@@ -321,7 +321,7 @@ Checks:
 Sign-off: GLM-SELF
 ```
 
-### P2 Core Loop Vertical Slice (Owner: GLM)
+### P2 Core Loop Vertical Slice
 
 Standard tasks S2.1–S2.5. Slice scope: one valley, player (hearth) vs one novice rival (harvest), 8 miracles, 6 traits, 40 story templates, 12 seasons.
 
@@ -331,7 +331,7 @@ Standard tasks S2.1–S2.5. Slice scope: one valley, player (hearth) vs one novi
 - **LGV-P2.4 Season playback.** 10–15 seconds of animated village life, then Reckoning cards: credit (who credited whom), new believers, and 2–3 story log lines.
 - **LGV-P2.5 Villager inspector.** Press and hold a villager: traits, needs, faith bars, friends, and stories they carry.
 
-Slice checks: Mahler can tell within one season which miracle was miscredited and why (pillar 2); the story log produces specific lines (pillar 3).
+Slice checks: a first-time player can tell within one season which miracle was miscredited and why (pillar 2); the story log produces specific lines (pillar 3).
 
 ```
 GATE G2 — Vertical Slice
@@ -340,12 +340,10 @@ Checks:
   [ ] Omen recognizer ≥ 90% accuracy on a 120-stroke test corpus (20 per shape, committed in Tests/Fixtures/omens)
   [ ] Save and resume mid-invocation to identical hash
   [ ] docs/media/slice.mp4 recorded
-  [ ] REVIEW: GROK — does influence-without-control produce interesting decisions? Is attribution legible?
-  [ ] REVIEW: MAHLER — fun enough to continue?
-Sign-off: REVIEW: GROK + MAHLER · 🛑 GLM STOP
+Sign-off: GLM-SELF
 ```
 
-### P3 Content and Systems (Owner: GLM)
+### P3 Content and Systems
 
 - **LGV-P3.1** 5 gods with domains, favored omens, and unique miracles; 18 miracles total.
 - **LGV-P3.2** 14 traits, 12 events, births, deaths, weddings, and quarrels.
@@ -360,11 +358,10 @@ Checks:
   [ ] Counts: 5 gods, 18 miracles, 14 traits, 12 events, 6 valleys, 200 templates
   [ ] content-lint 0 errors; every template's placeholders resolve in a render test
   [ ] Tutorial UI test passes
-  [ ] REVIEW: CLAUDE (async)
-Sign-off: GLM-SELF + REVIEW: CLAUDE (async)
+Sign-off: GLM-SELF
 ```
 
-### P4 AI Opponents (Owner: GLM)
+### P4 AI Opponents
 
 - **LGV-P4.1** Novice, adept, and elder tiers; personalities.
 - **LGV-P4.2** `RolloutSim` reduced simulator with a fidelity test: its projected patron counts match the full sim within ±10% over 500 seasons.
@@ -379,7 +376,7 @@ Checks:
 Sign-off: GLM-SELF
 ```
 
-### P5 Meta and Replayability (Owner: GLM)
+### P5 Meta and Replayability
 
 - **LGV-P5.1 Pantheon unlocks.** Start with hearth and harvest; unlock storm, trickster, and ancestor by winning as other gods. All earnable.
 - **LGV-P5.2 Chronicle.** Every finished game saves its story log as an illuminated "chronicle" page (text plus a few event vignettes); browse past chronicles.
@@ -388,33 +385,31 @@ Sign-off: GLM-SELF
 - **LGV-P5.5 Stats:** wins by god, best scores, most-retold story.
 
 ```
-GATE G5 — Meta and Replayability (Final GLM Handoff)
+GATE G5 — Meta and Replayability
 Checks:
   [ ] Daily Valley deterministic for 60 dates across devices
   [ ] Chronicle renders for 100 sim games without layout overflow (snapshot sample)
   [ ] All standard tests and coverage thresholds pass
   [ ] docs/HANDOFF.md complete
-  [ ] REVIEW: CLAUDE + GROK + MAHLER
-Sign-off: REVIEW: CLAUDE + GROK + MAHLER · 🛑 GLM FINAL STOP
+Sign-off: GLM-SELF
 ```
 
-### P6 Aesthetics and Audio Pass (Owner: GROK + CLAUDE)
+### P6 Aesthetics and Audio Pass
 
 - **LGV-P6.1** Final gouache art: terrain, villages, villager figures (12 base figures × props), god emblems.
 - **LGV-P6.2** Miracle FX per miracle; omen sky painting animates the player's own stroke.
 - **LGV-P6.3** Seasonal palette shifts and weather overlays.
 - **LGV-P6.4** Music (4 seasonal themes, 5 god motifs) and ambience.
-- **LGV-P6.5** Grok edits the 200 story templates for voice and variety.
+- **LGV-P6.5** GLM edits the 200 story templates for voice and variety.
 
 ```
 GATE G6 — Aesthetics
 Checks:
-  [ ] Pillar 4 screenshot test: Grok identifies each village's leading god in 10/10 frames
-  [ ] REVIEW: MAHLER
-Sign-off: REVIEW: MAHLER
+  [ ] Pillar 4 screenshot test: each village's leading god is identifiable in 10/10 frames (GLM inspects the screenshots; human check playtest; `_CONVENTIONS.md` §8.2)
+Sign-off: GLM-SELF
 ```
 
-### P7 Platform Features (Owner: CLAUDE)
+### P7 Platform Features
 
 - **LGV-P7.1 Pencil.** Draw omens with Pencil; hover over a tile previews a miracle's area and backfire risk; squeeze opens the miracle palette.
 - **LGV-P7.2 Game Center.** Daily Valley leaderboard, 30 achievements, challenges.
@@ -426,11 +421,10 @@ GATE G7 — Platform
 Checks:
   [ ] Pencil omen recognition ≥ 90% on corpus; finger and radial fallback both work
   [ ] Game Center sandbox round trip; iCloud resume across iPad and Mac
-  [ ] REVIEW: GROK
-Sign-off: REVIEW: GROK
+Sign-off: GLM-SELF
 ```
 
-### P8 Polish, Accessibility, and Performance (Owner: CLAUDE)
+### P8 Polish, Accessibility, and Performance
 
 - **LGV-P8.1** Faith washes color-blind safe (each god also has a pattern texture: dots, stripes, waves, crosshatch, and solid).
 - **LGV-P8.2** VoiceOver for villages and villagers; omen selection fully via radial menu.
@@ -441,13 +435,12 @@ Sign-off: REVIEW: GROK
 GATE G8 — Polish
 Checks:
   [ ] Budgets met on real devices; accessibility audit clean
-  [ ] REVIEW: GROK + MAHLER
-Sign-off: REVIEW: GROK + MAHLER
+Sign-off: GLM-SELF
 ```
 
-### P9 Beta and TestFlight (Owner: GROK + CLAUDE)
+### P9 Beta and TestFlight
 
-- **LGV-P9.1** Internal TestFlight (Mahler creates records).
+- **LGV-P9.1** Internal TestFlight.
 - **LGV-P9.2** Opt-in export of game summaries (god, score, misattribution rate).
 - **LGV-P9.3** Balance and story-template revisions.
 
@@ -455,38 +448,36 @@ Sign-off: REVIEW: GROK + MAHLER
 GATE G9 — Beta
 Checks:
   [ ] Crash-free ≥ 99.5%; no S1/S2 open
-  [ ] ≥ 70% of testers can explain attribution after one game (survey Mahler approves)
-  [ ] REVIEW: MAHLER
-Sign-off: REVIEW: MAHLER
+  [ ] ≥ 70% of testers can explain attribution after one game (survey drafted in `docs/release/`; playtest; `_CONVENTIONS.md` §8.2)
+Sign-off: GLM-SELF
 ```
 
-### P10 Release Prep (Owner: CLAUDE + GROK)
+### P10 Release Prep
 
-Standard P10 tasks; preview shows an omen drawn in the sky and a village turning color. Age rating draft should note mild fantasy themes; religious themes are folk and fictional (Grok reviews copy for respectful tone).
+Standard P10 tasks; preview shows an omen drawn in the sky and a village turning color. Age rating draft should note mild fantasy themes; religious themes are folk and fictional (GLM reviews copy for respectful tone).
 
 ```
 GATE G10 — Release
 Checks:
   [ ] RC full CI green; clean-install smoke
   [ ] Metadata, privacy, and age-rating drafts reviewed
-  [ ] REVIEW: MAHLER (submits)
-Sign-off: REVIEW: MAHLER
+Sign-off: GLM-SELF
 ```
 
-## 9. Handoff to Grok and Claude
+## 9. Fragile Areas and Priorities
 
 - **Fragile areas:** attribution weights (R-16) dominate the feel; small changes swing misattribution rates heavily. The villager sim must not starve valleys (P1.1 stability test is a regression guard).
-- **Content:** story templates are the voice of the game; Grok owns them after G5.
-- **First tasks:** Grok — tune attribution weights and story spread toward pillar 2 targets; Claude — Pencil omen flow and the gouache shader performance.
+- **Content:** story templates are the voice of the game; keep them consistent through P6–P10.
+- **Priorities for P6–P10:** tune attribution weights and story spread toward pillar 2 targets; Pencil omen flow and the gouache shader performance.
 
 ## 10. Risks and Mitigations
 
 | Risk | Likelihood | Impact | Mitigation | Owner |
 | --- | --- | --- | --- | --- |
-| Players feel powerless (no direct control) | Medium | High | Strong feedback in Reckoning cards; wavering markers; tutorial | GROK |
-| Simulation opaque | Medium | High | Villager inspector, credit breakdown per miracle | GLM → CLAUDE |
-| Story log repetitive | Medium | Medium | 200 templates, selection by trait and season, no repeats within 3 seasons | GROK |
-| Religious sensitivity | Low | Medium | Fictional folk gods; no real-world religions; respectful tone review | GROK + MAHLER |
+| Players feel powerless (no direct control) | Medium | High | Strong feedback in Reckoning cards; wavering markers; tutorial | GLM |
+| Simulation opaque | Medium | High | Villager inspector, credit breakdown per miracle | GLM |
+| Story log repetitive | Medium | Medium | 200 templates, selection by trait and season, no repeats within 3 seasons | GLM |
+| Religious sensitivity | Low | Medium | Fictional folk gods; no real-world religions; respectful tone review | GLM |
 | AI too slow with rollouts | Medium | Medium | Reduced simulator; adaptive candidate counts | GLM |
 
 ## 11. Out of Scope
@@ -507,17 +498,17 @@ Sign-off: REVIEW: MAHLER
 | P3 Content and Systems | GLM | 12–16 |
 | P4 AI | GLM | 7–10 |
 | P5 Meta | GLM | 4–6 |
-| P6 Aesthetics and Audio | GROK + CLAUDE | 14–20 |
-| P7 Platform | CLAUDE | 4–6 |
-| P8 Polish | CLAUDE | 5–7 |
-| P9 Beta | GROK + CLAUDE | 8–12 |
-| P10 Release | CLAUDE + GROK | 2–4 |
+| P6 Aesthetics and Audio | GLM | 14–20 |
+| P7 Platform | GLM | 4–6 |
+| P8 Polish | GLM | 5–7 |
+| P9 Beta | GLM | 8–12 |
+| P10 Release | GLM | 2–4 |
 | **Total** | | **78–112** |
 
-## 13. Open Questions for Mahler
+## 13. Open Questions
 
 1. Is the folk-pantheon framing (fictional gods) acceptable given the user base? **Default:** yes, fictional and clearly mythic.
 2. Should the player be able to choose any god from the start? **Default:** no; two to start, three unlockable.
 3. Game length 12 seasons? **Default:** yes, with a "long" setting of 20 seasons.
 4. Hot-seat in v1.0? **Default:** yes.
-5. Price? **Default:** Mahler decides in P10.
+5. Price? **Default:** the maintainer decides; GLM leaves the price unset.

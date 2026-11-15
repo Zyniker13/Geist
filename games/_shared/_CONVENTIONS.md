@@ -1,6 +1,6 @@
 # Shared Conventions for All Strategy Game Roadmaps
 
-Version 1.0 · 2026-11-15 · Applies to every game roadmap at `../NN-<slug>/ROADMAP.md`.
+Version 2.0 · 2026-11-15 · Applies to every game roadmap at `../NN-<slug>/ROADMAP.md`.
 
 Every roadmap references this file. When a roadmap and this file disagree, **the roadmap wins for game-specific facts** (rules, content, modules) and **this file wins for process, stack, standards, and gates**. The build agent must read this file in full before starting P0 of any game.
 
@@ -10,27 +10,19 @@ Every roadmap references this file. When a roadmap and this file disagree, **the
 
 | Code | Who | Responsibility |
 | --- | --- | --- |
-| `GLM` | Autonomous GLM coding agent | Initial build, P0 through P5. Self-checks gates marked `GLM-SELF`. |
-| `CLAUDE` | Claude agent | Architecture and code-quality review, refactors, platform integration, accessibility. Leads P7 and P8. |
-| `GROK` | Grok agent | Design, balance, content, and AI-opponent review. Leads P5 tuning, P6 direction support, and P9 balance. |
-| `MAHLER` | Human owner | Feel, taste, and go/no-go. Only Mahler approves anything external: App Store Connect records, TestFlight external groups, App Store submission, pricing, spending money, or posting publicly. |
+| `GLM` | The autonomous build agent | Builds every game end to end, P0 through P10, and checks every gate itself. |
+| Maintainer | The repository owner | Only the steps that need an Apple account, real devices, money, or a public action: App Store Connect records, signing certificates, TestFlight, App Store submission, pricing, spending, and posting publicly. The maintainer may play and review any build at any time; those reviews are outside the roadmaps and never gate GLM. |
 
-Gate sign-off notation used in every roadmap:
+Every gate is signed off `GLM-SELF`: GLM runs every check itself, pastes the evidence into `docs/STATUS.md`, tags `gate-Gn-pass` (see §6), and goes straight on to the next phase.
 
-- `GLM-SELF` — GLM runs the checks itself, records results in `docs/STATUS.md`, and continues if all pass.
-- `REVIEW: CLAUDE` / `REVIEW: GROK` — the named agent must review and write a signed entry in `docs/STATUS.md`.
-- `REVIEW: MAHLER` — the human must play the build and approve.
-- `🛑 GLM STOP` — GLM must stop all work, write `docs/HANDOFF.md` for the current state, and wait. It must not start the next phase.
+### 1.1 Owner-Only Steps and Blockers (Same for Every Game)
 
-### 1.1 Where GLM Stops (Same for Every Game)
+GLM never stops a game and never waits. Instead:
 
-1. **G2 (Vertical Slice)** is a `🛑 GLM STOP`. GLM resumes P3 only after `REVIEW: GROK` and `REVIEW: MAHLER` are recorded as PASS in `docs/STATUS.md`.
-2. **G5 (Meta and Replayability)** is the **final GLM handoff**: `🛑 GLM STOP`. P6 through P10 belong to Claude and Grok, with Mahler approval.
-3. GLM must also stop immediately (and write `docs/HANDOFF.md`) when:
-   - a gate check fails three consecutive fix attempts;
-   - any task would require an Apple Developer account action, signing certificates, App Store Connect, payment, or a third-party account;
-   - a design ambiguity would change a rule in `docs/RULES.md` (log it in `docs/OPEN_QUESTIONS.md` instead of guessing, unless the roadmap lists a default);
-   - a dependency outside the allow-list (§4.4) seems necessary.
+1. **A step only the maintainer can do** (an Apple Developer account action, real signing certificates, App Store Connect, TestFlight, payment, a third-party account, a real device, or a human playtest or approval): do everything possible locally using the substitutes in §8.2, record the check as `SUBSTITUTED` with the local evidence and the maintainer item's link, file the item (see "Issues for the Maintainer" in the root `ROADMAP.md`), and continue.
+2. **A gate check that fails three consecutive, genuinely different fix attempts:** record it in `docs/KNOWN_ISSUES.md`, file a `blocked` item, mark the check `FAILED` in `docs/STATUS.md`, and continue with the next phase if it does not depend on the failed check; if it does, the game is `Blocked` and GLM moves on to the next game until the item is answered (root `ROADMAP.md`, "Program Loop"). Do not tag that gate until the check passes; retry every open `FAILED` check before the game's G10.
+3. **A design ambiguity that would change a rule in `docs/RULES.md`:** use the roadmap's default if it lists one; otherwise choose the option most consistent with the roadmap's pillars (§1), record it as an ADR and in `docs/OPEN_QUESTIONS.md`, file a `question` item, and continue.
+4. **A dependency outside the allow-list (§4.4) seems necessary:** do not add it. Write the code yourself or use an allow-listed package; if neither is feasible, ship a tested stub, file a `blocked` item, and continue.
 
 ---
 
@@ -39,7 +31,7 @@ Gate sign-off notation used in every roadmap:
 | Concern | Decision | Rationale |
 | --- | --- | --- |
 | Language | Swift 6, strict concurrency `complete` | First-party, one language across iPad, iPhone, and Mac; strong typing suits deterministic rules. |
-| Toolchain | Latest stable Xcode 26.x; record the exact version in `docs/DECISIONS.md` (ADR-0001) | Reproducible builds. |
+| Toolchain | Xcode 27.2, the toolchain installed on the build machine; record the exact version and build number in `docs/DECISIONS.md` (ADR-0001) | Reproducible builds. Xcode 27.2 builds the 26.0 deployment targets below. |
 | Deployment targets | iOS and iPadOS 26.0, macOS 26.0 | Unlocks Game Center challenges in the Apple Games app, current Pencil APIs, and Metal 4; acceptable reach by launch. |
 | App shell and menus | SwiftUI multiplatform app (one app target per platform from one source set) | Native Mac menus, windows, and pointer behavior without Catalyst compromises. |
 | 2D rendering (default) | SpriteKit hosted in SwiftUI via `SpriteView` | Mature, built in, enough for every 2D concept; supports custom `SKShader` for effects. |
@@ -52,21 +44,22 @@ Gate sign-off notation used in every roadmap:
 | Project generation | XcodeGen (`project.yml`); the `.xcodeproj` is generated and git-ignored | Agents must never hand-edit `project.pbxproj`. |
 | Packages | Swift Package Manager local packages under `Packages/` | Pure-Swift cores are testable on the command line with `swift test`. |
 | Tests | Swift Testing (`import Testing`) for packages; XCTest/XCUITest for UI tests; `swift-snapshot-testing` for rendering snapshots | Modern, parallel, parameterized tests. |
-| Lint and format | SwiftLint (config in repo) and `swift-format` | Consistent style for three different agents. |
-| CI | GitHub Actions, `macos-26` runner (or latest available macOS runner); see §6 | Every gate is checkable by CI. |
-| Monetization (default) | Premium, one price, universal purchase across iPhone, iPad, and Mac; no ads, no consumables | Matches the research; keeps Apple Arcade pitches possible. Pricing is a `MAHLER` decision. |
+| Lint and format | SwiftLint (config in repo) and `swift-format` | Consistent style. |
+| CI | GitHub Actions on the latest macOS runner (`macos-latest`), selecting the newest Xcode 27 on the image; see §6 | Every gate is checkable by CI. |
+| Monetization (default) | Premium, one price, universal purchase across iPhone, iPad, and Mac; no ads, no consumables | Matches the research; keeps Apple Arcade pitches possible. Pricing is a maintainer decision. |
 
-Universal purchase: iOS and macOS apps share **one bundle identifier** `com.zyniker.<slug>` (placeholder; Mahler confirms the reverse-DNS prefix) and are added as platforms of one App Store Connect record. GLM never creates that record.
+Universal purchase: iOS and macOS apps share **one bundle identifier**, which the maintainer sets. Every target's `PRODUCT_BUNDLE_IDENTIFIER` in `project.yml` derives from one build setting, `GEIST_BUNDLE_ID`, defined only in `Config/Bundle.xcconfig` with the neutral placeholder `com.example.<slug>` (tests append a suffix, for example `$(GEIST_BUNDLE_ID).tests`). GLM never changes that value, never invents a real prefix, and never asks about it. The maintainer fills it in and creates the App Store Connect record.
 
 ---
 
 ## 3. Repository Layout (Every Game)
 
-> **This repository:** all twenty-five games share one repository, so `<slug>/` below is the game's folder, `games/NN-<slug>/`. "Repository Adaptations" in the root `ROADMAP.md` maps the CI file, branches, tags, and merging, and "Program Loop" there says how a stop applies to one game at a time.
+> **This repository:** all twenty-five games share one repository, so `<slug>/` below is the game's folder, `games/NN-<slug>/`. "Repository Adaptations" in the root `ROADMAP.md` maps the CI file, branches, tags, and merging, and "Program Loop" there says how GLM moves from one game to the next.
 
 ```
 <slug>/
 ├── project.yml                  # XcodeGen spec (iOS app, macOS app, UI test targets)
+├── Config/Bundle.xcconfig       # GEIST_BUNDLE_ID placeholder only (§2)
 ├── Makefile                     # make bootstrap | gen | build | test | lint | snapshot | perf | coverage
 ├── .swiftlint.yml
 ├── .swift-format
@@ -140,7 +133,7 @@ Each roadmap defines `<Prefix>` (two to four letters, e.g. `CG` for Cartographer
 - Accessibility identifiers on every interactive control (`"board.cell.3.4"`), used by UI tests.
 
 ### 4.4 Dependency Allow-List
-Only: `pointfreeco/swift-snapshot-testing` (tests only), `apple/swift-collections`, `apple/swift-algorithms`, `apple/swift-numerics` (Render/Audio only), XcodeGen, SwiftLint, and swift-format as tools. Anything else requires an ADR and `REVIEW: CLAUDE`.
+Only: `pointfreeco/swift-snapshot-testing` (tests only), `apple/swift-collections`, `apple/swift-algorithms`, `apple/swift-numerics` (Render/Audio only), XcodeGen, SwiftLint, and swift-format as tools. Nothing else is added (§1.1, item 4).
 
 ---
 
@@ -207,17 +200,17 @@ Every roadmap uses these eleven phases. Standard tasks (`S` prefix) apply to eve
 | --- | --- | --- | --- | --- |
 | P0 | Setup | GLM | G0 | GLM-SELF |
 | P1 | Rules Engine Prototype | GLM | G1 | GLM-SELF |
-| P2 | Core Loop Vertical Slice | GLM | G2 | REVIEW: GROK + MAHLER · 🛑 GLM STOP |
-| P3 | Content and Systems | GLM | G3 | GLM-SELF + REVIEW: CLAUDE (async, non-blocking) |
+| P2 | Core Loop Vertical Slice | GLM | G2 | GLM-SELF |
+| P3 | Content and Systems | GLM | G3 | GLM-SELF |
 | P4 | AI Opponents | GLM | G4 | GLM-SELF |
-| P5 | Meta and Replayability | GLM | G5 | REVIEW: CLAUDE + GROK + MAHLER · 🛑 GLM FINAL STOP |
-| P6 | Aesthetics and Audio Pass | GROK + CLAUDE | G6 | REVIEW: MAHLER |
-| P7 | Platform Features (Pencil, Game Center, iCloud, Mac) | CLAUDE | G7 | REVIEW: GROK |
-| P8 | Polish, Accessibility, and Performance | CLAUDE | G8 | REVIEW: GROK + MAHLER |
-| P9 | Beta and TestFlight | GROK + CLAUDE | G9 | REVIEW: MAHLER |
-| P10 | Release Prep | CLAUDE + GROK | G10 | REVIEW: MAHLER (only Mahler submits) |
+| P5 | Meta and Replayability | GLM | G5 | GLM-SELF |
+| P6 | Aesthetics and Audio Pass | GLM | G6 | GLM-SELF |
+| P7 | Platform Features (Pencil, Game Center, iCloud, Mac) | GLM | G7 | GLM-SELF |
+| P8 | Polish, Accessibility, and Performance | GLM | G8 | GLM-SELF |
+| P9 | Beta and TestFlight | GLM | G9 | GLM-SELF |
+| P10 | Release Prep | GLM | G10 | GLM-SELF |
 
-GLM may build **placeholder** art, audio, and Pencil/Game Center stubs earlier when a slice needs them, but the P6/P7 owners replace them.
+GLM may build **placeholder** art, audio, and Pencil/Game Center stubs earlier when a slice needs them, and replaces them in P6 and P7.
 
 ### 8.1 Standard Tasks
 
@@ -247,7 +240,7 @@ GLM may build **placeholder** art, audio, and Pencil/Game Center stubs earlier w
 - S2.4 Save and resume mid-game (local only).
 - S2.5 Build a 60-second screen recording via XCUITest + `simctl io recordVideo`, saved to `docs/media/slice.mp4`.
 
-**G2 checks:** XCUITest plays a full match/run to the results screen on iPad and Mac; 60 fps on iPad simulator debug overlay (real-device perf comes later); the roadmap's slice-specific checks. Then `🛑 GLM STOP` for `REVIEW: GROK` (does the core decision space feel interesting?) and `REVIEW: MAHLER` (is it fun enough to continue?). Possible outcomes: PASS, PASS WITH CHANGES (listed in `docs/STATUS.md`), or PIVOT (roadmap revised before P3).
+**G2 checks:** XCUITest plays a full match/run to the results screen on iPad and Mac; 60 fps on iPad simulator debug overlay (real-device perf comes later); the roadmap's slice-specific checks. Then GLM writes `docs/SLICE_ASSESSMENT.md`: an honest self-assessment of the slice against the roadmap's pillars (§1), using the recording and screenshots, and turns every weakness it finds into a P3 task. The maintainer may review the slice on their own; that never blocks P3.
 
 **P3 Content and Systems** — roadmap-specific content to the counts in §5 of each roadmap; all content in JSON; `content-lint` clean; tutorial flow scripted.
 
@@ -255,7 +248,7 @@ GLM may build **placeholder** art, audio, and Pencil/Game Center stubs earlier w
 
 **P5 Meta and Replayability** — run structure, unlocks, daily seed (date-derived, UTC, deterministic), statistics, and local leaderboards ready to bind to Game Center in P7.
 
-**G5 checks:** roadmap-specific; plus all standard tests, coverage thresholds in §5, a complete `docs/HANDOFF.md` (§9), and `🛑 GLM FINAL STOP`.
+**G5 checks:** roadmap-specific; plus all standard tests, coverage thresholds in §5, and an up-to-date `docs/HANDOFF.md` (§9).
 
 **P6 Aesthetics and Audio Pass** — final art direction, shaders, animation, music, SFX, and haptics per roadmap §1 aesthetic spec.
 
@@ -263,13 +256,27 @@ GLM may build **placeholder** art, audio, and Pencil/Game Center stubs earlier w
 
 **P8 Polish, Accessibility, and Performance** — VoiceOver labels, Dynamic Type in menus, Reduce Motion, color-blind-safe palettes (verify with simulated deuteranopia/protanopia/tritanopia), adjustable text size, left-handed layout, haptics toggle, and performance budgets in §7 on real devices.
 
-**P9 Beta and TestFlight** — internal TestFlight first, then an external group only after `MAHLER` approves; crash and feedback triage; balance passes driven by telemetry-free in-game opt-in stats export.
+**P9 Beta and TestFlight** — GLM prepares everything for a beta: a Release archive that builds with signing disabled (`CODE_SIGNING_ALLOWED=NO`), beta notes, a tester guide, and the telemetry-free, in-game, opt-in stats export; runs long simulator soak sessions (scripted UI tests and `Tools/sim`) as the local substitute for beta crash data; and drives balance passes from sim data. Uploading to TestFlight and running internal or external groups are maintainer items (§1.1). Feedback the maintainer records in issues is triaged into tasks.
 
-**P10 Release Prep** — App Store metadata drafts, screenshots for all sizes, app preview video, privacy nutrition label (target: Data Not Collected), age rating questionnaire draft, accessibility nutrition labels, press kit. Mahler submits.
+**P10 Release Prep** — App Store metadata drafts, screenshots for all sizes (generated by UI tests on simulators), an app preview video (`simctl io recordVideo`), the privacy nutrition label (target: Data Not Collected), an age rating questionnaire draft, accessibility nutrition labels, and a press kit, all in `docs/release/`. Signing, App Store Connect, pricing, and submission are maintainer items (§1.1); GLM files one item listing everything ready and what is left.
+
+### 8.2 Local Substitutes for Owner-Only Steps
+
+The build machine is a Mac with Xcode and simulators only. Where a task or gate check needs more, GLM does the substitute, records the check as `SUBSTITUTED` with its evidence, and files one maintainer item for what is left (§1.1). Any gate check that names real devices, a specific iPad or iPhone model, TestFlight, testers, a survey, sandbox accounts, a playtest, or an approval is such a check; so is any task that needs TestFlight, App Store Connect, signing, real devices, or outside testers, or that the roadmap marks as a maintainer item. A `SUBSTITUTED` check counts as passed for tagging.
+
+| Owner-only step | What GLM does locally | Left for the maintainer |
+| --- | --- | --- |
+| Real-device performance, memory, thermal, and download size (§7) | Measure on the iPad and iPhone simulators and on the Mac with Instruments or `xctrace`; record results in `docs/PERF.md`, marked "simulator" or "Mac"; budgets apply to the simulator figures as a proxy | A device run against §7 |
+| Human playtest, feel, or approval (including "approved" assets or snapshots) | Scripted UI-test playthroughs, sim and bot metrics, screenshots and recordings in `docs/media/`, and a self-assessment against the pillars; GLM approves reference snapshots itself | A playtest |
+| Apple Pencil hardware (pressure, squeeze, hover) | Code paths behind protocols with tests on the input model, plus the finger and pointer fallbacks working on the simulator | A device check |
+| Game Center, iCloud, and CloudKit sandbox | Real GameKit and CloudKit code compiled, exercised through protocol fakes with tests; entitlements with placeholder identifiers | Sandbox verification |
+| Signing and archiving | `xcodebuild archive` with `CODE_SIGNING_ALLOWED=NO` | Signing with real certificates |
+| TestFlight and beta crash-free rate | Simulator soak sessions with crash counts | Upload and beta groups |
+| App Store Connect, pricing, and submission | Everything in P10, in `docs/release/` | The record, pricing, and submission |
 
 ---
 
-## 9. Handoff Package (What GLM Leaves Behind at Every 🛑 STOP)
+## 9. Handoff Package (Kept Current at Every Gate)
 
 `docs/HANDOFF.md` must contain, in this order:
 1. **State summary** — phase, last passed gate, branch, commit SHA, and tag.
