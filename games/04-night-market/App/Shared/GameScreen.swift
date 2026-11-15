@@ -225,6 +225,20 @@ public struct GameScreen: View {
             }
         }
         .onDisappear { game.stop() }
+        #if os(macOS)
+        .onReceive(NotificationCenter.default.publisher(for: .nmTogglePause)) { _ in
+            game.setPaused(!game.paused)
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .nmSave)) { _ in
+            _ = game.save()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .nmNewNight)) { _ in
+            game.restart(seed: UInt64.random(in: 1...1_000_000))
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .nmToggleDebug)) { _ in
+            debug.isVisible.toggle()
+        }
+        #endif
     }
 
     private var hud: some View {

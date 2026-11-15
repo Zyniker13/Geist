@@ -43,6 +43,7 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: $(GEIST_BUNDLE_ID)
         SWIFT_EMIT_LOC_STRINGS: YES
+        CODE_SIGN_ENTITLEMENTS: App/NM.entitlements
     info:
       path: App/iOS/Info.plist
       properties:

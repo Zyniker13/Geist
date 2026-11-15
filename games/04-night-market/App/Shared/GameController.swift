@@ -7,6 +7,7 @@ import os
 import NMCore
 import NMContent
 import NMAudio
+import NMPlatform
 import NMRender
 
 @MainActor
@@ -300,6 +301,7 @@ public final class GameController: NSObject, ObservableObject, MarketSceneDelega
                     newAchievements: earned.achievements.map(\.title),
                     unlockedMapName: unlockedName
                 )
+                postNightLeaderboards(outcome: outcome, newAchievements: earned.achievements.map(\.id))
             default:
                 break
             }
@@ -324,6 +326,29 @@ public final class GameController: NSObject, ObservableObject, MarketSceneDelega
     }
 
     private var lastAutosaveTick = -1
+
+    /// The scores/achievements poster (NM-P7.1): real GameKit off UI tests,
+    /// the recording fake under them so runs stay deterministic.
+    private lazy var poster: ScoresPosting = {
+        let underUITest = ProcessInfo.processInfo.arguments.contains { $0.hasPrefix("-uitest") }
+        return underUITest ? MockPoster() : GameCenterPoster()
+    }()
+
+    private func postNightLeaderboards(outcome: ProfileStore.NightOutcome, newAchievements: [String]) {
+        let challenge: NightOutcomeSummary.Challenge?
+        if outcome.challenge {
+            challenge = currentSetup.mode == .daily ? .daily : .weekly
+        } else {
+            challenge = nil
+        }
+        let summary = NightOutcomeSummary(
+            mapId: outcome.mapId, finalScore: outcome.finalScore,
+            challenge: challenge, modifierId: outcome.modifier?.rawValue
+        )
+        let plan = LeaderboardPlan.posts(for: summary, newAchievements: newAchievements)
+        for score in plan.scores { poster.post(score) }
+        for id in plan.achievements { poster.reportAchievement(id: id, percentComplete: 100) }
+    }
 
     private func publishHud() {
         budgetUsed = state.usedBudget

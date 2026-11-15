@@ -1,9 +1,10 @@
 /// NMPlatformTests — tests for platform types.
 import Testing
+import Testing
 @testable import NMPlatform
 
 @Suite("Platform Tests")
-struct PlatformTests {
+struct NightPlatformTests {
     @Test("input event is creatable")
     func inputCreation() {
         let event = InputEvent.tap(col: 5, row: 10)
@@ -12,7 +13,7 @@ struct PlatformTests {
             #expect(col == 5)
             #expect(row == 10)
         default:
-            #expect(Bool.false)
+            Issue.record("unreachable")
         }
     }
 }

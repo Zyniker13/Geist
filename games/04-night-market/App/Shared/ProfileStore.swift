@@ -4,6 +4,7 @@
 /// AchievementCatalog) and is tested there.
 import Foundation
 import NMCore
+import NMPlatform
 
 @MainActor
 public final class ProfileStore: ObservableObject {
@@ -25,13 +26,31 @@ public final class ProfileStore: ObservableObject {
         } else {
             profile = Profile()
         }
+        // Restore from iCloud when the local file is missing (NM-P7.2);
+        // without the entitlement this is a no-op.
+        if !hasLocalProfile, let cloudData = ICloudSync().load(),
+            let decoded = try? JSONDecoder().decode(Profile.self, from: cloudData),
+            decoded.nightsPlayed > profile.nightsPlayed {
+            profile = decoded
+        }
+        cloudSync = ICloudSync()
+    }
+
+    private var hasLocalProfile: Bool {
+        FileManager.default.fileExists(atPath: Self.fileURL.path)
     }
 
     private func persist() {
         if let data = try? JSONEncoder().encode(profile) {
             try? data.write(to: Self.fileURL, options: .atomic)
+            // Write-through to iCloud when the app wired a backend (NM-P7.2);
+            // the profile is tiny, well under the KVS limit.
+            cloudSync?.save(data)
         }
     }
+
+    /// The iCloud write-through backend, wired by the app entry points.
+    public var cloudSync: ProfileSyncing?
 
     /// The outcome of one finished night, applied to the profile.
     public struct NightOutcome: Sendable {

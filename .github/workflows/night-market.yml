@@ -50,6 +50,9 @@ jobs:
       - name: Swift test (Audio)
         working-directory: games/04-night-market
         run: swift test --package-path Packages/NMAudio
+      - name: Swift test (Platform)
+        working-directory: games/04-night-market
+        run: swift test --package-path Packages/NMPlatform
 
   build-ios:
     runs-on: macos-latest
