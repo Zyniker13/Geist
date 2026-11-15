@@ -62,6 +62,8 @@ Universal purchase: iOS and macOS apps share **one bundle identifier** `com.zyni
 
 ## 3. Repository Layout (Every Game)
 
+> **This repository:** all twenty-five games share one repository, so `<slug>/` below is the game's folder, `games/NN-<slug>/`. "Repository Adaptations" in the root `ROADMAP.md` maps the CI file, branches, tags, and merging, and "Program Loop" there says how a stop applies to one game at a time.
+
 ```
 <slug>/
 ├── project.yml                  # XcodeGen spec (iOS app, macOS app, UI test targets)
@@ -160,6 +162,8 @@ Coverage is generated with `xcrun xccov` / `swift test --enable-code-coverage` a
 ---
 
 ## 6. CI Expectations
+
+> **This repository:** the workflow is `.github/workflows/<slug>.yml` at the repository root, branches are `<slug>/phase/Pn-short-name`, tags are `<slug>/gate-Gn-pass`, and the build agent merges with a normal push after local checks and branch CI pass; see "Repository Adaptations" in the root `ROADMAP.md`.
 
 `.github/workflows/ci.yml` runs on every push and pull request:
 1. `make bootstrap` (install XcodeGen, SwiftLint, and swift-format via Homebrew, cached).
