@@ -18,6 +18,8 @@ public struct GameState: Codable, Sendable, Equatable, Hashable {
     public var isPaused: Bool
     /// Scheduled rain showers for the night (R-17).
     public var rainSchedule: [RainShower]
+    /// Placeable-fixture tokens granted by upgrades, consumed on placement (ADR-0010).
+    public var fixtureStock: FixtureStock = FixtureStock()
     /// Upgrade offers waiting at an hour boundary (R-5); non-empty implies paused-for-choice.
     public var pendingOffers: [UpgradeOffer]
     /// Bumped whenever geometry changes (walkways, fixtures, stall/gate opens, rain).
@@ -44,6 +46,7 @@ public struct GameState: Codable, Sendable, Equatable, Hashable {
         speedMultiplier: Int,
         isPaused: Bool,
         rainSchedule: [RainShower] = [],
+        fixtureStock: FixtureStock = FixtureStock(),
         pendingOffers: [UpgradeOffer] = [],
         fieldVersion: Int = 0,
         pathFields: PathFields = PathFields()
@@ -65,6 +68,7 @@ public struct GameState: Codable, Sendable, Equatable, Hashable {
         self.speedMultiplier = speedMultiplier
         self.isPaused = isPaused
         self.rainSchedule = rainSchedule
+        self.fixtureStock = fixtureStock
         self.pendingOffers = pendingOffers
         self.fieldVersion = fieldVersion
         self.pathFields = pathFields

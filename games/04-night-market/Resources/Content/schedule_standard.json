@@ -1,0 +1,6 @@
+{
+  "id": "schedule_standard",
+  "startHour": 18,
+  "hours": 12,
+  "spawnsPerHour": [6, 9, 12, 16, 20, 24, 28, 32, 36, 40, 44, 48]
+}

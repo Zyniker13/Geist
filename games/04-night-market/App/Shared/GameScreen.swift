@@ -357,11 +357,13 @@ public struct UpgradePicker: View {
     private func offerName(_ offer: UpgradeOffer) -> String {
         switch offer.kind {
         case .extraWalkwayBudget(let n): return "+\(n) walkway budget"
-        case .extraLantern: return "Extra lantern"
+        case .extraLanterns(let n): return "+\(n) lanterns"
         case .extraAwning: return "Extra awning"
         case .extraBusker: return "Extra busker"
-        case .extraSeats(let n): return "Seating block (\(n) seats)"
+        case .extraBridge: return "Bridge"
+        case .extraSeating: return "Seating block (3 seats)"
         case .fasterService(let percent): return "Faster cooks (−\(percent)% service time)"
+        case .extraQueue(let n): return "+\(n) queue at the busiest stall"
         }
     }
 }

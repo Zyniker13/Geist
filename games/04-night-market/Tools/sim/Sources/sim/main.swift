@@ -302,7 +302,124 @@ func hasFlag(_ flag: String) -> Bool {
 
 var exitCode = 0
 
-if let sweep = argumentValue("--invariant-sweep") {
+if let mapDir = argumentValue("--emit-maps") {
+    // P3 content authoring: write map JSON (base64-rle tiles) for the
+    // three G3 maps. Taipei mirrors the built-in GameState.initial layout
+    // so the round-trip test can prove byte-identical states.
+    func tileBytes(_ tiles: [TileType]) -> [UInt8] {
+        func byte(_ t: TileType) -> UInt8 {
+            switch t {
+            case .ground: return 0
+            case .plaza: return 1
+            case .water(.canal): return 2
+            case .building: return 3
+            }
+        }
+        var rle: [UInt8] = []
+        var runValue = byte(tiles[0])
+        var runCount: UInt8 = 0
+        for t in tiles {
+            let v = byte(t)
+            if v == runValue, runCount < 255 {
+                runCount += 1
+            } else {
+                rle.append(runCount)
+                rle.append(runValue)
+                runValue = v
+                runCount = 1
+            }
+        }
+        rle.append(runCount)
+        rle.append(runValue)
+        return rle
+    }
+    struct MapSpec {
+        let name: String
+        let width: Int
+        let height: Int
+        let tileFn: (Int, Int) -> TileType
+        let gates: [[Int]]
+        let gateOpenTicks: [Int]
+        let stallZone: [Int]
+        let stallStride: Int
+        let lanternSpots: [[Int]]
+        let palette: String
+    }
+
+    func emit(_ spec: MapSpec) throws {
+        let name = spec.name
+        let width = spec.width
+        let height = spec.height
+        let tileFn = spec.tileFn
+        var tiles: [TileType] = []
+        for row in 0..<height {
+            for col in 0..<width { tiles.append(tileFn(col, row)) }
+        }
+        let zones: [String: [[Int]]] = [
+            "noodles": [spec.stallZone], "tea": [spec.stallZone], "skewers": [spec.stallZone],
+            "dumplings": [spec.stallZone], "sweets": [spec.stallZone], "seafood": [spec.stallZone],
+        ]
+        let json: [String: Any] = [
+            "id": name.lowercased(), "name": name,
+            "size": [width, height],
+            "tiles": Data(tileBytes(tiles)).base64EncodedString(),
+            "gates": spec.gates, "gateOpenTicks": spec.gateOpenTicks,
+            "zones": zones, "stallStride": spec.stallStride,
+            "lanternSpots": spec.lanternSpots,
+            "schedule": "schedule_standard", "palette": spec.palette,
+        ]
+        let data = try JSONSerialization.data(
+            withJSONObject: json, options: [.prettyPrinted, .sortedKeys])
+        try data.write(
+            to: URL(fileURLWithPath: mapDir).appendingPathComponent("\(name.lowercased()).json"))
+        print("EMIT \(name.lowercased()).json tiles=\(tiles.count)")
+    }
+
+    do {
+        // Taipei: byte-identical to the built-in GameState.initial layout
+        // (canals painted AFTER the plaza so they cut through it — ADR-0008).
+        try emit(
+            MapSpec(
+                name: "Taipei", width: 32, height: 20,
+                tileFn: { col, row in
+                    if row == 7 || row == 12, col >= 14, col < 17 { return .water(.canal) }
+                    if row >= 8, row < 13, col >= 12, col < 20 { return .plaza }
+                    return .ground
+                },
+                gates: [[0, 9], [0, 10]], gateOpenTicks: [0, 5400],
+                stallZone: [13, 9, 5, 3], stallStride: 2,
+                lanternSpots: [[14, 10], [17, 10]], palette: "neon_warm"))
+        // Bangkok: a four-wide river down the middle; plazas on both banks;
+        // three gates; stalls along the banks (bridge crossing required).
+        try emit(
+            MapSpec(
+                name: "Bangkok", width: 32, height: 20,
+                tileFn: { col, row in
+                    if col >= 14, col <= 17 { return .water(.canal) }
+                    if row >= 8, row < 12, col >= 8, col < 13 { return .plaza }
+                    if row >= 8, row < 12, col >= 19, col < 24 { return .plaza }
+                    return .ground
+                },
+                gates: [[0, 9], [31, 10], [15, 0]], gateOpenTicks: [0, 3600, 7200],
+                stallZone: [8, 8, 16, 4], stallStride: 1,
+                lanternSpots: [[10, 9], [21, 9]], palette: "river_gold"))
+        // Marrakesh: building blocks leave one-wide alleys between them.
+        try emit(
+            MapSpec(
+                name: "Marrakesh", width: 32, height: 20,
+                tileFn: { col, row in
+                    if row >= 4, row < 16, col % 5 == 4, row % 4 != 3 { return .building }
+                    if col >= 12, col < 20, row >= 7, row < 13 { return .plaza }
+                    return .ground
+                },
+                gates: [[0, 9], [0, 10]], gateOpenTicks: [0, 4500],
+                stallZone: [12, 7, 8, 6], stallStride: 1,
+                lanternSpots: [[13, 9], [18, 9]], palette: "earth_lantern"))
+    } catch {
+        print("EMIT FAILED: \(error)")
+        exitCode = 1
+    }
+} else if let sweep = argumentValue("--invariant-sweep") {
     // INV-1…INV-5 over N seeded nights.
     let nights = Int(sweep) ?? 500
     var servedTotal = 0

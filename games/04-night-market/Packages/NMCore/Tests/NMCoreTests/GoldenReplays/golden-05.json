@@ -131,38 +131,6 @@
     },
     {
       "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "seat" : {
-              "count" : 3
-            }
-          },
-          "_1" : {
-            "col" : 4,
-            "row" : 9
-          }
-        }
-      },
-      "tick" : 197
-    },
-    {
-      "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "seat" : {
-              "count" : 3
-            }
-          },
-          "_1" : {
-            "col" : 19,
-            "row" : 11
-          }
-        }
-      },
-      "tick" : 201
-    },
-    {
-      "action" : {
         "paintWalkway" : {
           "_0" : [
             {
@@ -185,7 +153,7 @@
     {
       "action" : {
         "moveFixture" : {
-          "_0" : 2,
+          "_0" : 0,
           "_1" : {
             "col" : 10,
             "row" : 9
@@ -229,22 +197,6 @@
     },
     {
       "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "busker" : {
-              "radius" : 2
-            }
-          },
-          "_1" : {
-            "col" : 14,
-            "row" : 11
-          }
-        }
-      },
-      "tick" : 354
-    },
-    {
-      "action" : {
         "paintWalkway" : {
           "_0" : [
             {
@@ -266,43 +218,11 @@
     },
     {
       "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "busker" : {
-              "radius" : 2
-            }
-          },
-          "_1" : {
-            "col" : 12,
-            "row" : 9
-          }
-        }
-      },
-      "tick" : 542
-    },
-    {
-      "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "bridge" : {
-              "length" : 3
-            }
-          },
-          "_1" : {
-            "col" : 13,
-            "row" : 12
-          }
-        }
-      },
-      "tick" : 635
-    },
-    {
-      "action" : {
         "moveFixture" : {
-          "_0" : 0,
+          "_0" : 1,
           "_1" : {
-            "col" : 18,
-            "row" : 10
+            "col" : 16,
+            "row" : 1
           }
         }
       },
@@ -310,27 +230,11 @@
     },
     {
       "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "awning" : {
-
-            }
-          },
-          "_1" : {
-            "col" : 14,
-            "row" : 8
-          }
-        }
-      },
-      "tick" : 718
-    },
-    {
-      "action" : {
         "moveFixture" : {
           "_0" : 1,
           "_1" : {
-            "col" : 7,
-            "row" : 9
+            "col" : 14,
+            "row" : 8
           }
         }
       },
@@ -338,43 +242,11 @@
     },
     {
       "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "busker" : {
-              "radius" : 2
-            }
-          },
-          "_1" : {
-            "col" : 3,
-            "row" : 9
-          }
-        }
-      },
-      "tick" : 810
-    },
-    {
-      "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "seat" : {
-              "count" : 3
-            }
-          },
-          "_1" : {
-            "col" : 4,
-            "row" : 9
-          }
-        }
-      },
-      "tick" : 853
-    },
-    {
-      "action" : {
         "moveFixture" : {
-          "_0" : 5,
+          "_0" : 1,
           "_1" : {
-            "col" : 18,
-            "row" : 11
+            "col" : 16,
+            "row" : 1
           }
         }
       },
@@ -382,27 +254,11 @@
     },
     {
       "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "seat" : {
-              "count" : 3
-            }
-          },
-          "_1" : {
-            "col" : 21,
-            "row" : 6
-          }
-        }
-      },
-      "tick" : 929
-    },
-    {
-      "action" : {
         "moveFixture" : {
-          "_0" : 5,
+          "_0" : 0,
           "_1" : {
-            "col" : 19,
-            "row" : 10
+            "col" : 9,
+            "row" : 9
           }
         }
       },
@@ -410,104 +266,8 @@
     },
     {
       "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "busker" : {
-              "radius" : 2
-            }
-          },
-          "_1" : {
-            "col" : 14,
-            "row" : 9
-          }
-        }
-      },
-      "tick" : 1033
-    },
-    {
-      "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "awning" : {
-
-            }
-          },
-          "_1" : {
-            "col" : 1,
-            "row" : 16
-          }
-        }
-      },
-      "tick" : 1155
-    },
-    {
-      "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "busker" : {
-              "radius" : 2
-            }
-          },
-          "_1" : {
-            "col" : 12,
-            "row" : 9
-          }
-        }
-      },
-      "tick" : 1428
-    },
-    {
-      "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "awning" : {
-
-            }
-          },
-          "_1" : {
-            "col" : 13,
-            "row" : 8
-          }
-        }
-      },
-      "tick" : 1564
-    },
-    {
-      "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "seat" : {
-              "count" : 3
-            }
-          },
-          "_1" : {
-            "col" : 13,
-            "row" : 8
-          }
-        }
-      },
-      "tick" : 1568
-    },
-    {
-      "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "busker" : {
-              "radius" : 2
-            }
-          },
-          "_1" : {
-            "col" : 19,
-            "row" : 10
-          }
-        }
-      },
-      "tick" : 1674
-    },
-    {
-      "action" : {
         "chooseUpgrade" : {
-          "_0" : "awning"
+          "_0" : "busker"
         }
       },
       "tick" : 1800
@@ -517,8 +277,8 @@
         "moveFixture" : {
           "_0" : 1,
           "_1" : {
-            "col" : 21,
-            "row" : 6
+            "col" : 18,
+            "row" : 12
           }
         }
       },
@@ -533,8 +293,8 @@
             }
           },
           "_1" : {
-            "col" : 30,
-            "row" : 4
+            "col" : 16,
+            "row" : 11
           }
         }
       },
@@ -543,9 +303,9 @@
     {
       "action" : {
         "moveFixture" : {
-          "_0" : 9,
+          "_0" : 0,
           "_1" : {
-            "col" : 18,
+            "col" : 19,
             "row" : 8
           }
         }
@@ -554,27 +314,11 @@
     },
     {
       "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "busker" : {
-              "radius" : 2
-            }
-          },
-          "_1" : {
-            "col" : 13,
-            "row" : 11
-          }
-        }
-      },
-      "tick" : 2130
-    },
-    {
-      "action" : {
         "moveFixture" : {
-          "_0" : 16,
+          "_0" : 0,
           "_1" : {
-            "col" : 13,
-            "row" : 11
+            "col" : 14,
+            "row" : 8
           }
         }
       },
@@ -582,59 +326,11 @@
     },
     {
       "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "awning" : {
-
-            }
-          },
-          "_1" : {
-            "col" : 12,
-            "row" : 10
-          }
-        }
-      },
-      "tick" : 2322
-    },
-    {
-      "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "seat" : {
-              "count" : 3
-            }
-          },
-          "_1" : {
-            "col" : 13,
-            "row" : 12
-          }
-        }
-      },
-      "tick" : 2386
-    },
-    {
-      "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "awning" : {
-
-            }
-          },
-          "_1" : {
-            "col" : 19,
-            "row" : 10
-          }
-        }
-      },
-      "tick" : 2411
-    },
-    {
-      "action" : {
         "moveFixture" : {
-          "_0" : 16,
+          "_0" : 1,
           "_1" : {
-            "col" : 12,
-            "row" : 11
+            "col" : 26,
+            "row" : 7
           }
         }
       },
@@ -642,59 +338,11 @@
     },
     {
       "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "busker" : {
-              "radius" : 2
-            }
-          },
-          "_1" : {
-            "col" : 7,
-            "row" : 9
-          }
-        }
-      },
-      "tick" : 2836
-    },
-    {
-      "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "busker" : {
-              "radius" : 2
-            }
-          },
-          "_1" : {
-            "col" : 15,
-            "row" : 12
-          }
-        }
-      },
-      "tick" : 2900
-    },
-    {
-      "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "awning" : {
-
-            }
-          },
-          "_1" : {
-            "col" : 8,
-            "row" : 9
-          }
-        }
-      },
-      "tick" : 2959
-    },
-    {
-      "action" : {
         "moveFixture" : {
-          "_0" : 4,
+          "_0" : 1,
           "_1" : {
-            "col" : 17,
-            "row" : 9
+            "col" : 26,
+            "row" : 7
           }
         }
       },
@@ -703,14 +351,38 @@
     {
       "action" : {
         "moveFixture" : {
-          "_0" : 4,
+          "_0" : 2,
           "_1" : {
-            "col" : 17,
-            "row" : 8
+            "col" : 12,
+            "row" : 9
           }
         }
       },
       "tick" : 3065
+    },
+    {
+      "action" : {
+        "moveFixture" : {
+          "_0" : 0,
+          "_1" : {
+            "col" : 15,
+            "row" : 8
+          }
+        }
+      },
+      "tick" : 3111
+    },
+    {
+      "action" : {
+        "moveFixture" : {
+          "_0" : 1,
+          "_1" : {
+            "col" : 16,
+            "row" : 10
+          }
+        }
+      },
+      "tick" : 3213
     },
     {
       "action" : {
@@ -722,36 +394,12 @@
           }
         }
       },
-      "tick" : 3111
-    },
-    {
-      "action" : {
-        "moveFixture" : {
-          "_0" : 0,
-          "_1" : {
-            "col" : 17,
-            "row" : 11
-          }
-        }
-      },
-      "tick" : 3213
-    },
-    {
-      "action" : {
-        "moveFixture" : {
-          "_0" : 15,
-          "_1" : {
-            "col" : 18,
-            "row" : 12
-          }
-        }
-      },
       "tick" : 3457
     },
     {
       "action" : {
         "chooseUpgrade" : {
-          "_0" : "seats-3"
+          "_0" : "seating"
         }
       },
       "tick" : 3600
@@ -765,8 +413,8 @@
             }
           },
           "_1" : {
-            "col" : 21,
-            "row" : 6
+            "col" : 19,
+            "row" : 8
           }
         }
       },
@@ -774,43 +422,11 @@
     },
     {
       "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "seat" : {
-              "count" : 3
-            }
-          },
-          "_1" : {
-            "col" : 12,
-            "row" : 8
-          }
-        }
-      },
-      "tick" : 3840
-    },
-    {
-      "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "busker" : {
-              "radius" : 2
-            }
-          },
-          "_1" : {
-            "col" : 17,
-            "row" : 10
-          }
-        }
-      },
-      "tick" : 3894
-    },
-    {
-      "action" : {
         "moveFixture" : {
-          "_0" : 15,
+          "_0" : 3,
           "_1" : {
-            "col" : 12,
-            "row" : 8
+            "col" : 30,
+            "row" : 4
           }
         }
       },
@@ -819,9 +435,9 @@
     {
       "action" : {
         "moveFixture" : {
-          "_0" : 15,
+          "_0" : 3,
           "_1" : {
-            "col" : 5,
+            "col" : 14,
             "row" : 9
           }
         }
@@ -831,10 +447,10 @@
     {
       "action" : {
         "moveFixture" : {
-          "_0" : 21,
+          "_0" : 1,
           "_1" : {
-            "col" : 16,
-            "row" : 9
+            "col" : 19,
+            "row" : 12
           }
         }
       },
@@ -845,7 +461,7 @@
         "moveFixture" : {
           "_0" : 1,
           "_1" : {
-            "col" : 17,
+            "col" : 19,
             "row" : 12
           }
         }
@@ -854,26 +470,10 @@
     },
     {
       "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "bridge" : {
-              "length" : 3
-            }
-          },
+        "moveFixture" : {
+          "_0" : 3,
           "_1" : {
             "col" : 13,
-            "row" : 12
-          }
-        }
-      },
-      "tick" : 4530
-    },
-    {
-      "action" : {
-        "moveFixture" : {
-          "_0" : 15,
-          "_1" : {
-            "col" : 18,
             "row" : 9
           }
         }
@@ -882,58 +482,10 @@
     },
     {
       "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "busker" : {
-              "radius" : 2
-            }
-          },
+        "moveFixture" : {
+          "_0" : 3,
           "_1" : {
             "col" : 16,
-            "row" : 9
-          }
-        }
-      },
-      "tick" : 4634
-    },
-    {
-      "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "seat" : {
-              "count" : 3
-            }
-          },
-          "_1" : {
-            "col" : 13,
-            "row" : 9
-          }
-        }
-      },
-      "tick" : 4715
-    },
-    {
-      "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "seat" : {
-              "count" : 3
-            }
-          },
-          "_1" : {
-            "col" : 19,
-            "row" : 10
-          }
-        }
-      },
-      "tick" : 4840
-    },
-    {
-      "action" : {
-        "moveFixture" : {
-          "_0" : 7,
-          "_1" : {
-            "col" : 18,
             "row" : 9
           }
         }
@@ -943,10 +495,10 @@
     {
       "action" : {
         "moveFixture" : {
-          "_0" : 17,
+          "_0" : 1,
           "_1" : {
-            "col" : 17,
-            "row" : 11
+            "col" : 21,
+            "row" : 6
           }
         }
       },
@@ -955,9 +507,9 @@
     {
       "action" : {
         "moveFixture" : {
-          "_0" : 21,
+          "_0" : 1,
           "_1" : {
-            "col" : 12,
+            "col" : 19,
             "row" : 10
           }
         }
@@ -967,10 +519,10 @@
     {
       "action" : {
         "moveFixture" : {
-          "_0" : 8,
+          "_0" : 0,
           "_1" : {
-            "col" : 13,
-            "row" : 9
+            "col" : 21,
+            "row" : 6
           }
         }
       },
@@ -978,59 +530,11 @@
     },
     {
       "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "busker" : {
-              "radius" : 2
-            }
-          },
-          "_1" : {
-            "col" : 13,
-            "row" : 10
-          }
-        }
-      },
-      "tick" : 5074
-    },
-    {
-      "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "awning" : {
-
-            }
-          },
-          "_1" : {
-            "col" : 18,
-            "row" : 9
-          }
-        }
-      },
-      "tick" : 5075
-    },
-    {
-      "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "awning" : {
-
-            }
-          },
-          "_1" : {
-            "col" : 19,
-            "row" : 10
-          }
-        }
-      },
-      "tick" : 5133
-    },
-    {
-      "action" : {
         "moveFixture" : {
-          "_0" : 18,
+          "_0" : 3,
           "_1" : {
-            "col" : 19,
-            "row" : 8
+            "col" : 15,
+            "row" : 11
           }
         }
       },
@@ -1039,10 +543,10 @@
     {
       "action" : {
         "moveFixture" : {
-          "_0" : 24,
+          "_0" : 2,
           "_1" : {
-            "col" : 19,
-            "row" : 12
+            "col" : 9,
+            "row" : 7
           }
         }
       },
@@ -1051,34 +555,18 @@
     {
       "action" : {
         "chooseUpgrade" : {
-          "_0" : "awning"
+          "_0" : "busker"
         }
       },
       "tick" : 5400
     },
     {
       "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "awning" : {
-
-            }
-          },
-          "_1" : {
-            "col" : 7,
-            "row" : 9
-          }
-        }
-      },
-      "tick" : 5414
-    },
-    {
-      "action" : {
         "moveFixture" : {
-          "_0" : 30,
+          "_0" : 2,
           "_1" : {
-            "col" : 13,
-            "row" : 12
+            "col" : 16,
+            "row" : 1
           }
         }
       },
@@ -1086,27 +574,11 @@
     },
     {
       "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "awning" : {
-
-            }
-          },
-          "_1" : {
-            "col" : 12,
-            "row" : 10
-          }
-        }
-      },
-      "tick" : 5522
-    },
-    {
-      "action" : {
         "moveFixture" : {
-          "_0" : 2,
+          "_0" : 3,
           "_1" : {
-            "col" : 19,
-            "row" : 11
+            "col" : 7,
+            "row" : 13
           }
         }
       },
@@ -1121,8 +593,8 @@
             }
           },
           "_1" : {
-            "col" : 7,
-            "row" : 9
+            "col" : 30,
+            "row" : 15
           }
         }
       },
@@ -1131,9 +603,9 @@
     {
       "action" : {
         "moveFixture" : {
-          "_0" : 11,
+          "_0" : 3,
           "_1" : {
-            "col" : 8,
+            "col" : 9,
             "row" : 9
           }
         }
@@ -1142,43 +614,11 @@
     },
     {
       "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "seat" : {
-              "count" : 3
-            }
-          },
-          "_1" : {
-            "col" : 30,
-            "row" : 4
-          }
-        }
-      },
-      "tick" : 5952
-    },
-    {
-      "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "awning" : {
-
-            }
-          },
-          "_1" : {
-            "col" : 18,
-            "row" : 10
-          }
-        }
-      },
-      "tick" : 6018
-    },
-    {
-      "action" : {
         "moveFixture" : {
-          "_0" : 31,
+          "_0" : 1,
           "_1" : {
-            "col" : 12,
-            "row" : 10
+            "col" : 19,
+            "row" : 9
           }
         }
       },
@@ -1186,43 +626,11 @@
     },
     {
       "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "awning" : {
-
-            }
-          },
-          "_1" : {
-            "col" : 8,
-            "row" : 9
-          }
-        }
-      },
-      "tick" : 6067
-    },
-    {
-      "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "awning" : {
-
-            }
-          },
-          "_1" : {
-            "col" : 1,
-            "row" : 9
-          }
-        }
-      },
-      "tick" : 6196
-    },
-    {
-      "action" : {
         "moveFixture" : {
-          "_0" : 26,
+          "_0" : 1,
           "_1" : {
-            "col" : 6,
-            "row" : 9
+            "col" : 7,
+            "row" : 3
           }
         }
       },
@@ -1230,27 +638,11 @@
     },
     {
       "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "seat" : {
-              "count" : 3
-            }
-          },
+        "moveFixture" : {
+          "_0" : 1,
           "_1" : {
             "col" : 15,
-            "row" : 9
-          }
-        }
-      },
-      "tick" : 6304
-    },
-    {
-      "action" : {
-        "moveFixture" : {
-          "_0" : 8,
-          "_1" : {
-            "col" : 9,
-            "row" : 17
+            "row" : 11
           }
         }
       },
@@ -1258,27 +650,11 @@
     },
     {
       "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "busker" : {
-              "radius" : 2
-            }
-          },
-          "_1" : {
-            "col" : 16,
-            "row" : 12
-          }
-        }
-      },
-      "tick" : 6432
-    },
-    {
-      "action" : {
         "moveFixture" : {
-          "_0" : 40,
+          "_0" : 4,
           "_1" : {
-            "col" : 16,
-            "row" : 10
+            "col" : 9,
+            "row" : 17
           }
         }
       },
@@ -1286,27 +662,11 @@
     },
     {
       "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "awning" : {
-
-            }
-          },
-          "_1" : {
-            "col" : 19,
-            "row" : 12
-          }
-        }
-      },
-      "tick" : 6508
-    },
-    {
-      "action" : {
         "moveFixture" : {
-          "_0" : 17,
+          "_0" : 2,
           "_1" : {
-            "col" : 12,
-            "row" : 9
+            "col" : 26,
+            "row" : 7
           }
         }
       },
@@ -1314,26 +674,10 @@
     },
     {
       "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "seat" : {
-              "count" : 3
-            }
-          },
-          "_1" : {
-            "col" : 12,
-            "row" : 9
-          }
-        }
-      },
-      "tick" : 6579
-    },
-    {
-      "action" : {
         "moveFixture" : {
-          "_0" : 44,
+          "_0" : 2,
           "_1" : {
-            "col" : 18,
+            "col" : 15,
             "row" : 8
           }
         }
@@ -1342,27 +686,11 @@
     },
     {
       "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "awning" : {
-
-            }
-          },
-          "_1" : {
-            "col" : 17,
-            "row" : 9
-          }
-        }
-      },
-      "tick" : 6702
-    },
-    {
-      "action" : {
         "moveFixture" : {
-          "_0" : 27,
+          "_0" : 1,
           "_1" : {
             "col" : 13,
-            "row" : 10
+            "row" : 8
           }
         }
       },
@@ -1371,10 +699,10 @@
     {
       "action" : {
         "moveFixture" : {
-          "_0" : 31,
+          "_0" : 2,
           "_1" : {
-            "col" : 0,
-            "row" : 9
+            "col" : 2,
+            "row" : 11
           }
         }
       },
@@ -1383,10 +711,10 @@
     {
       "action" : {
         "moveFixture" : {
-          "_0" : 21,
+          "_0" : 2,
           "_1" : {
-            "col" : 13,
-            "row" : 12
+            "col" : 7,
+            "row" : 3
           }
         }
       },
@@ -1394,114 +722,18 @@
     },
     {
       "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "awning" : {
-
-            }
-          },
-          "_1" : {
-            "col" : 30,
-            "row" : 15
-          }
-        }
-      },
-      "tick" : 7034
-    },
-    {
-      "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "awning" : {
-
-            }
-          },
-          "_1" : {
-            "col" : 17,
-            "row" : 10
-          }
-        }
-      },
-      "tick" : 7133
-    },
-    {
-      "action" : {
         "chooseUpgrade" : {
-          "_0" : "busker"
+          "_0" : "bridge"
         }
       },
       "tick" : 7200
     },
     {
       "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "seat" : {
-              "count" : 3
-            }
-          },
-          "_1" : {
-            "col" : 13,
-            "row" : 9
-          }
-        }
-      },
-      "tick" : 7333
-    },
-    {
-      "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "awning" : {
-
-            }
-          },
-          "_1" : {
-            "col" : 16,
-            "row" : 11
-          }
-        }
-      },
-      "tick" : 7477
-    },
-    {
-      "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "awning" : {
-
-            }
-          },
-          "_1" : {
-            "col" : 19,
-            "row" : 12
-          }
-        }
-      },
-      "tick" : 7538
-    },
-    {
-      "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "awning" : {
-
-            }
-          },
-          "_1" : {
-            "col" : 12,
-            "row" : 9
-          }
-        }
-      },
-      "tick" : 7541
-    },
-    {
-      "action" : {
         "moveFixture" : {
-          "_0" : 23,
+          "_0" : 1,
           "_1" : {
-            "col" : 19,
+            "col" : 8,
             "row" : 9
           }
         }
@@ -1510,27 +742,11 @@
     },
     {
       "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "seat" : {
-              "count" : 3
-            }
-          },
-          "_1" : {
-            "col" : 7,
-            "row" : 9
-          }
-        }
-      },
-      "tick" : 7696
-    },
-    {
-      "action" : {
         "moveFixture" : {
-          "_0" : 31,
+          "_0" : 2,
           "_1" : {
-            "col" : 4,
-            "row" : 9
+            "col" : 13,
+            "row" : 11
           }
         }
       },
@@ -1538,75 +754,11 @@
     },
     {
       "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "seat" : {
-              "count" : 3
-            }
-          },
-          "_1" : {
-            "col" : 14,
-            "row" : 11
-          }
-        }
-      },
-      "tick" : 7781
-    },
-    {
-      "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "seat" : {
-              "count" : 3
-            }
-          },
-          "_1" : {
-            "col" : 2,
-            "row" : 9
-          }
-        }
-      },
-      "tick" : 7785
-    },
-    {
-      "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "awning" : {
-
-            }
-          },
-          "_1" : {
-            "col" : 12,
-            "row" : 8
-          }
-        }
-      },
-      "tick" : 7807
-    },
-    {
-      "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "busker" : {
-              "radius" : 2
-            }
-          },
-          "_1" : {
-            "col" : 12,
-            "row" : 11
-          }
-        }
-      },
-      "tick" : 7876
-    },
-    {
-      "action" : {
         "moveFixture" : {
-          "_0" : 54,
+          "_0" : 1,
           "_1" : {
-            "col" : 15,
-            "row" : 9
+            "col" : 17,
+            "row" : 10
           }
         }
       },
@@ -1614,27 +766,11 @@
     },
     {
       "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "awning" : {
-
-            }
-          },
-          "_1" : {
-            "col" : 19,
-            "row" : 11
-          }
-        }
-      },
-      "tick" : 7908
-    },
-    {
-      "action" : {
         "moveFixture" : {
           "_0" : 2,
           "_1" : {
-            "col" : 30,
-            "row" : 1
+            "col" : 18,
+            "row" : 12
           }
         }
       },
@@ -1642,26 +778,10 @@
     },
     {
       "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "busker" : {
-              "radius" : 2
-            }
-          },
-          "_1" : {
-            "col" : 12,
-            "row" : 8
-          }
-        }
-      },
-      "tick" : 7963
-    },
-    {
-      "action" : {
         "moveFixture" : {
-          "_0" : 23,
+          "_0" : 3,
           "_1" : {
-            "col" : 4,
+            "col" : 19,
             "row" : 9
           }
         }
@@ -1670,27 +790,11 @@
     },
     {
       "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "busker" : {
-              "radius" : 2
-            }
-          },
-          "_1" : {
-            "col" : 14,
-            "row" : 10
-          }
-        }
-      },
-      "tick" : 8019
-    },
-    {
-      "action" : {
         "moveFixture" : {
-          "_0" : 0,
+          "_0" : 4,
           "_1" : {
-            "col" : 18,
-            "row" : 12
+            "col" : 30,
+            "row" : 15
           }
         }
       },
@@ -1698,27 +802,11 @@
     },
     {
       "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "seat" : {
-              "count" : 3
-            }
-          },
-          "_1" : {
-            "col" : 9,
-            "row" : 9
-          }
-        }
-      },
-      "tick" : 8199
-    },
-    {
-      "action" : {
         "moveFixture" : {
-          "_0" : 10,
+          "_0" : 1,
           "_1" : {
-            "col" : 6,
-            "row" : 9
+            "col" : 13,
+            "row" : 11
           }
         }
       },
@@ -1726,27 +814,11 @@
     },
     {
       "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "seat" : {
-              "count" : 3
-            }
-          },
-          "_1" : {
-            "col" : 15,
-            "row" : 8
-          }
-        }
-      },
-      "tick" : 8411
-    },
-    {
-      "action" : {
         "moveFixture" : {
-          "_0" : 13,
+          "_0" : 3,
           "_1" : {
-            "col" : 19,
-            "row" : 8
+            "col" : 4,
+            "row" : 9
           }
         }
       },
@@ -1755,10 +827,10 @@
     {
       "action" : {
         "moveFixture" : {
-          "_0" : 57,
+          "_0" : 2,
           "_1" : {
-            "col" : 9,
-            "row" : 7
+            "col" : 14,
+            "row" : 9
           }
         }
       },
@@ -1767,10 +839,10 @@
     {
       "action" : {
         "moveFixture" : {
-          "_0" : 37,
+          "_0" : 2,
           "_1" : {
             "col" : 14,
-            "row" : 8
+            "row" : 11
           }
         }
       },
@@ -1778,40 +850,8 @@
     },
     {
       "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "seat" : {
-              "count" : 3
-            }
-          },
-          "_1" : {
-            "col" : 16,
-            "row" : 12
-          }
-        }
-      },
-      "tick" : 8551
-    },
-    {
-      "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "awning" : {
-
-            }
-          },
-          "_1" : {
-            "col" : 2,
-            "row" : 11
-          }
-        }
-      },
-      "tick" : 8958
-    },
-    {
-      "action" : {
         "chooseUpgrade" : {
-          "_0" : "busker"
+          "_0" : "bridge"
         }
       },
       "tick" : 9000
@@ -1821,8 +861,8 @@
         "moveFixture" : {
           "_0" : 2,
           "_1" : {
-            "col" : 17,
-            "row" : 11
+            "col" : 1,
+            "row" : 9
           }
         }
       },
@@ -1830,59 +870,11 @@
     },
     {
       "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "seat" : {
-              "count" : 3
-            }
-          },
-          "_1" : {
-            "col" : 26,
-            "row" : 2
-          }
-        }
-      },
-      "tick" : 9128
-    },
-    {
-      "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "seat" : {
-              "count" : 3
-            }
-          },
-          "_1" : {
-            "col" : 30,
-            "row" : 4
-          }
-        }
-      },
-      "tick" : 9222
-    },
-    {
-      "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "seat" : {
-              "count" : 3
-            }
-          },
-          "_1" : {
-            "col" : 11,
-            "row" : 9
-          }
-        }
-      },
-      "tick" : 9376
-    },
-    {
-      "action" : {
         "moveFixture" : {
-          "_0" : 20,
+          "_0" : 2,
           "_1" : {
             "col" : 13,
-            "row" : 11
+            "row" : 8
           }
         }
       },
@@ -1900,22 +892,6 @@
         }
       },
       "tick" : 9473
-    },
-    {
-      "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "busker" : {
-              "radius" : 2
-            }
-          },
-          "_1" : {
-            "col" : 9,
-            "row" : 9
-          }
-        }
-      },
-      "tick" : 9511
     },
     {
       "action" : {
@@ -1958,22 +934,6 @@
     },
     {
       "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "seat" : {
-              "count" : 3
-            }
-          },
-          "_1" : {
-            "col" : 15,
-            "row" : 9
-          }
-        }
-      },
-      "tick" : 9845
-    },
-    {
-      "action" : {
         "eraseWalkway" : {
           "_0" : [
             {
@@ -1987,27 +947,11 @@
     },
     {
       "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "awning" : {
-
-            }
-          },
-          "_1" : {
-            "col" : 16,
-            "row" : 11
-          }
-        }
-      },
-      "tick" : 10074
-    },
-    {
-      "action" : {
         "moveFixture" : {
-          "_0" : 33,
+          "_0" : 4,
           "_1" : {
-            "col" : 19,
-            "row" : 12
+            "col" : 30,
+            "row" : 15
           }
         }
       },
@@ -2029,46 +973,14 @@
     {
       "action" : {
         "moveFixture" : {
-          "_0" : 49,
+          "_0" : 2,
           "_1" : {
-            "col" : 19,
-            "row" : 10
-          }
-        }
-      },
-      "tick" : 10296
-    },
-    {
-      "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "busker" : {
-              "radius" : 2
-            }
-          },
-          "_1" : {
-            "col" : 18,
-            "row" : 11
-          }
-        }
-      },
-      "tick" : 10365
-    },
-    {
-      "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "seat" : {
-              "count" : 3
-            }
-          },
-          "_1" : {
-            "col" : 18,
+            "col" : 16,
             "row" : 9
           }
         }
       },
-      "tick" : 10381
+      "tick" : 10296
     },
     {
       "action" : {
@@ -2098,38 +1010,6 @@
     },
     {
       "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "busker" : {
-              "radius" : 2
-            }
-          },
-          "_1" : {
-            "col" : 26,
-            "row" : 2
-          }
-        }
-      },
-      "tick" : 10499
-    },
-    {
-      "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "awning" : {
-
-            }
-          },
-          "_1" : {
-            "col" : 8,
-            "row" : 9
-          }
-        }
-      },
-      "tick" : 10502
-    },
-    {
-      "action" : {
         "eraseWalkway" : {
           "_0" : [
             {
@@ -2144,10 +1024,10 @@
     {
       "action" : {
         "moveFixture" : {
-          "_0" : 46,
+          "_0" : 1,
           "_1" : {
-            "col" : 15,
-            "row" : 10
+            "col" : 16,
+            "row" : 9
           }
         }
       },
@@ -2181,22 +1061,6 @@
     },
     {
       "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "awning" : {
-
-            }
-          },
-          "_1" : {
-            "col" : 21,
-            "row" : 6
-          }
-        }
-      },
-      "tick" : 10609
-    },
-    {
-      "action" : {
         "paintWalkway" : {
           "_0" : [
             {
@@ -2211,34 +1075,18 @@
     {
       "action" : {
         "chooseUpgrade" : {
-          "_0" : "busker"
+          "_0" : "bridge"
         }
       },
       "tick" : 10800
     },
     {
       "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "busker" : {
-              "radius" : 2
-            }
-          },
-          "_1" : {
-            "col" : 0,
-            "row" : 10
-          }
-        }
-      },
-      "tick" : 10809
-    },
-    {
-      "action" : {
         "moveFixture" : {
-          "_0" : 10,
+          "_0" : 2,
           "_1" : {
-            "col" : 14,
-            "row" : 10
+            "col" : 8,
+            "row" : 12
           }
         }
       },
@@ -2247,10 +1095,10 @@
     {
       "action" : {
         "moveFixture" : {
-          "_0" : 55,
+          "_0" : 1,
           "_1" : {
-            "col" : 7,
-            "row" : 9
+            "col" : 16,
+            "row" : 10
           }
         }
       },
@@ -2258,59 +1106,11 @@
     },
     {
       "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "seat" : {
-              "count" : 3
-            }
-          },
-          "_1" : {
-            "col" : 19,
-            "row" : 8
-          }
-        }
-      },
-      "tick" : 11027
-    },
-    {
-      "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "busker" : {
-              "radius" : 2
-            }
-          },
-          "_1" : {
-            "col" : 18,
-            "row" : 12
-          }
-        }
-      },
-      "tick" : 11255
-    },
-    {
-      "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "awning" : {
-
-            }
-          },
-          "_1" : {
-            "col" : 18,
-            "row" : 11
-          }
-        }
-      },
-      "tick" : 11258
-    },
-    {
-      "action" : {
         "moveFixture" : {
-          "_0" : 16,
+          "_0" : 1,
           "_1" : {
-            "col" : 15,
-            "row" : 12
+            "col" : 18,
+            "row" : 9
           }
         }
       },
@@ -2319,10 +1119,10 @@
     {
       "action" : {
         "moveFixture" : {
-          "_0" : 58,
+          "_0" : 3,
           "_1" : {
-            "col" : 0,
-            "row" : 9
+            "col" : 18,
+            "row" : 10
           }
         }
       },
@@ -2330,27 +1130,11 @@
     },
     {
       "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "awning" : {
-
-            }
-          },
-          "_1" : {
-            "col" : 15,
-            "row" : 9
-          }
-        }
-      },
-      "tick" : 11328
-    },
-    {
-      "action" : {
         "moveFixture" : {
-          "_0" : 51,
+          "_0" : 1,
           "_1" : {
-            "col" : 3,
-            "row" : 9
+            "col" : 18,
+            "row" : 11
           }
         }
       },
@@ -2359,10 +1143,10 @@
     {
       "action" : {
         "moveFixture" : {
-          "_0" : 24,
+          "_0" : 2,
           "_1" : {
-            "col" : 17,
-            "row" : 11
+            "col" : 21,
+            "row" : 6
           }
         }
       },
@@ -2384,9 +1168,9 @@
     {
       "action" : {
         "moveFixture" : {
-          "_0" : 61,
+          "_0" : 1,
           "_1" : {
-            "col" : 18,
+            "col" : 9,
             "row" : 9
           }
         }
@@ -2396,10 +1180,10 @@
     {
       "action" : {
         "moveFixture" : {
-          "_0" : 71,
+          "_0" : 2,
           "_1" : {
-            "col" : 13,
-            "row" : 8
+            "col" : 7,
+            "row" : 13
           }
         }
       },
@@ -2408,46 +1192,14 @@
     {
       "action" : {
         "moveFixture" : {
-          "_0" : 41,
+          "_0" : 2,
           "_1" : {
-            "col" : 30,
-            "row" : 4
+            "col" : 18,
+            "row" : 9
           }
         }
       },
       "tick" : 11680
-    },
-    {
-      "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "seat" : {
-              "count" : 3
-            }
-          },
-          "_1" : {
-            "col" : 9,
-            "row" : 9
-          }
-        }
-      },
-      "tick" : 11737
-    },
-    {
-      "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "busker" : {
-              "radius" : 2
-            }
-          },
-          "_1" : {
-            "col" : 11,
-            "row" : 9
-          }
-        }
-      },
-      "tick" : 11752
     },
     {
       "action" : {
@@ -2508,10 +1260,10 @@
     {
       "action" : {
         "moveFixture" : {
-          "_0" : 73,
+          "_0" : 0,
           "_1" : {
-            "col" : 12,
-            "row" : 11
+            "col" : 4,
+            "row" : 9
           }
         }
       },
@@ -2520,10 +1272,10 @@
     {
       "action" : {
         "moveFixture" : {
-          "_0" : 35,
+          "_0" : 4,
           "_1" : {
-            "col" : 12,
-            "row" : 9
+            "col" : 17,
+            "row" : 11
           }
         }
       },
@@ -2531,59 +1283,11 @@
     },
     {
       "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "seat" : {
-              "count" : 3
-            }
-          },
+        "moveFixture" : {
+          "_0" : 0,
           "_1" : {
             "col" : 16,
-            "row" : 10
-          }
-        }
-      },
-      "tick" : 12158
-    },
-    {
-      "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "seat" : {
-              "count" : 3
-            }
-          },
-          "_1" : {
-            "col" : 18,
-            "row" : 8
-          }
-        }
-      },
-      "tick" : 12174
-    },
-    {
-      "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "busker" : {
-              "radius" : 2
-            }
-          },
-          "_1" : {
-            "col" : 30,
-            "row" : 17
-          }
-        }
-      },
-      "tick" : 12208
-    },
-    {
-      "action" : {
-        "moveFixture" : {
-          "_0" : 21,
-          "_1" : {
-            "col" : 15,
-            "row" : 8
+            "row" : 11
           }
         }
       },
@@ -2591,27 +1295,11 @@
     },
     {
       "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "awning" : {
-
-            }
-          },
-          "_1" : {
-            "col" : 16,
-            "row" : 8
-          }
-        }
-      },
-      "tick" : 12331
-    },
-    {
-      "action" : {
         "moveFixture" : {
-          "_0" : 48,
+          "_0" : 3,
           "_1" : {
-            "col" : 7,
-            "row" : 9
+            "col" : 30,
+            "row" : 17
           }
         }
       },
@@ -2619,63 +1307,15 @@
     },
     {
       "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "busker" : {
-              "radius" : 2
-            }
-          },
-          "_1" : {
-            "col" : 15,
-            "row" : 8
-          }
-        }
-      },
-      "tick" : 12354
-    },
-    {
-      "action" : {
         "moveFixture" : {
-          "_0" : 53,
+          "_0" : 0,
           "_1" : {
-            "col" : 18,
-            "row" : 12
+            "col" : 30,
+            "row" : 17
           }
         }
       },
       "tick" : 12460
-    },
-    {
-      "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "seat" : {
-              "count" : 3
-            }
-          },
-          "_1" : {
-            "col" : 13,
-            "row" : 10
-          }
-        }
-      },
-      "tick" : 12563
-    },
-    {
-      "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "awning" : {
-
-            }
-          },
-          "_1" : {
-            "col" : 17,
-            "row" : 11
-          }
-        }
-      },
-      "tick" : 12568
     },
     {
       "action" : {
@@ -2693,7 +1333,7 @@
     {
       "action" : {
         "chooseUpgrade" : {
-          "_0" : "lantern"
+          "_0" : "awning"
         }
       },
       "tick" : 12600
@@ -2720,8 +1360,8 @@
             }
           },
           "_1" : {
-            "col" : 17,
-            "row" : 10
+            "col" : 10,
+            "row" : 9
           }
         }
       },
@@ -2755,38 +1395,6 @@
     },
     {
       "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "awning" : {
-
-            }
-          },
-          "_1" : {
-            "col" : 2,
-            "row" : 4
-          }
-        }
-      },
-      "tick" : 12829
-    },
-    {
-      "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "busker" : {
-              "radius" : 2
-            }
-          },
-          "_1" : {
-            "col" : 19,
-            "row" : 12
-          }
-        }
-      },
-      "tick" : 12887
-    },
-    {
-      "action" : {
         "eraseWalkway" : {
           "_0" : [
             {
@@ -2814,10 +1422,10 @@
     {
       "action" : {
         "moveFixture" : {
-          "_0" : 74,
+          "_0" : 2,
           "_1" : {
-            "col" : 19,
-            "row" : 8
+            "col" : 13,
+            "row" : 10
           }
         }
       },
@@ -2826,9 +1434,9 @@
     {
       "action" : {
         "moveFixture" : {
-          "_0" : 12,
+          "_0" : 0,
           "_1" : {
-            "col" : 16,
+            "col" : 17,
             "row" : 12
           }
         }
@@ -2838,10 +1446,10 @@
     {
       "action" : {
         "moveFixture" : {
-          "_0" : 58,
+          "_0" : 1,
           "_1" : {
-            "col" : 3,
-            "row" : 9
+            "col" : 30,
+            "row" : 15
           }
         }
       },
@@ -2849,27 +1457,11 @@
     },
     {
       "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "seat" : {
-              "count" : 3
-            }
-          },
-          "_1" : {
-            "col" : 27,
-            "row" : 6
-          }
-        }
-      },
-      "tick" : 13505
-    },
-    {
-      "action" : {
         "moveFixture" : {
-          "_0" : 58,
+          "_0" : 2,
           "_1" : {
-            "col" : 19,
-            "row" : 11
+            "col" : 16,
+            "row" : 9
           }
         }
       },
@@ -2877,27 +1469,11 @@
     },
     {
       "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "busker" : {
-              "radius" : 2
-            }
-          },
-          "_1" : {
-            "col" : 16,
-            "row" : 11
-          }
-        }
-      },
-      "tick" : 13663
-    },
-    {
-      "action" : {
         "moveFixture" : {
-          "_0" : 43,
+          "_0" : 4,
           "_1" : {
-            "col" : 1,
-            "row" : 9
+            "col" : 13,
+            "row" : 8
           }
         }
       },
@@ -2906,10 +1482,10 @@
     {
       "action" : {
         "moveFixture" : {
-          "_0" : 11,
+          "_0" : 5,
           "_1" : {
-            "col" : 13,
-            "row" : 10
+            "col" : 16,
+            "row" : 8
           }
         }
       },
@@ -2917,27 +1493,11 @@
     },
     {
       "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "busker" : {
-              "radius" : 2
-            }
-          },
-          "_1" : {
-            "col" : 2,
-            "row" : 4
-          }
-        }
-      },
-      "tick" : 13765
-    },
-    {
-      "action" : {
         "moveFixture" : {
-          "_0" : 47,
+          "_0" : 5,
           "_1" : {
-            "col" : 12,
-            "row" : 9
+            "col" : 30,
+            "row" : 15
           }
         }
       },
@@ -2958,27 +1518,11 @@
     },
     {
       "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "busker" : {
-              "radius" : 2
-            }
-          },
-          "_1" : {
-            "col" : 7,
-            "row" : 13
-          }
-        }
-      },
-      "tick" : 13901
-    },
-    {
-      "action" : {
         "moveFixture" : {
-          "_0" : 30,
+          "_0" : 0,
           "_1" : {
-            "col" : 4,
-            "row" : 9
+            "col" : 20,
+            "row" : 4
           }
         }
       },
@@ -3000,7 +1544,7 @@
     {
       "action" : {
         "chooseUpgrade" : {
-          "_0" : "service-10"
+          "_0" : "cooks-20"
         }
       },
       "tick" : 14400
@@ -3008,10 +1552,10 @@
     {
       "action" : {
         "moveFixture" : {
-          "_0" : 60,
+          "_0" : 4,
           "_1" : {
-            "col" : 17,
-            "row" : 10
+            "col" : 27,
+            "row" : 6
           }
         }
       },
@@ -3032,27 +1576,11 @@
     },
     {
       "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "busker" : {
-              "radius" : 2
-            }
-          },
+        "moveFixture" : {
+          "_0" : 1,
           "_1" : {
             "col" : 17,
-            "row" : 12
-          }
-        }
-      },
-      "tick" : 14712
-    },
-    {
-      "action" : {
-        "moveFixture" : {
-          "_0" : 61,
-          "_1" : {
-            "col" : 15,
-            "row" : 12
+            "row" : 10
           }
         }
       },
@@ -3073,19 +1601,15 @@
     },
     {
       "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "seat" : {
-              "count" : 3
-            }
-          },
+        "moveFixture" : {
+          "_0" : 1,
           "_1" : {
-            "col" : 13,
-            "row" : 10
+            "col" : 14,
+            "row" : 8
           }
         }
       },
-      "tick" : 14850
+      "tick" : 14876
     },
     {
       "action" : {
@@ -3102,43 +1626,11 @@
     },
     {
       "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "awning" : {
-
-            }
-          },
-          "_1" : {
-            "col" : 17,
-            "row" : 11
-          }
-        }
-      },
-      "tick" : 15113
-    },
-    {
-      "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "awning" : {
-
-            }
-          },
-          "_1" : {
-            "col" : 1,
-            "row" : 9
-          }
-        }
-      },
-      "tick" : 15167
-    },
-    {
-      "action" : {
         "moveFixture" : {
-          "_0" : 54,
+          "_0" : 2,
           "_1" : {
-            "col" : 15,
-            "row" : 8
+            "col" : 30,
+            "row" : 15
           }
         }
       },
@@ -3159,56 +1651,8 @@
     },
     {
       "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "busker" : {
-              "radius" : 2
-            }
-          },
-          "_1" : {
-            "col" : 15,
-            "row" : 11
-          }
-        }
-      },
-      "tick" : 15221
-    },
-    {
-      "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "seat" : {
-              "count" : 3
-            }
-          },
-          "_1" : {
-            "col" : 15,
-            "row" : 8
-          }
-        }
-      },
-      "tick" : 15289
-    },
-    {
-      "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "busker" : {
-              "radius" : 2
-            }
-          },
-          "_1" : {
-            "col" : 18,
-            "row" : 10
-          }
-        }
-      },
-      "tick" : 15318
-    },
-    {
-      "action" : {
         "moveFixture" : {
-          "_0" : 32,
+          "_0" : 4,
           "_1" : {
             "col" : 19,
             "row" : 12
@@ -3220,10 +1664,10 @@
     {
       "action" : {
         "moveFixture" : {
-          "_0" : 45,
+          "_0" : 1,
           "_1" : {
-            "col" : 18,
-            "row" : 8
+            "col" : 17,
+            "row" : 10
           }
         }
       },
@@ -3232,10 +1676,10 @@
     {
       "action" : {
         "moveFixture" : {
-          "_0" : 62,
+          "_0" : 4,
           "_1" : {
-            "col" : 20,
-            "row" : 19
+            "col" : 16,
+            "row" : 10
           }
         }
       },
@@ -3243,47 +1687,15 @@
     },
     {
       "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "awning" : {
-
-            }
-          },
-          "_1" : {
-            "col" : 18,
-            "row" : 11
-          }
-        }
-      },
-      "tick" : 15470
-    },
-    {
-      "action" : {
         "moveFixture" : {
-          "_0" : 14,
+          "_0" : 5,
           "_1" : {
-            "col" : 17,
-            "row" : 8
+            "col" : 7,
+            "row" : 9
           }
         }
       },
       "tick" : 15507
-    },
-    {
-      "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "awning" : {
-
-            }
-          },
-          "_1" : {
-            "col" : 16,
-            "row" : 10
-          }
-        }
-      },
-      "tick" : 15610
     },
     {
       "action" : {
@@ -3326,22 +1738,6 @@
     },
     {
       "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "awning" : {
-
-            }
-          },
-          "_1" : {
-            "col" : 12,
-            "row" : 11
-          }
-        }
-      },
-      "tick" : 15865
-    },
-    {
-      "action" : {
         "paintWalkway" : {
           "_0" : [
             {
@@ -3352,22 +1748,6 @@
         }
       },
       "tick" : 15882
-    },
-    {
-      "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "seat" : {
-              "count" : 3
-            }
-          },
-          "_1" : {
-            "col" : 13,
-            "row" : 12
-          }
-        }
-      },
-      "tick" : 15934
     },
     {
       "action" : {
@@ -3397,24 +1777,8 @@
     },
     {
       "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "seat" : {
-              "count" : 3
-            }
-          },
-          "_1" : {
-            "col" : 16,
-            "row" : 9
-          }
-        }
-      },
-      "tick" : 16034
-    },
-    {
-      "action" : {
         "chooseUpgrade" : {
-          "_0" : "busker"
+          "_0" : "bridge"
         }
       },
       "tick" : 16200
@@ -3422,10 +1786,10 @@
     {
       "action" : {
         "moveFixture" : {
-          "_0" : 108,
+          "_0" : 3,
           "_1" : {
-            "col" : 17,
-            "row" : 8
+            "col" : 4,
+            "row" : 14
           }
         }
       },
@@ -3434,10 +1798,10 @@
     {
       "action" : {
         "moveFixture" : {
-          "_0" : 37,
+          "_0" : 2,
           "_1" : {
-            "col" : 19,
-            "row" : 9
+            "col" : 17,
+            "row" : 12
           }
         }
       },
@@ -3471,27 +1835,11 @@
     },
     {
       "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "seat" : {
-              "count" : 3
-            }
-          },
-          "_1" : {
-            "col" : 8,
-            "row" : 9
-          }
-        }
-      },
-      "tick" : 16543
-    },
-    {
-      "action" : {
         "moveFixture" : {
-          "_0" : 67,
+          "_0" : 5,
           "_1" : {
-            "col" : 12,
-            "row" : 12
+            "col" : 16,
+            "row" : 9
           }
         }
       },
@@ -3500,46 +1848,14 @@
     {
       "action" : {
         "moveFixture" : {
-          "_0" : 72,
+          "_0" : 0,
           "_1" : {
-            "col" : 19,
-            "row" : 12
-          }
-        }
-      },
-      "tick" : 16653
-    },
-    {
-      "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "awning" : {
-
-            }
-          },
-          "_1" : {
-            "col" : 18,
-            "row" : 11
-          }
-        }
-      },
-      "tick" : 16755
-    },
-    {
-      "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "awning" : {
-
-            }
-          },
-          "_1" : {
-            "col" : 16,
+            "col" : 0,
             "row" : 9
           }
         }
       },
-      "tick" : 16762
+      "tick" : 16653
     },
     {
       "action" : {
@@ -3557,9 +1873,9 @@
     {
       "action" : {
         "moveFixture" : {
-          "_0" : 101,
+          "_0" : 3,
           "_1" : {
-            "col" : 17,
+            "col" : 18,
             "row" : 8
           }
         }
@@ -3581,27 +1897,11 @@
     },
     {
       "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "seat" : {
-              "count" : 3
-            }
-          },
-          "_1" : {
-            "col" : 12,
-            "row" : 12
-          }
-        }
-      },
-      "tick" : 17049
-    },
-    {
-      "action" : {
         "moveFixture" : {
-          "_0" : 40,
+          "_0" : 4,
           "_1" : {
-            "col" : 15,
-            "row" : 10
+            "col" : 1,
+            "row" : 9
           }
         }
       },
@@ -3635,43 +1935,11 @@
     },
     {
       "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "busker" : {
-              "radius" : 2
-            }
-          },
-          "_1" : {
-            "col" : 3,
-            "row" : 9
-          }
-        }
-      },
-      "tick" : 17145
-    },
-    {
-      "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "seat" : {
-              "count" : 3
-            }
-          },
-          "_1" : {
-            "col" : 30,
-            "row" : 17
-          }
-        }
-      },
-      "tick" : 17160
-    },
-    {
-      "action" : {
         "moveFixture" : {
-          "_0" : 72,
+          "_0" : 0,
           "_1" : {
-            "col" : 19,
-            "row" : 8
+            "col" : 12,
+            "row" : 7
           }
         }
       },
@@ -3680,10 +1948,10 @@
     {
       "action" : {
         "moveFixture" : {
-          "_0" : 98,
+          "_0" : 3,
           "_1" : {
-            "col" : 14,
-            "row" : 9
+            "col" : 18,
+            "row" : 10
           }
         }
       },
@@ -3691,58 +1959,10 @@
     },
     {
       "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "seat" : {
-              "count" : 3
-            }
-          },
-          "_1" : {
-            "col" : 19,
-            "row" : 11
-          }
-        }
-      },
-      "tick" : 17317
-    },
-    {
-      "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "seat" : {
-              "count" : 3
-            }
-          },
-          "_1" : {
-            "col" : 6,
-            "row" : 9
-          }
-        }
-      },
-      "tick" : 17332
-    },
-    {
-      "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "seat" : {
-              "count" : 3
-            }
-          },
-          "_1" : {
-            "col" : 17,
-            "row" : 6
-          }
-        }
-      },
-      "tick" : 17405
-    },
-    {
-      "action" : {
         "moveFixture" : {
-          "_0" : 13,
+          "_0" : 3,
           "_1" : {
-            "col" : 19,
+            "col" : 15,
             "row" : 10
           }
         }
@@ -3765,30 +1985,14 @@
     {
       "action" : {
         "moveFixture" : {
-          "_0" : 50,
+          "_0" : 2,
           "_1" : {
-            "col" : 18,
+            "col" : 3,
             "row" : 9
           }
         }
       },
       "tick" : 17682
-    },
-    {
-      "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "seat" : {
-              "count" : 3
-            }
-          },
-          "_1" : {
-            "col" : 18,
-            "row" : 10
-          }
-        }
-      },
-      "tick" : 17689
     },
     {
       "action" : {
@@ -3806,10 +2010,10 @@
     {
       "action" : {
         "moveFixture" : {
-          "_0" : 52,
+          "_0" : 4,
           "_1" : {
-            "col" : 12,
-            "row" : 8
+            "col" : 2,
+            "row" : 9
           }
         }
       },
@@ -3818,10 +2022,10 @@
     {
       "action" : {
         "moveFixture" : {
-          "_0" : 34,
+          "_0" : 3,
           "_1" : {
-            "col" : 6,
-            "row" : 9
+            "col" : 19,
+            "row" : 11
           }
         }
       },
@@ -3830,7 +2034,7 @@
     {
       "action" : {
         "chooseUpgrade" : {
-          "_0" : "service-20"
+          "_0" : "queue-2"
         }
       },
       "tick" : 18000
@@ -3838,10 +2042,10 @@
     {
       "action" : {
         "moveFixture" : {
-          "_0" : 42,
+          "_0" : 0,
           "_1" : {
-            "col" : 7,
-            "row" : 13
+            "col" : 15,
+            "row" : 8
           }
         }
       },
@@ -3850,10 +2054,10 @@
     {
       "action" : {
         "moveFixture" : {
-          "_0" : 59,
+          "_0" : 3,
           "_1" : {
-            "col" : 14,
-            "row" : 8
+            "col" : 1,
+            "row" : 14
           }
         }
       },
@@ -3862,10 +2066,10 @@
     {
       "action" : {
         "moveFixture" : {
-          "_0" : 40,
+          "_0" : 4,
           "_1" : {
-            "col" : 16,
-            "row" : 8
+            "col" : 20,
+            "row" : 4
           }
         }
       },
@@ -3874,10 +2078,10 @@
     {
       "action" : {
         "moveFixture" : {
-          "_0" : 90,
+          "_0" : 1,
           "_1" : {
-            "col" : 5,
-            "row" : 13
+            "col" : 17,
+            "row" : 11
           }
         }
       },
@@ -3898,22 +2102,6 @@
     },
     {
       "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "seat" : {
-              "count" : 3
-            }
-          },
-          "_1" : {
-            "col" : 15,
-            "row" : 10
-          }
-        }
-      },
-      "tick" : 18405
-    },
-    {
-      "action" : {
         "paintWalkway" : {
           "_0" : [
             {
@@ -3928,30 +2116,14 @@
     {
       "action" : {
         "moveFixture" : {
-          "_0" : 88,
+          "_0" : 4,
           "_1" : {
-            "col" : 17,
-            "row" : 9
+            "col" : 25,
+            "row" : 8
           }
         }
       },
       "tick" : 18505
-    },
-    {
-      "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "busker" : {
-              "radius" : 2
-            }
-          },
-          "_1" : {
-            "col" : 0,
-            "row" : 10
-          }
-        }
-      },
-      "tick" : 18515
     },
     {
       "action" : {
@@ -3969,10 +2141,10 @@
     {
       "action" : {
         "moveFixture" : {
-          "_0" : 36,
+          "_0" : 3,
           "_1" : {
-            "col" : 2,
-            "row" : 9
+            "col" : 30,
+            "row" : 17
           }
         }
       },
@@ -4016,38 +2188,6 @@
         }
       },
       "tick" : 18769
-    },
-    {
-      "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "seat" : {
-              "count" : 3
-            }
-          },
-          "_1" : {
-            "col" : 5,
-            "row" : 13
-          }
-        }
-      },
-      "tick" : 18828
-    },
-    {
-      "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "awning" : {
-
-            }
-          },
-          "_1" : {
-            "col" : 12,
-            "row" : 10
-          }
-        }
-      },
-      "tick" : 18834
     },
     {
       "action" : {
@@ -4103,27 +2243,11 @@
     },
     {
       "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "busker" : {
-              "radius" : 2
-            }
-          },
-          "_1" : {
-            "col" : 0,
-            "row" : 9
-          }
-        }
-      },
-      "tick" : 19005
-    },
-    {
-      "action" : {
         "moveFixture" : {
-          "_0" : 113,
+          "_0" : 3,
           "_1" : {
-            "col" : 15,
-            "row" : 8
+            "col" : 1,
+            "row" : 14
           }
         }
       },
@@ -4132,62 +2256,14 @@
     {
       "action" : {
         "moveFixture" : {
-          "_0" : 118,
+          "_0" : 2,
           "_1" : {
-            "col" : 30,
-            "row" : 15
-          }
-        }
-      },
-      "tick" : 19136
-    },
-    {
-      "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "busker" : {
-              "radius" : 2
-            }
-          },
-          "_1" : {
-            "col" : 16,
-            "row" : 12
-          }
-        }
-      },
-      "tick" : 19178
-    },
-    {
-      "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "awning" : {
-
-            }
-          },
-          "_1" : {
-            "col" : 30,
-            "row" : 15
-          }
-        }
-      },
-      "tick" : 19199
-    },
-    {
-      "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "seat" : {
-              "count" : 3
-            }
-          },
-          "_1" : {
-            "col" : 1,
+            "col" : 7,
             "row" : 9
           }
         }
       },
-      "tick" : 19317
+      "tick" : 19136
     },
     {
       "action" : {
@@ -4205,7 +2281,7 @@
     {
       "action" : {
         "moveFixture" : {
-          "_0" : 102,
+          "_0" : 2,
           "_1" : {
             "col" : 1,
             "row" : 9
@@ -4229,27 +2305,11 @@
     },
     {
       "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "awning" : {
-
-            }
-          },
-          "_1" : {
-            "col" : 11,
-            "row" : 9
-          }
-        }
-      },
-      "tick" : 19612
-    },
-    {
-      "action" : {
         "moveFixture" : {
-          "_0" : 47,
+          "_0" : 3,
           "_1" : {
-            "col" : 19,
-            "row" : 8
+            "col" : 16,
+            "row" : 11
           }
         }
       },
@@ -4258,10 +2318,10 @@
     {
       "action" : {
         "moveFixture" : {
-          "_0" : 68,
+          "_0" : 4,
           "_1" : {
             "col" : 13,
-            "row" : 11
+            "row" : 9
           }
         }
       },
@@ -4295,554 +2355,85 @@
     },
     {
       "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "busker" : {
-              "radius" : 2
-            }
-          },
-          "_1" : {
-            "col" : 0,
-            "row" : 10
-          }
-        }
-      },
-      "tick" : 19752
-    },
-    {
-      "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "seat" : {
-              "count" : 3
-            }
-          },
-          "_1" : {
-            "col" : 0,
-            "row" : 9
-          }
-        }
-      },
-      "tick" : 19767
-    },
-    {
-      "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "seat" : {
-              "count" : 3
-            }
-          },
-          "_1" : {
-            "col" : 7,
-            "row" : 9
-          }
-        }
-      },
-      "tick" : 19777
-    },
-    {
-      "action" : {
         "chooseUpgrade" : {
-          "_0" : "budget-10"
+          "_0" : "lanterns-2"
         }
       },
       "tick" : 19800
     },
     {
       "action" : {
-        "paintWalkway" : {
+        "eraseWalkway" : {
           "_0" : [
             {
-              "col" : 7,
-              "row" : 1
-            },
-            {
-              "col" : 11,
-              "row" : 0
-            },
-            {
-              "col" : 19,
-              "row" : 12
-            }
-          ]
-        }
-      },
-      "tick" : 19808
-    },
-    {
-      "action" : {
-        "paintWalkway" : {
-          "_0" : [
-            {
-              "col" : 9,
+              "col" : 2,
               "row" : 11
-            },
-            {
-              "col" : 28,
-              "row" : 3
-            },
-            {
-              "col" : 7,
-              "row" : 6
             }
           ]
         }
       },
-      "tick" : 19846
-    },
-    {
-      "action" : {
-        "paintWalkway" : {
-          "_0" : [
-            {
-              "col" : 26,
-              "row" : 12
-            },
-            {
-              "col" : 6,
-              "row" : 3
-            },
-            {
-              "col" : 17,
-              "row" : 13
-            }
-          ]
-        }
-      },
-      "tick" : 19870
-    },
-    {
-      "action" : {
-        "eraseWalkway" : {
-          "_0" : [
-            {
-              "col" : 23,
-              "row" : 1
-            }
-          ]
-        }
-      },
-      "tick" : 19978
+      "tick" : 19987
     },
     {
       "action" : {
         "moveFixture" : {
-          "_0" : 130,
-          "_1" : {
-            "col" : 16,
-            "row" : 9
-          }
-        }
-      },
-      "tick" : 19981
-    },
-    {
-      "action" : {
-        "paintWalkway" : {
-          "_0" : [
-            {
-              "col" : 4,
-              "row" : 18
-            },
-            {
-              "col" : 24,
-              "row" : 10
-            }
-          ]
-        }
-      },
-      "tick" : 19999
-    },
-    {
-      "action" : {
-        "moveFixture" : {
-          "_0" : 99,
-          "_1" : {
-            "col" : 25,
-            "row" : 8
-          }
-        }
-      },
-      "tick" : 20010
-    },
-    {
-      "action" : {
-        "moveFixture" : {
-          "_0" : 2,
-          "_1" : {
-            "col" : 0,
-            "row" : 10
-          }
-        }
-      },
-      "tick" : 20082
-    },
-    {
-      "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "busker" : {
-              "radius" : 2
-            }
-          },
-          "_1" : {
-            "col" : 15,
-            "row" : 9
-          }
-        }
-      },
-      "tick" : 20090
-    },
-    {
-      "action" : {
-        "moveFixture" : {
-          "_0" : 115,
-          "_1" : {
-            "col" : 30,
-            "row" : 15
-          }
-        }
-      },
-      "tick" : 20112
-    },
-    {
-      "action" : {
-        "eraseWalkway" : {
-          "_0" : [
-            {
-              "col" : 17,
-              "row" : 10
-            }
-          ]
-        }
-      },
-      "tick" : 20278
-    },
-    {
-      "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "awning" : {
-
-            }
-          },
-          "_1" : {
-            "col" : 7,
-            "row" : 1
-          }
-        }
-      },
-      "tick" : 20290
-    },
-    {
-      "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "seat" : {
-              "count" : 3
-            }
-          },
-          "_1" : {
-            "col" : 15,
-            "row" : 11
-          }
-        }
-      },
-      "tick" : 20323
-    },
-    {
-      "action" : {
-        "moveFixture" : {
-          "_0" : 50,
-          "_1" : {
-            "col" : 9,
-            "row" : 11
-          }
-        }
-      },
-      "tick" : 20390
-    },
-    {
-      "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "busker" : {
-              "radius" : 2
-            }
-          },
-          "_1" : {
-            "col" : 12,
-            "row" : 12
-          }
-        }
-      },
-      "tick" : 20399
-    },
-    {
-      "action" : {
-        "paintWalkway" : {
-          "_0" : [
-            {
-              "col" : 1,
-              "row" : 5
-            }
-          ]
-        }
-      },
-      "tick" : 20430
-    },
-    {
-      "action" : {
-        "moveFixture" : {
-          "_0" : 110,
-          "_1" : {
-            "col" : 25,
-            "row" : 8
-          }
-        }
-      },
-      "tick" : 20477
-    },
-    {
-      "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "awning" : {
-
-            }
-          },
-          "_1" : {
-            "col" : 19,
-            "row" : 9
-          }
-        }
-      },
-      "tick" : 20488
-    },
-    {
-      "action" : {
-        "moveFixture" : {
-          "_0" : 69,
-          "_1" : {
-            "col" : 9,
-            "row" : 11
-          }
-        }
-      },
-      "tick" : 20510
-    },
-    {
-      "action" : {
-        "moveFixture" : {
-          "_0" : 61,
-          "_1" : {
-            "col" : 18,
-            "row" : 9
-          }
-        }
-      },
-      "tick" : 20550
-    },
-    {
-      "action" : {
-        "moveFixture" : {
-          "_0" : 115,
+          "_0" : 1,
           "_1" : {
             "col" : 23,
             "row" : 9
           }
         }
       },
-      "tick" : 20591
-    },
-    {
-      "action" : {
-        "moveFixture" : {
-          "_0" : 125,
-          "_1" : {
-            "col" : 1,
-            "row" : 5
-          }
-        }
-      },
-      "tick" : 20617
-    },
-    {
-      "action" : {
-        "eraseWalkway" : {
-          "_0" : [
-            {
-              "col" : 30,
-              "row" : 16
-            }
-          ]
-        }
-      },
-      "tick" : 20752
+      "tick" : 19990
     },
     {
       "action" : {
         "paintWalkway" : {
           "_0" : [
             {
-              "col" : 26,
-              "row" : 14
+              "col" : 14,
+              "row" : 6
             }
           ]
         }
       },
-      "tick" : 20756
-    },
-    {
-      "action" : {
-        "eraseWalkway" : {
-          "_0" : [
-            {
-              "col" : 23,
-              "row" : 9
-            }
-          ]
-        }
-      },
-      "tick" : 20766
-    },
-    {
-      "action" : {
-        "paintWalkway" : {
-          "_0" : [
-            {
-              "col" : 17,
-              "row" : 4
-            }
-          ]
-        }
-      },
-      "tick" : 20776
-    },
-    {
-      "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "busker" : {
-              "radius" : 2
-            }
-          },
-          "_1" : {
-            "col" : 18,
-            "row" : 8
-          }
-        }
-      },
-      "tick" : 20825
+      "tick" : 20008
     },
     {
       "action" : {
         "moveFixture" : {
-          "_0" : 39,
-          "_1" : {
-            "col" : 14,
-            "row" : 11
-          }
-        }
-      },
-      "tick" : 20910
-    },
-    {
-      "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "seat" : {
-              "count" : 3
-            }
-          },
-          "_1" : {
-            "col" : 7,
-            "row" : 6
-          }
-        }
-      },
-      "tick" : 20920
-    },
-    {
-      "action" : {
-        "moveFixture" : {
-          "_0" : 137,
-          "_1" : {
-            "col" : 12,
-            "row" : 9
-          }
-        }
-      },
-      "tick" : 20945
-    },
-    {
-      "action" : {
-        "moveFixture" : {
-          "_0" : 34,
-          "_1" : {
-            "col" : 7,
-            "row" : 6
-          }
-        }
-      },
-      "tick" : 20986
-    },
-    {
-      "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "awning" : {
-
-            }
-          },
-          "_1" : {
-            "col" : 1,
-            "row" : 5
-          }
-        }
-      },
-      "tick" : 21068
-    },
-    {
-      "action" : {
-        "moveFixture" : {
-          "_0" : 0,
-          "_1" : {
-            "col" : 4,
-            "row" : 9
-          }
-        }
-      },
-      "tick" : 21203
-    },
-    {
-      "action" : {
-        "placeFixture" : {
-          "_0" : {
-            "seat" : {
-              "count" : 3
-            }
-          },
-          "_1" : {
-            "col" : 2,
-            "row" : 11
-          }
-        }
-      },
-      "tick" : 21225
-    },
-    {
-      "action" : {
-        "moveFixture" : {
-          "_0" : 132,
+          "_0" : 1,
           "_1" : {
             "col" : 13,
-            "row" : 11
+            "row" : 10
           }
         }
       },
-      "tick" : 21265
+      "tick" : 20020
+    },
+    {
+      "action" : {
+        "moveFixture" : {
+          "_0" : 1,
+          "_1" : {
+            "col" : 17,
+            "row" : 10
+          }
+        }
+      },
+      "tick" : 20092
+    },
+    {
+      "action" : {
+        "moveFixture" : {
+          "_0" : 1,
+          "_1" : {
+            "col" : 23,
+            "row" : 9
+          }
+        }
+      },
+      "tick" : 20122
     },
     {
       "action" : {
@@ -4855,68 +2446,342 @@
           ]
         }
       },
-      "tick" : 21268
+      "tick" : 20288
     },
     {
       "action" : {
         "moveFixture" : {
-          "_0" : 96,
+          "_0" : 0,
           "_1" : {
-            "col" : 7,
+            "col" : 9,
             "row" : 13
           }
         }
       },
-      "tick" : 21311
-    },
-    {
-      "action" : {
-        "moveFixture" : {
-          "_0" : 54,
-          "_1" : {
-            "col" : 13,
-            "row" : 8
-          }
-        }
-      },
-      "tick" : 21326
-    },
-    {
-      "action" : {
-        "moveFixture" : {
-          "_0" : 15,
-          "_1" : {
-            "col" : 18,
-            "row" : 11
-          }
-        }
-      },
-      "tick" : 21388
-    },
-    {
-      "action" : {
-        "moveFixture" : {
-          "_0" : 76,
-          "_1" : {
-            "col" : 13,
-            "row" : 12
-          }
-        }
-      },
-      "tick" : 21450
+      "tick" : 20400
     },
     {
       "action" : {
         "paintWalkway" : {
           "_0" : [
             {
-              "col" : 10,
-              "row" : 12
+              "col" : 30,
+              "row" : 17
             }
           ]
         }
       },
-      "tick" : 21502
+      "tick" : 20440
+    },
+    {
+      "action" : {
+        "moveFixture" : {
+          "_0" : 2,
+          "_1" : {
+            "col" : 30,
+            "row" : 17
+          }
+        }
+      },
+      "tick" : 20487
+    },
+    {
+      "action" : {
+        "moveFixture" : {
+          "_0" : 5,
+          "_1" : {
+            "col" : 16,
+            "row" : 9
+          }
+        }
+      },
+      "tick" : 20520
+    },
+    {
+      "action" : {
+        "moveFixture" : {
+          "_0" : 5,
+          "_1" : {
+            "col" : 4,
+            "row" : 11
+          }
+        }
+      },
+      "tick" : 20560
+    },
+    {
+      "action" : {
+        "moveFixture" : {
+          "_0" : 1,
+          "_1" : {
+            "col" : 16,
+            "row" : 9
+          }
+        }
+      },
+      "tick" : 20601
+    },
+    {
+      "action" : {
+        "eraseWalkway" : {
+          "_0" : [
+            {
+              "col" : 17,
+              "row" : 10
+            }
+          ]
+        }
+      },
+      "tick" : 20620
+    },
+    {
+      "action" : {
+        "paintWalkway" : {
+          "_0" : [
+            {
+              "col" : 4,
+              "row" : 19
+            }
+          ]
+        }
+      },
+      "tick" : 20623
+    },
+    {
+      "action" : {
+        "moveFixture" : {
+          "_0" : 3,
+          "_1" : {
+            "col" : 2,
+            "row" : 9
+          }
+        }
+      },
+      "tick" : 20626
+    },
+    {
+      "action" : {
+        "eraseWalkway" : {
+          "_0" : [
+            {
+              "col" : 2,
+              "row" : 5
+            }
+          ]
+        }
+      },
+      "tick" : 20776
+    },
+    {
+      "action" : {
+        "paintWalkway" : {
+          "_0" : [
+            {
+              "col" : 12,
+              "row" : 5
+            }
+          ]
+        }
+      },
+      "tick" : 20786
+    },
+    {
+      "action" : {
+        "moveFixture" : {
+          "_0" : 1,
+          "_1" : {
+            "col" : 17,
+            "row" : 11
+          }
+        }
+      },
+      "tick" : 20920
+    },
+    {
+      "action" : {
+        "eraseWalkway" : {
+          "_0" : [
+            {
+              "col" : 9,
+              "row" : 13
+            }
+          ]
+        }
+      },
+      "tick" : 20940
+    },
+    {
+      "action" : {
+        "moveFixture" : {
+          "_0" : 5,
+          "_1" : {
+            "col" : 15,
+            "row" : 10
+          }
+        }
+      },
+      "tick" : 20955
+    },
+    {
+      "action" : {
+        "paintWalkway" : {
+          "_0" : [
+            {
+              "col" : 1,
+              "row" : 13
+            }
+          ]
+        }
+      },
+      "tick" : 20957
+    },
+    {
+      "action" : {
+        "moveFixture" : {
+          "_0" : 4,
+          "_1" : {
+            "col" : 4,
+            "row" : 14
+          }
+        }
+      },
+      "tick" : 20995
+    },
+    {
+      "action" : {
+        "moveFixture" : {
+          "_0" : 5,
+          "_1" : {
+            "col" : 1,
+            "row" : 9
+          }
+        }
+      },
+      "tick" : 21212
+    },
+    {
+      "action" : {
+        "eraseWalkway" : {
+          "_0" : [
+            {
+              "col" : 14,
+              "row" : 6
+            }
+          ]
+        }
+      },
+      "tick" : 21219
+    },
+    {
+      "action" : {
+        "paintWalkway" : {
+          "_0" : [
+            {
+              "col" : 1,
+              "row" : 14
+            }
+          ]
+        }
+      },
+      "tick" : 21266
+    },
+    {
+      "action" : {
+        "moveFixture" : {
+          "_0" : 2,
+          "_1" : {
+            "col" : 13,
+            "row" : 8
+          }
+        }
+      },
+      "tick" : 21273
+    },
+    {
+      "action" : {
+        "eraseWalkway" : {
+          "_0" : [
+            {
+              "col" : 4,
+              "row" : 19
+            }
+          ]
+        }
+      },
+      "tick" : 21276
+    },
+    {
+      "action" : {
+        "moveFixture" : {
+          "_0" : 2,
+          "_1" : {
+            "col" : 18,
+            "row" : 8
+          }
+        }
+      },
+      "tick" : 21319
+    },
+    {
+      "action" : {
+        "moveFixture" : {
+          "_0" : 4,
+          "_1" : {
+            "col" : 22,
+            "row" : 3
+          }
+        }
+      },
+      "tick" : 21334
+    },
+    {
+      "action" : {
+        "moveFixture" : {
+          "_0" : 5,
+          "_1" : {
+            "col" : 9,
+            "row" : 9
+          }
+        }
+      },
+      "tick" : 21396
+    },
+    {
+      "action" : {
+        "moveFixture" : {
+          "_0" : 2,
+          "_1" : {
+            "col" : 11,
+            "row" : 9
+          }
+        }
+      },
+      "tick" : 21458
+    },
+    {
+      "action" : {
+        "moveFixture" : {
+          "_0" : 2,
+          "_1" : {
+            "col" : 18,
+            "row" : 11
+          }
+        }
+      },
+      "tick" : 21499
+    },
+    {
+      "action" : {
+        "paintWalkway" : {
+          "_0" : [
+            {
+              "col" : 26,
+              "row" : 5
+            }
+          ]
+        }
+      },
+      "tick" : 21510
     }
   ],
   "contentVersion" : "0.0.0",

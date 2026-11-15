@@ -10,6 +10,8 @@ public struct Stall: Codable, Sendable, Equatable, Hashable {
     public var serviceProgress: Int  // ticks until next service
     public var overflowTimer: Int
     public var serviceTicks: Int  // default 90
+    /// Extra queue capacity granted by the extra-queue upgrade (ADR-0010).
+    public var queueCapacityBonus: Int = 0
 
     public init(
         id: Int, color: StallColor, position: Tile, serviceTicks: Int = 90,

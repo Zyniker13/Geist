@@ -1,9 +1,128 @@
 #!/bin/bash
-# content-lint — validate content JSON (maps, stalls, upgrades) against the schemas.
-# Skeleton for P0; filled in as content lands in Resources/Content.
+# content-lint — validate content JSON (maps, upgrades, schedule, tutorial)
+# against the P3 schemas and the G3 content counts.
 set -o pipefail
 
 cd "$(dirname "$0")/.."
+CONTENT="Resources/Content"
+errors=0
 
-echo "content-lint: no content files yet (P0 skeleton) — nothing to validate"
-exit 0
+fail() {
+  echo "content-lint: ERROR: $1"
+  errors=$((errors + 1))
+}
+
+require_keys() {
+  # require_keys FILE KEY...
+  local file="$1"
+  shift
+  for key in "$@"; do
+    if ! python3 -c "
+import json, sys
+data = json.load(open('$file'))
+sys.exit(0 if '$key' in data else 1)
+" 2>/dev/null; then
+      fail "$file is missing key '$key'"
+    fi
+  done
+}
+
+# Maps: three, each with the schema fields and sane geometry.
+map_count=$(ls "$CONTENT"/maps/*.json 2>/dev/null | wc -l | tr -d ' ')
+if [ "$map_count" != "3" ]; then
+  fail "expected 3 maps, found $map_count"
+fi
+for map_file in "$CONTENT"/maps/*.json; do
+  require_keys "$map_file" id name size tiles gates gateOpenTicks zones stallStride lanternSpots schedule palette
+  python3 - "$map_file" <<'PYEOF' || errors=$((errors + 1))
+import base64, json, sys
+path = sys.argv[1]
+data = json.load(open(path))
+w, h = data["size"]
+raw = base64.b64decode(data["tiles"])
+total = 0
+kinds = {0, 1, 2, 3}
+for i in range(0, len(raw), 2):
+    count, value = raw[i], raw[i + 1]
+    if value not in kinds or count == 0:
+        print(f"content-lint: ERROR: {path}: bad RLE pair ({count},{value})")
+        sys.exit(1)
+    total += count
+if total != w * h:
+    print(f"content-lint: ERROR: {path}: RLE decodes to {total} tiles, expected {w * h}")
+    sys.exit(1)
+gates = data["gates"]
+if len(gates) != len(data["gateOpenTicks"]):
+    print(f"content-lint: ERROR: {path}: gates and gateOpenTicks lengths differ")
+    sys.exit(1)
+for col, row in gates:
+    if not (0 <= col < w and 0 <= row < h):
+        print(f"content-lint: ERROR: {path}: gate ({col},{row}) out of bounds")
+        sys.exit(1)
+zone_tiles = 0
+for color, rects in data["zones"].items():
+    for x, y, cw, ch in rects:
+        if not (0 <= x and x + cw <= w and 0 <= y and y + ch <= h):
+            print(f"content-lint: ERROR: {path}: zone {color} rect out of bounds")
+            sys.exit(1)
+        zone_tiles += cw * ch
+if zone_tiles < 6:
+    print(f"content-lint: ERROR: {path}: zones hold fewer than 6 candidate tiles")
+    sys.exit(1)
+PYEOF
+done
+
+# Upgrades: exactly the eight kinds with positive weights.
+require_keys "$CONTENT/upgrades.json" upgrades
+python3 - "$CONTENT/upgrades.json" <<'PYEOF' || errors=$((errors + 1))
+import json, sys
+data = json.load(open(sys.argv[1]))
+rows = data["upgrades"]
+kinds = [row["kind"] for row in rows]
+expected = {"budget", "lanterns", "awning", "busker", "bridge", "seating", "faster_cooks", "extra_queue"}
+if len(rows) != 8 or set(kinds) != expected:
+    print(f"content-lint: ERROR: upgrades.json must list exactly the 8 kinds, found {sorted(kinds)}")
+    sys.exit(1)
+for row in rows:
+    if row.get("weight", 0) <= 0:
+        print(f"content-lint: ERROR: {row['id']} weight must be positive")
+        sys.exit(1)
+ids = [row["id"] for row in rows]
+if len(set(ids)) != len(ids):
+    print("content-lint: ERROR: duplicate upgrade ids")
+    sys.exit(1)
+PYEOF
+
+# Schedule: one, 12 hours, hourly spawns matching R-7's ramp.
+require_keys "$CONTENT/schedule_standard.json" id startHour hours spawnsPerHour
+python3 - "$CONTENT/schedule_standard.json" <<'PYEOF' || errors=$((errors + 1))
+import json, sys
+data = json.load(open(sys.argv[1]))
+if data["hours"] != 12 or len(data["spawnsPerHour"]) != 12:
+    print("content-lint: ERROR: schedule must cover 12 hours")
+    sys.exit(1)
+if data["spawnsPerHour"] != [6, 9, 12, 16, 20, 24, 28, 32, 36, 40, 44, 48]:
+    print("content-lint: ERROR: schedule spawns must match R-7's standard ramp")
+    sys.exit(1)
+PYEOF
+
+# Tutorial: exactly six steps with ids, titles, text, and advances.
+require_keys "$CONTENT/tutorial.json" steps
+python3 - "$CONTENT/tutorial.json" <<'PYEOF' || errors=$((errors + 1))
+import json, sys
+steps = json.load(open(sys.argv[1]))["steps"]
+if len(steps) != 6:
+    print(f"content-lint: ERROR: tutorial must have 6 steps, found {len(steps)}")
+    sys.exit(1)
+for step in steps:
+    for key in ("id", "title", "text", "advance"):
+        if not step.get(key):
+            print(f"content-lint: ERROR: tutorial step missing {key}")
+            sys.exit(1)
+PYEOF
+
+if [ "$errors" -ne 0 ]; then
+  echo "content-lint: $errors error(s)"
+  exit 1
+fi
+echo "content-lint: OK (3 maps, 8 upgrade kinds, 1 schedule, 6 tutorial steps)"

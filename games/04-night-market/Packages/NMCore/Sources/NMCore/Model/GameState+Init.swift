@@ -132,4 +132,109 @@ public extension GameState {
             pathFields: PathFields()
         )
     }
+
+    /// Content-driven initialisation from a `MapDefinition` (P3). Applies the
+    /// same R-3/R-6 semantics: seeded stall shuffle inside the zone rects
+    /// (deduplicated, colour-major), two stalls open, the rest opening across
+    /// hours 2–5 with seeded jitter, starting lanterns from the map, and the
+    /// seeded R-17 rain schedule. For the Taipei map this must reproduce the
+    /// built-in layout byte-for-byte (see MapRoundTripTests).
+    public static func initial(
+        seed: UInt64, map: MapDefinition, contentVersion: String = "0.0.0",
+        overrides: GameStateOverrides = .init()
+    ) throws -> GameState {
+        var rng = SeededRNG(seed: seed)
+        let grid = try map.grid()
+
+        let gates: [Gate] = map.gates.enumerated().map { index, position in
+            let tick = index < map.gateOpenTicks.count ? map.gateOpenTicks[index] : 0
+            return Gate(
+                id: index, position: Tile(col: position[0], row: position[1]),
+                opensAtTick: tick == 0 ? nil : tick)
+        }
+
+        // Stall candidates: union of zone rects, colour-major, stride-filtered,
+        // walkable tiles only, deduplicated preserving order.
+        var candidatePositions: [Tile] = []
+        var seen = Set<Tile>()
+        for color in StallColor.allCases {
+            for rect in map.zones[color.debugName] ?? [] {
+                guard rect.count >= 4 else { continue }
+                for row in stride(from: rect[1], to: rect[1] + rect[3], by: max(1, map.stallStride)) {
+                    for col in stride(from: rect[0], to: rect[0] + rect[2], by: max(1, map.stallStride)) {
+                        let tile = Tile(col: col, row: row)
+                        guard seen.insert(tile).inserted else { continue }
+                        switch grid.tile(at: tile) {
+                        case .ground, .plaza:
+                            candidatePositions.append(tile)
+                        case .water, .building:
+                            continue
+                        }
+                    }
+                }
+            }
+        }
+        guard candidatePositions.count >= StallColor.allCases.count else {
+            throw ContentError.invalidField("zones: only \(candidatePositions.count) candidates")
+        }
+        rng.shuffle(&candidatePositions)
+
+        var stalls: [Stall] = []
+        for (idx, color) in StallColor.allCases.enumerated() {
+            let position = candidatePositions[idx]
+            if idx < 2 {
+                stalls.append(Stall(id: idx, color: color, position: position, serviceTicks: 90))
+            } else {
+                let base = idx * 1800
+                let jitter = Int(rng.next(upperBound: 601)) - 300
+                let openTick = max(1, base + jitter)
+                stalls.append(
+                    Stall(
+                        id: idx, color: color, position: position, serviceTicks: 90,
+                        scheduledOpenTick: openTick))
+            }
+        }
+
+        let fixtures: [Fixture] = map.lanternSpots.enumerated().map { index, spot in
+            Fixture(id: index, kind: .lantern(radius: 3), position: Tile(col: spot[0], row: spot[1]), radius: 3)
+        }
+
+        let showerCount = Int(rng.next(upperBound: 4))
+        var rainSchedule: [RainShower] = []
+        var cursor = 3600 + Int(rng.next(upperBound: 1801))
+        for _ in 0..<showerCount {
+            let duration = 2700 + Int(rng.next(upperBound: 2701))
+            rainSchedule.append(RainShower(startTick: cursor, durationTicks: duration))
+            cursor += duration + Int(rng.next(upperBound: 1801))
+        }
+
+        let finalGrid = overrides.grid ?? grid
+        let finalGates = overrides.gates ?? gates
+        let finalStalls = overrides.stalls ?? stalls
+        let finalFixtures = overrides.fixtures ?? fixtures
+        let finalRain = overrides.rainSchedule ?? rainSchedule
+
+        return GameState(
+            grid: finalGrid,
+            stalls: finalStalls,
+            gates: finalGates,
+            fixtures: finalFixtures,
+            customers: [],
+            weather: .clear,
+            clock: Clock(tick: 0),
+            walkwayTiles: [],
+            walkwayBudget: overrides.walkwayBudget ?? 30,
+            usedBudget: 0,
+            score: 0,
+            nextCustomerID: 0,
+            nextFixtureID: finalFixtures.count,
+            contentVersion: contentVersion,
+            speedMultiplier: 1,
+            isPaused: false,
+            rainSchedule: finalRain,
+            pendingOffers: [],
+            fieldVersion: 0,
+            pathFields: PathFields()
+        )
+    }
 }

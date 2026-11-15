@@ -1,0 +1,91 @@
+{
+  "gateOpenTicks" : [
+    0,
+    3600,
+    7200
+  ],
+  "gates" : [
+    [
+      0,
+      9
+    ],
+    [
+      31,
+      10
+    ],
+    [
+      15,
+      0
+    ]
+  ],
+  "id" : "bangkok",
+  "lanternSpots" : [
+    [
+      10,
+      9
+    ],
+    [
+      21,
+      9
+    ]
+  ],
+  "name" : "Bangkok",
+  "palette" : "river_gold",
+  "schedule" : "schedule_standard",
+  "size" : [
+    32,
+    20
+  ],
+  "stallStride" : 1,
+  "tiles" : "DgAEAhwABAIcAAQCHAAEAhwABAIcAAQCHAAEAhwABAIWAAUBAQAEAgEABQEQAAUBAQAEAgEABQEQAAUBAQAEAgEABQEQAAUBAQAEAgEABQEWAAQCHAAEAhwABAIcAAQCHAAEAhwABAIcAAQCHAAEAg4A",
+  "zones" : {
+    "dumplings" : [
+      [
+        8,
+        8,
+        16,
+        4
+      ]
+    ],
+    "noodles" : [
+      [
+        8,
+        8,
+        16,
+        4
+      ]
+    ],
+    "seafood" : [
+      [
+        8,
+        8,
+        16,
+        4
+      ]
+    ],
+    "skewers" : [
+      [
+        8,
+        8,
+        16,
+        4
+      ]
+    ],
+    "sweets" : [
+      [
+        8,
+        8,
+        16,
+        4
+      ]
+    ],
+    "tea" : [
+      [
+        8,
+        8,
+        16,
+        4
+      ]
+    ]
+  }
+}

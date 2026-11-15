@@ -1,0 +1,86 @@
+{
+  "gateOpenTicks" : [
+    0,
+    4500
+  ],
+  "gates" : [
+    [
+      0,
+      9
+    ],
+    [
+      0,
+      10
+    ]
+  ],
+  "id" : "marrakesh",
+  "lanternSpots" : [
+    [
+      13,
+      9
+    ],
+    [
+      18,
+      9
+    ]
+  ],
+  "name" : "Marrakesh",
+  "palette" : "earth_lantern",
+  "schedule" : "schedule_standard",
+  "size" : [
+    32,
+    20
+  ],
+  "stallStride" : 1,
+  "tiles" : "hAABAwQAAQMEAAEDBAABAwQAAQMEAAEDBgABAwQAAQMEAAEDBAABAwQAAQMEAAEDBgABAwQAAQMEAAEDBAABAwQAAQMEAAEDDgAIARAAAQMEAAEDAgACAQEDBAEBAwQAAQMEAAEDBgABAwQAAQMCAAIBAQMEAQEDBAABAwQAAQMGAAEDBAABAwIAAgEBAwQBAQMEAAEDBAABAw4ACAEQAAEDBAABAwIAAgEBAwQBAQMEAAEDBAABAwYAAQMEAAEDBAABAwQAAQMEAAEDBAABAwYAAQMEAAEDBAABAwQAAQMEAAEDBAABA6IA",
+  "zones" : {
+    "dumplings" : [
+      [
+        12,
+        7,
+        8,
+        6
+      ]
+    ],
+    "noodles" : [
+      [
+        12,
+        7,
+        8,
+        6
+      ]
+    ],
+    "seafood" : [
+      [
+        12,
+        7,
+        8,
+        6
+      ]
+    ],
+    "skewers" : [
+      [
+        12,
+        7,
+        8,
+        6
+      ]
+    ],
+    "sweets" : [
+      [
+        12,
+        7,
+        8,
+        6
+      ]
+    ],
+    "tea" : [
+      [
+        12,
+        7,
+        8,
+        6
+      ]
+    ]
+  }
+}
