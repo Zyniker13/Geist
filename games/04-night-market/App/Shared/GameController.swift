@@ -35,12 +35,17 @@ public final class GameController: NSObject, ObservableObject, MarketSceneDelega
         public let survived: Bool
         public let finalScore: Int
         public let nightNumber: Int
+        public let newAchievements: [String]
+        public let unlockedMapName: String?
     }
 
     // Presentation-only traffic heatmap (not part of GameState).
     public private(set) var heatmap: [Int] = []
     private var servesTotal = 0
-    private var nightNumber = 1
+    private var overflowCount = 0
+    private var nightNumber = 1  // init's slice night is night 1; restart/start(setup:) advance
+    /// The setup this night was started with (drives profile accounting).
+    private var currentSetup = NightSetup.freePlay(mapId: "taipei", scheduleId: "schedule_standard", seed: 42)
 
     public let scene: MarketScene
 
@@ -263,10 +268,24 @@ public final class GameController: NSObject, ObservableObject, MarketSceneDelega
                         state = next
                     }
                 }
+            case .overflowWarning:
+                overflowCount += 1
             case .nightEnded(let finalScore, let survived):
+                let outcome = ProfileStore.NightOutcome(
+                    served: servesTotal, survived: survived, finalScore: finalScore,
+                    overflowCount: overflowCount, mapId: currentSetup.mapId,
+                    modifier: currentSetup.modifier,
+                    challenge: currentSetup.mode != .freePlay
+                )
+                let earned = ProfileStore.shared.applyNight(outcome)
+                let unlockedName = earned.unlockedMaps.first.flatMap {
+                    (try? BundledContent.map($0))?.name
+                }
                 results = ResultsSummary(
                     served: servesTotal, survived: survived,
-                    finalScore: finalScore, nightNumber: nightNumber
+                    finalScore: finalScore, nightNumber: nightNumber,
+                    newAchievements: earned.achievements.map(\.title),
+                    unlockedMapName: unlockedName
                 )
             default:
                 break
@@ -378,6 +397,37 @@ public final class GameController: NSObject, ObservableObject, MarketSceneDelega
         rng = SeededRNG(seed: seed)
         heatmap = Array(repeating: 0, count: state.grid.width * state.grid.height)
         servesTotal = 0
+        overflowCount = 0
+        nightNumber += 1
+        results = nil
+        selectedStall = nil
+        scene.rebuild(with: state)
+        scene.marketDelegate = self
+        publishHud()
+        start()
+    }
+
+    /// Starts a night from a player-chosen setup (NM-P5.2/P5.3): bundled map,
+    /// its or the challenge's schedule, and the challenge modifier if any.
+    public func start(setup: NightSetup) throws {
+        let map = try BundledContent.map(setup.mapId)
+        let schedule = try BundledContent.schedule(setup.scheduleId)
+        guard schedule.spawnsPerHour.count == 12 else {
+            throw NSError(domain: "GameController", code: 3, userInfo: [
+                NSLocalizedDescriptionKey: "schedule \(setup.scheduleId) must cover 12 hours",
+            ])
+        }
+        stop()
+        state = try GameState.initial(
+            seed: setup.seed, map: map, contentVersion: "0.5.0",
+            spawnRates: schedule.spawnsPerHour,
+            modifiers: setup.modifier.map { [$0] } ?? []
+        )
+        currentSetup = setup
+        rng = SeededRNG(seed: setup.seed)
+        heatmap = Array(repeating: 0, count: state.grid.width * state.grid.height)
+        servesTotal = 0
+        overflowCount = 0
         nightNumber += 1
         results = nil
         selectedStall = nil

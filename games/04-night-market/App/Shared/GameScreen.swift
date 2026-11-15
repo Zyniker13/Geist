@@ -121,7 +121,9 @@ public struct GameScreen: View {
     @StateObject private var game = GameController()
     @StateObject private var debug = DebugState.shared
     @StateObject private var tutorial = TutorialState()
+    @StateObject private var launcherStore = ProfileStore.shared
     @State private var armed: FixtureKind?
+    @State private var showLauncher = false
 
     public init() {}
 
@@ -162,7 +164,23 @@ public struct GameScreen: View {
 
             if let results = game.results {
                 ResultsScreen(results: results) {
-                    game.restart(seed: UInt64.random(in: 1...1_000_000))
+                    if ProcessInfo.processInfo.arguments.contains(where: { $0.hasPrefix("-uitest") }) {
+                        game.restart(seed: UInt64.random(in: 1...1_000_000))
+                    } else {
+                        showLauncher = true
+                    }
+                }
+            }
+
+            if showLauncher {
+                NewNightMenu(store: launcherStore) { setup in
+                    showLauncher = false
+                    do {
+                        try game.start(setup: setup)
+                    } catch {
+                        assertionFailure("night start failed: \(error)")
+                    }
+                    tutorial.activateIfNeeded()
                 }
             }
 
@@ -174,7 +192,12 @@ public struct GameScreen: View {
         }
         .onAppear {
             game.start()
-            tutorial.activateIfNeeded()
+            let underUITest = ProcessInfo.processInfo.arguments.contains { $0.hasPrefix("-uitest") }
+            let wantsLauncher = ProcessInfo.processInfo.arguments.contains("-uitest-launcher-daily")
+            showLauncher = wantsLauncher || (!underUITest && !game.hasSave)
+            if !showLauncher {
+                tutorial.activateIfNeeded()
+            }
             DispatchQueue.main.async {
                 if ProcessInfo.processInfo.arguments.contains("-uitest-fresh") {
                     self.game.deleteSave()
@@ -200,6 +223,7 @@ public struct GameScreen: View {
             Text("🌙 \(clockText)")
                 .font(.system(.headline, design: .monospaced))
                 .foregroundStyle(nmColor(Palette.hudText))
+                .accessibilityIdentifier("clock-hud")
             Text("Score \(game.score)")
                 .font(.system(.headline, design: .monospaced))
                 .foregroundStyle(nmColor(Palette.hudText))
@@ -459,6 +483,16 @@ public struct ResultsScreen: View {
             Text("Final score \(results.finalScore)")
                 .font(.title3.monospaced())
                 .foregroundStyle(nmColor(Palette.lanternGlow))
+            if let unlocked = results.unlockedMapName {
+                Text("🔓 Unlocked \(unlocked)")
+                    .font(.headline)
+                    .foregroundStyle(nmColor(Palette.hudText))
+            }
+            if !results.newAchievements.isEmpty {
+                Text("🏅 \(results.newAchievements.joined(separator: ", "))")
+                    .font(.headline)
+                    .foregroundStyle(nmColor(Palette.lanternGlow))
+            }
             Button("Next night") { onRestart() }
                 .buttonStyle(.borderedProminent)
                 .accessibilityLabel("next-night")

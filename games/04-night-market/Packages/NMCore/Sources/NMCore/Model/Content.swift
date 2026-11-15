@@ -87,6 +87,22 @@ public struct MapDefinition: Codable, Equatable, Sendable {
     }
 }
 
+/// A named spawn schedule (P5: Standard, Festival, Monsoon). `spawnsPerHour`
+/// replaces `Spawner.hourlyRates` for the night when selected.
+public struct ScheduleDefinition: Codable, Equatable, Sendable {
+    public var id: String
+    public var startHour: Int
+    public var hours: Int
+    public var spawnsPerHour: [Int]
+
+    public init(id: String, startHour: Int, hours: Int, spawnsPerHour: [Int]) {
+        self.id = id
+        self.startHour = startHour
+        self.hours = hours
+        self.spawnsPerHour = spawnsPerHour
+    }
+}
+
 public enum ContentError: Error, CustomStringConvertible {
     case invalidField(String)
     case missingMap(String)

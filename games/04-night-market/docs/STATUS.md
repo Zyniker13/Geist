@@ -110,6 +110,33 @@ EXIT=0  (** TEST SUCCEEDED **)
 - Headless iPad sim cannot rotate while XCUITest stays portrait: checks are launch-arg-driven; map input goes through `MapInputCatcher`
 - `-uitest-*` affordances live in `GameController`/`GameScreen` (fast, fresh, paused, stress, autochoose, autosave, save-restart, autolane, debug, shot) — never set by gameplay
 
+## P5 (Meta and Replayability) — COMPLETE, tagged `night-market/gate-G5-pass`
+
+- **Status:** complete; G5 self-checked 2026-11-15. Tag: `night-market/gate-G5-pass`.
+- **Spec:** ROADMAP.md §P5 — three more maps, Festival/Monsoon schedules, daily/weekly challenges with 12 modifiers, unlocks, stats, 20 achievements.
+
+### What was built
+- **Maps (P5.1):** istanbul, oaxaca, seoul added to `Resources/Content/maps/` (six total, distinct zone weights/geometry); Festival and Monsoon schedules as JSON content (`ScheduleDefinition`, `spawnsPerHour`, 12 hours each); content-lint validates 6 maps / 8 kinds / 3 schedules / 6 tutorial steps (standard schedule must equal the R-7 ramp).
+- **Challenges (P5.2, ADR-0012):** `Challenge` (FNV-1a seeds over UTC date strings), `ChallengeModifier` (12 kinds applied at init over existing rule surfaces), `NightSetup` (free play / daily / weekly); daily/weekly draws are deterministic functions of the date strings.
+- **Engine surfaces:** `Clock.nightHours` (early close), `queueCapacityMod`, `scorePerServe`, `challengeModifiers` — all hashed in **StateHash encoding version 5**; goldens regenerated and reproducing (86→118 tests green).
+- **Profile (P5.3/P5.4):** `Profile` value type + `UnlockCatalog` (taipei free, seoul 15, bangkok 20, marrakesh 30, istanbul 40, oaxaca 55; one map per qualifying night, no skipping) + `AchievementCatalog` (20 fixed ids).
+- **App:** `ProfileStore` (JSON persistence beside the save), `BundledContent` loader, `NewNightMenu` launcher sheet (challenges + unlocked map ladder; `-uitest-*` launches bypass it), night hook on `.nightEnded` (stats, unlock, achievements → results screen), overflow counting for calm nights.
+
+### Tests added
+- `ChallengesTests` (19): 30-date / 8-week seed identity, draw determinism + catalog bounds + empty-catalog fallbacks, all 12 modifier titles and effects, lantern double-cost through the reducer, double-serve score through a tick, hash participation.
+- `ProfileTests` (15): ladder order/no-skip, threshold boundaries, 20 unique ids, tier triggers, no re-earn, codable round-trip.
+
+### G5 gate evidence (all self-checked, real output)
+- **Daily/weekly seeds identical across devices:** `ChallengesTests.dailyDeterministic` (30 dates, 3 passes identical, 30 distinct seeds) and `.weeklyDeterministic` (8 ISO weeks, same) — NMCore suite green.
+- **6 maps pass AutoPlanner sims** (`/tmp/p5-autopilot.log`, Release, exit 0: `AUTOPILOT OK illegal=0 across 6 maps × 200 nights`): bangkok 187/200 dawn-served; istanbul 166/200; marrakesh 199/200; oaxaca 197/200; seoul 198/200; taipei 200/200 — zero illegal actions and zero first-overflow-before-20:00 occurrences in 1,200 nights (§6 target 3 met at 100%; survival targets per **ADR-0011**).
+- **Coverage ≥ 90% LINE** (`make coverage`, docs/COVERAGE.md): TOTAL lines 3,758 / 176 missed = **95.32%**.
+- **make lint** (exit 0): swiftlint + swift-format clean; content-lint `OK (6 maps, 8 upgrade kinds, 3 schedules, 6 tutorial steps)`.
+- **make test** (exit 0): `** TEST SUCCEEDED **`; NMCore 120/120 (incl. StateHash v5 goldens), NMContent 1/1, NMAI 6/6, iPad UI tests passed incl. the new `testDailyChallengeStartsWithTightBudget` (launcher → daily draw → modifier budget in the HUD → night advances; 8.5 s).
+- **Builds:** iOS + macOS Debug green (`/tmp/iosb6.log`, `/tmp/macb6.log`); launcher visual check on the iPad sim (`/tmp/p5-launcher2.png`): challenge rows show named maps + modifiers, locked ladder shows thresholds, free-play row shows its schedule.
+
+### CI note
+The single red Actions run (43760806577) predates the G4 merge: its failing `Swift test (Core)` step ran on the intermediate commit 90cc12ed, whose NMCore tree is byte-identical to main's tip (`git diff 90cc12ed 687d70a -- Packages/NMCore` is empty) and passes 86/86 locally — a runner-environment failure, not a regression. The G5 merge triggers a fresh run on the true tip; watch it after the merge push.
+
 ## P4 (AI Opponents) — COMPLETE, tagged `night-market/gate-G4-pass`
 
 - **Status:** complete; G4 self-checked 2026-11-15. Tag: `night-market/gate-G4-pass`.

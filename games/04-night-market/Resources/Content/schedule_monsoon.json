@@ -1,0 +1,6 @@
+{
+  "id": "schedule_monsoon",
+  "startHour": 18,
+  "hours": 12,
+  "spawnsPerHour": [4, 6, 9, 13, 17, 21, 26, 30, 35, 39, 43, 47]
+}

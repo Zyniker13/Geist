@@ -27,7 +27,8 @@ public struct GameStateOverrides: Sendable {
 /// walkway budget 30 tiles, 2 lanterns, 0 awnings, 0 buskers.
 public extension GameState {
     static func initial(
-        seed: UInt64, contentVersion: String = "0.0.0", overrides: GameStateOverrides = .init()
+        seed: UInt64, contentVersion: String = "0.0.0",
+        modifiers: [ChallengeModifier] = [], overrides: GameStateOverrides = .init()
     ) -> GameState {
         var rng = SeededRNG(seed: seed)
 
@@ -109,7 +110,7 @@ public extension GameState {
         let finalBudget = overrides.walkwayBudget ?? 30
         let finalRain = overrides.rainSchedule ?? rainSchedule
 
-        return GameState(
+        var built = GameState(
             grid: finalGrid,
             stalls: finalStalls,
             gates: finalGates,
@@ -131,6 +132,13 @@ public extension GameState {
             fieldVersion: 0,
             pathFields: PathFields()
         )
+        for modifier in modifiers {
+            modifier.apply(to: &built)
+        }
+        built.challengeModifiers = modifiers
+        if overrides.walkwayBudget != nil { built.walkwayBudget = finalBudget }
+        if overrides.rainSchedule != nil { built.rainSchedule = finalRain }
+        return built
     }
 
     /// Content-driven initialisation from a `MapDefinition` (P3). Applies the
@@ -141,6 +149,8 @@ public extension GameState {
     /// built-in layout byte-for-byte (see MapRoundTripTests).
     public static func initial(
         seed: UInt64, map: MapDefinition, contentVersion: String = "0.0.0",
+        spawnRates: [Int] = Spawner.hourlyRates,
+        modifiers: [ChallengeModifier] = [],
         overrides: GameStateOverrides = .init()
     ) throws -> GameState {
         var rng = SeededRNG(seed: seed)
@@ -208,22 +218,43 @@ public extension GameState {
             cursor += duration + Int(rng.next(upperBound: 1801))
         }
 
-        let finalGrid = overrides.grid ?? grid
-        let finalGates = overrides.gates ?? gates
-        let finalStalls = overrides.stalls ?? stalls
-        let finalFixtures = overrides.fixtures ?? fixtures
-        let finalRain = overrides.rainSchedule ?? rainSchedule
+        // Assemble the default state, then apply challenge modifiers last
+        // (after every R-3/R-6/R-17 default), then scripted overrides.
+        var built = GameState(
+            grid: grid, stalls: stalls, gates: gates, fixtures: fixtures, customers: [],
+            weather: .clear, clock: Clock(tick: 0), walkwayTiles: [],
+            walkwayBudget: overrides.walkwayBudget ?? 30, usedBudget: 0, score: 0,
+            nextCustomerID: 0, nextFixtureID: fixtures.count, contentVersion: contentVersion,
+            speedMultiplier: 1, isPaused: false, rainSchedule: rainSchedule,
+            zoneWeights: map.zoneWeights, spawnRates: spawnRates,
+            pendingOffers: [], fieldVersion: 0, pathFields: PathFields()
+        )
+        for modifier in modifiers {
+            modifier.apply(to: &built)
+        }
+        built.challengeModifiers = modifiers
 
+        // Scripted overrides win over modifiers (the scenario harness pins
+        // exactly what it asks for); grid is let on GameState, so the final
+        // state is composed explicitly.
+        let finalGrid = overrides.grid ?? built.grid
+        let finalFixtures = overrides.fixtures ?? built.fixtures
+        if overrides.gates != nil { built.gates = overrides.gates! }
+        if overrides.stalls != nil { built.stalls = overrides.stalls! }
+        if overrides.fixtures != nil { built.nextFixtureID = overrides.fixtures!.count }
+        if overrides.rainSchedule != nil { built.rainSchedule = overrides.rainSchedule! }
+        var finalBudget = built.walkwayBudget
+        if overrides.walkwayBudget != nil { finalBudget = overrides.walkwayBudget! }
         return GameState(
             grid: finalGrid,
-            stalls: finalStalls,
-            gates: finalGates,
+            stalls: built.stalls,
+            gates: built.gates,
             fixtures: finalFixtures,
             customers: [],
             weather: .clear,
-            clock: Clock(tick: 0),
+            clock: built.clock,
             walkwayTiles: [],
-            walkwayBudget: overrides.walkwayBudget ?? 30,
+            walkwayBudget: finalBudget,
             usedBudget: 0,
             score: 0,
             nextCustomerID: 0,
@@ -231,8 +262,12 @@ public extension GameState {
             contentVersion: contentVersion,
             speedMultiplier: 1,
             isPaused: false,
-            rainSchedule: finalRain,
-            zoneWeights: map.zoneWeights,
+            rainSchedule: built.rainSchedule,
+            zoneWeights: built.zoneWeights,
+            spawnRates: built.spawnRates,
+            challengeModifiers: modifiers,
+            queueCapacityMod: built.queueCapacityMod,
+            scorePerServe: built.scorePerServe,
             pendingOffers: [],
             fieldVersion: 0,
             pathFields: PathFields()

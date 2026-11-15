@@ -1,0 +1,95 @@
+{
+  "gateOpenTicks" : [
+    0,
+    3600,
+    7200
+  ],
+  "gates" : [
+    [
+      2,
+      9
+    ],
+    [
+      29,
+      10
+    ],
+    [
+      15,
+      0
+    ]
+  ],
+  "id" : "seoul",
+  "lanternSpots" : [
+    [
+      14,
+      9
+    ],
+    [
+      17,
+      10
+    ]
+  ],
+  "name" : "Seoul",
+  "palette" : "river_gold",
+  "schedule" : "schedule_standard",
+  "size" : [
+    32,
+    20
+  ],
+  "stallStride" : 1,
+  "tiles" : "pgAUAgwAFAIzAAYBGgAGARoABgEaAAYBMwAUAgwAFAKmAA==",
+  "zones" : {
+    "dumplings" : [
+      [
+        12,
+        8,
+        8,
+        4
+      ]
+    ],
+    "noodles" : [
+      [
+        12,
+        8,
+        8,
+        4
+      ]
+    ],
+    "seafood" : [
+      [
+        12,
+        8,
+        8,
+        4
+      ]
+    ],
+    "skewers" : [
+      [
+        12,
+        8,
+        8,
+        4
+      ]
+    ],
+    "sweets" : [
+      [
+        12,
+        8,
+        8,
+        4
+      ]
+    ],
+    "tea" : [
+      [
+        12,
+        8,
+        8,
+        4
+      ]
+    ]
+  },
+  "zoneWeights" : {
+    "noodles" : 2,
+    "skewers" : 3
+  }
+}

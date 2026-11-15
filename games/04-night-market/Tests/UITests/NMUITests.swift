@@ -168,4 +168,31 @@ final class NMUITests: XCTestCase {
         XCTAssertGreaterThanOrEqual(average, 50, "crowd load should hold ~60 fps (avg \(average))")
         app.terminate()
     }
+
+    // MARK: - P5 launcher
+
+    func testDailyChallengeStartsWithTightBudget() throws {
+        // The launcher shows the daily draw; tapping it starts a night with
+        // the drawn modifier applied (tight budget → walkway 0/20 unless the
+        // daily draw picked a budget modifier that day).
+        let app = launch("-uitest-fresh", "-uitest-launcher-daily")
+        let daily = app.descendants(matching: .any)["challenge-daily-challenge"].firstMatch
+        XCTAssertTrue(daily.waitForExistence(timeout: 10), "the launcher must show the daily challenge row")
+        daily.tap()
+        let budget = app.staticTexts["budget-hud"]
+        XCTAssertTrue(budget.waitForExistence(timeout: 10), "the HUD must appear after the challenge starts")
+        let label = budget.label
+        XCTAssertTrue(label.contains("/20") || label.contains("/30") || label.contains("/50"),
+                      "the daily challenge must start on the drawn modifier's budget (got \(label))")
+        // The night advances: the clock ticks past 18:00 within a few seconds.
+        let deadline = Date().addingTimeInterval(15)
+        var advanced = false
+        while Date() < deadline {
+            let clock = app.staticTexts["clock-hud"]
+            if clock.exists && !clock.label.contains("18:00") { advanced = true; break }
+            usleep(500_000)
+        }
+        XCTAssertTrue(advanced, "the challenge night must advance")
+        app.terminate()
+    }
 }

@@ -14,7 +14,7 @@ public enum Service {
                 stall.serviceProgress = 0
                 let servedID = stall.queue.removeFirst()
                 events.append(.served(servedID, stall.color))
-                s.score += 1  // R-13: score = customers served
+                s.score += s.scorePerServe  // R-13: score = customers served (×2 under double-serves)
 
                 // Send the served customer to the nearest reachable free seat
                 // within 8 path tiles, or straight to the exit (R-8).
@@ -118,7 +118,8 @@ public enum Overflow {
             var stall = s.stalls[idx]
             guard stall.isOpen else { continue }
 
-            let capacity = 6 + stall.queueCapacityBonus + attributedWaiting(for: stall, in: s)
+            let capacity = 6 + stall.queueCapacityBonus + s.queueCapacityMod
+                + attributedWaiting(for: stall, in: s)
             if stall.queue.count > capacity {
                 stall.overflowTimer += 1
                 events.append(.overflowWarning(stall.id, progress: stall.overflowTimer))

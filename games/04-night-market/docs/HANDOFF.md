@@ -38,3 +38,24 @@ Kept current at every gate. What a new engineer (or agent) needs to resume.
 - **UI-test affordances (`-uitest-*`):** fast/fresh/paused/stress/autochoose/autosave/save-restart/autolane/debug/shot — see ADR-0009 and `docs/STATUS.md` harness notes. Accessibility ids: pause-button, save-button, offer-button, upgrade-picker, results-screen, next-night-button, budget-hud, debug-{fps,tick,hash,savehash}.
 - **Known gaps:** Mac XCUITest blocked (issue #6); stall art is placeholder glyphs; upgrade offers are not context-aware; night number not surfaced in the HUD — all carried to P3 in `docs/SLICE_ASSESSMENT.md`.
 - **Next:** P3 Content and Systems — Bangkok/Marrakesh maps, all 8 upgrade kinds, rain visuals, content JSON + content-lint (see ROADMAP.md §P3).
+
+## P3 Content and Systems — state at G3
+
+- **Status:** COMPLETE; tagged `night-market/gate-G3-pass`. Evidence in `docs/STATUS.md`.
+- **Content layer:** `MapDefinition` (base64-RLE tiles, gates, zones, lanternSpots, palette, `zoneWeights`) + `GameState.initial(seed:map:contentVersion:spawnRates:overrides:)`; `--emit-maps` regenerates the six JSONs. Content lives in `Resources/Content/` and reaches the app via a resources build phase on BOTH app targets (files land flattened at bundle root; use `BundledContent`).
+- **Token economy (ADR-0010):** upgrades grant `FixtureStock` tokens; placement consumes them; bridges need a token; faster-cooks/extra-queue hit the busiest stall (longest queue, ties by lowest id). `queueCapacity = 6 + bonus + attributedWaiting`.
+- **Rain visuals:** `MarketScene` rainLayer (36 pooled streaks, tick-cycled, no RNG in render). Tutorial: 6-step `tutorial.json` wrapped in `{"steps":[...]}` (`TutorialFile`), calm first night via `-uitest-calm`.
+
+## P4 AI Opponents — state at G4
+
+- **Status:** COMPLETE; tagged `night-market/gate-G4-pass`. Evidence in `docs/STATUS.md`; balance report in `docs/BALANCE.md`.
+- **AutoPlanner (NMAI):** event-driven replans (night start / openings / hour boundaries); paints shortest paths from the gate network over PAINTABLE tiles (bare ground is not traversable) — the path ALWAYS includes its start tile; tries each neighbor as the path start (a stall's south neighbor may be a building). Sims/tuning only — never shipped input.
+- **DirectorTuner:** `--tune N` writes `docs/BALANCE.md`; `--autopilot N` reports per-map collapse/serves/illegal counts. §6 survival targets are unreachable by construction (ADR-0011); the default R-7 ramp stands.
+
+## P5 Meta and Replayability — state at G5 (in progress)
+
+- **Status:** code-complete; G5 evidence being collected (see `docs/STATUS.md`).
+- **Challenges (ADR-0012):** `Challenge.dailySeed(yyyymmddUTC:)` / `weeklySeed(isoWeekUTC:)` are FNV-1a over `"NM-daily-" + yyyyMMdd` / `"NM-weekly-" + isoWeek` — the app formats the date (`BundledContent.ChallengeClock`), the core only sees strings. `Challenge.draw(seed:mapIds:scheduleIds:)` picks map + schedule + exactly one of 12 `ChallengeModifier`s; modifiers apply at init over existing rule surfaces and hash into StateHash (**encoding version 5** — bump + regenerate goldens whenever the hashed field set changes).
+- **Profile:** `Profile` (Codable value), `UnlockCatalog` (taipei free → seoul 15 → bangkok 20 → marrakesh 30 → istanbul 40 → oaxaca 55; one map per qualifying night, no skipping), `AchievementCatalog` (20 fixed ids; earned ids never revoked). Persistence: `ProfileStore.shared` → Application Support/NightMarket/profile.json.
+- **Launcher:** `NewNightMenu` shows daily/weekly (challenges bypass map locks by design) + free play over unlocked maps; `-uitest-*` launches bypass the launcher entirely; `-uitest-launcher-daily` forces it for the UI test. New accessibility ids: `new-night-menu`, `challenge-daily-challenge`, `challenge-weekly-challenge`, `map-<id>`, `clock-hud`.
+- **Next:** collect G5 evidence (6-map autopilot, coverage ≥ 90%, make test/lint), close G5, then P6 aesthetics/audio.

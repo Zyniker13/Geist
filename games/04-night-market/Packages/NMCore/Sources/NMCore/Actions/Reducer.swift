@@ -174,10 +174,11 @@ public enum Reducer {
         guard state.isTraversable(tile) else { throw .invalidPosition }
         switch canonical {
         case .lantern:
-            guard state.fixtureStock.lantern > 0 else {
+            let cost = state.challengeModifiers.contains(.lanternsCostDouble) ? 2 : 1
+            guard state.fixtureStock.lantern >= cost else {
                 throw .illegalAction("no lantern token; earn one from an upgrade")
             }
-            state.fixtureStock.lantern -= 1
+            state.fixtureStock.lantern -= cost
         case .awning:
             guard state.fixtureStock.awning > 0 else {
                 throw .illegalAction("no awning token; earn one from an upgrade")
