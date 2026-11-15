@@ -63,3 +63,11 @@
 - **Summary:** The default Taipei map paints plaza first, then canals (canals cut through the plaza). `StateHash.digest` hashes `walkwayTiles` in sorted order, and no engine or policy code lets `Set` iteration order reach the RNG.
 - **Rationale:** The plaza loop silently overwrote the row-12 canal (only row 7 existed), which the bridge-move test caught. Swift's per-process `Hasher` seed makes unsorted Set iteration differ between processes, which broke Debug/Release hash parity until the erase policy sorted its candidates.
 - **Consequences:** Both canals (rows 7 and 12, cols 14–16) exist; Debug and Release sims produce identical hashes for the same seed; digest regression test `digestCoversWalkways`.
+
+## ADR-0009: Launch-argument-driven UI tests and the harness data view
+
+- **Date:** 2026-11-15
+- **Status:** accepted
+- **Summary:** G2 UI checks drive the app with `-uitest-*` launch arguments (fast, fresh, paused, stress, autochoose, autosave, save-restart, autolane, debug, shot) and assert through the debug overlay's accessibility rows; map painting goes through real touch synthesis into `MapInputCatcher`. The save/resume check reloads the save in-process (`-uitest-save-restart`), and `SaveData` carries the save-time hash so resume can verify the restore. On Mac, `-uitest-shot <path>` writes an in-app window snapshot for evidence.
+- **Rationale:** Three harness facts forced this: the headless iPad simulator cannot rotate its display while XCUITest's touch space stays portrait, so every SwiftUI button tap mistranslates and never fires (probe counter proof); each `XCUIApplication` launch observes an empty data container, so a relaunch cannot read a previous launch's save; and the Mac UI-test runner cannot enable automation mode on this build machine (issue #6). The StateHash includes `isPaused`, so the save must be taken while paused for the resumed hash to equal the saved hash.
+- **Consequences:** UI-test affordances are inert without their launch arguments; the debug overlay doubles as the assertion surface; cross-launch save restore is verified manually via `simctl launch` (tick and hash restore exactly); real mouse/keyboard input remains tested on Mac only when automation is granted.

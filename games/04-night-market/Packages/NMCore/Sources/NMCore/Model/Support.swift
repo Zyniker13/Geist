@@ -12,7 +12,7 @@ public struct RainShower: Codable, Sendable, Equatable, Hashable {
 /// One of the two upgrade offers shown at an hour boundary (R-5).
 ///
 /// Effects land in P5; P1 carries the offer identity and the pause-until-choice rule.
-public struct UpgradeOffer: Codable, Sendable, Equatable, Hashable {
+public struct UpgradeOffer: Codable, Sendable, Equatable, Hashable, Identifiable {
     public let id: String
     public let kind: UpgradeKind
 
