@@ -496,6 +496,54 @@ if let mapDir = argumentValue("--emit-maps") {
                 stallZones: [[12, 7, 8, 6]], stallStride: 1,
                 lanternSpots: [[13, 9], [18, 9]], palette: "earth_lantern",
                 zoneWeights: ["sweets": 3, "tea": 2]))
+        // Oaxaca: one huge open plaza ringed by a wide ground apron; gates on
+        // three edges open early; long sightlines make lanterns matter less
+        // than raw walkway reach.
+        try emit(
+            MapSpec(
+                name: "Oaxaca", width: 32, height: 20,
+                tileFn: { col, row in
+                    if col >= 10, col < 22, row >= 6, row < 14 { return .plaza }
+                    if col == 8 || col == 23, row >= 5, row < 15 { return .building }
+                    return .ground
+                },
+                gates: [[0, 9], [0, 10], [31, 9]], gateOpenTicks: [0, 2700, 5400],
+                stallZones: [[10, 6, 12, 8]], stallStride: 1,
+                lanternSpots: [[13, 9], [18, 9]], palette: "earth_lantern",
+                zoneWeights: ["dumplings": 3, "sweets": 2]))
+        // Seoul: two canal arms pinching a central market island; crossings
+        // exist only where bridges span, so walkway planning is tight.
+        try emit(
+            MapSpec(
+                name: "Seoul", width: 32, height: 20,
+                tileFn: { col, row in
+                    if row == 5 || row == 6, col >= 6, col < 26 { return .water(.canal) }
+                    if row == 13 || row == 14, col >= 6, col < 26 { return .water(.canal) }
+                    if col >= 13, col < 19, row >= 8, row < 12 { return .plaza }
+                    return .ground
+                },
+                gates: [[2, 9], [29, 10], [15, 0]], gateOpenTicks: [0, 3600, 7200],
+                stallZones: [[12, 8, 8, 4]], stallStride: 1,
+                lanternSpots: [[14, 9], [17, 10]], palette: "river_gold",
+                zoneWeights: ["skewers": 3, "noodles": 2]))
+        // Istanbul: a covered bazaar grid — dense building blocks with
+        // two-wide lanes and a small central court; many corners (R-9).
+        try emit(
+            MapSpec(
+                name: "Istanbul", width: 32, height: 20,
+                tileFn: { col, row in
+                    if row >= 3, row < 17, col >= 5, col < 27 {
+                        let inBlockRow = row % 4 == 0 || row % 4 == 1
+                        let inBlockCol = col % 6 == 1 || col % 6 == 2
+                        if inBlockRow && inBlockCol { return .building }
+                    }
+                    if col >= 14, col < 18, row >= 8, row < 12 { return .plaza }
+                    return .ground
+                },
+                gates: [[0, 9], [0, 10], [31, 9], [31, 10]], gateOpenTicks: [0, 2700, 5400, 8100],
+                stallZones: [[6, 3, 20, 14]], stallStride: 1,
+                lanternSpots: [[15, 9], [16, 10]], palette: "earth_lantern",
+                zoneWeights: ["tea": 3, "sweets": 2]))
     } catch {
         print("EMIT FAILED: \(error)")
         exitCode = 1

@@ -85,6 +85,8 @@ public final class AutoPlanner {
                         // Budget-blocked: retry at the next hour boundary.
                         if tiles.count > state.walkwayBudget - state.usedBudget { continue }
                     }
+                    // The whole remaining path is painted in one action, so
+                    // the stall's connection is complete once this applies.
                     handledStalls.insert(stall.id)
                     return action
                 }
@@ -125,13 +127,26 @@ public final class AutoPlanner {
     /// connected to an open gate (or to a gate tile itself); paints the new
     /// tiles. Returns nil when no land path exists.
     private func connectStall(_ stall: Stall, in state: GameState) -> Action? {
-        let start = Self.frontTile(of: stall.position, in: state.grid)
-        guard Self.paintable(start, in: state) else { return nil }
+        // Try each neighbor of the stall as the path start (fixed order):
+        // the tile "below" may be a building wall in the bazaar maps.
+        for direction in [Direction.south, .north, .east, .west] {
+            let delta = direction.delta
+            let start = Tile(col: stall.position.col + delta.col, row: stall.position.row + delta.row)
+            guard state.grid.boundsContain(start), Self.paintable(start, in: state) else { continue }
+            if let action = paintPath(from: start, in: state) { return action }
+        }
+        return nil
+    }
+
+    private func paintPath(from start: Tile, in state: GameState) -> Action? {
         let path = Self.shortestPath(from: start, to: Self.networkTiles(state), in: state)
         guard let path, !path.isEmpty else { return nil }
         let fresh = path.filter { !state.walkwayTiles.contains($0) }
         guard !fresh.isEmpty else { return nil }
-        return .paintWalkway(Array(fresh.prefix(min(6, state.walkwayBudget - state.usedBudget))))
+        // Paint the whole remaining path in one action: the stall connects
+        // the moment it applies (R-14 has no per-action tile cap, only
+        // budget).
+        return .paintWalkway(Array(fresh.prefix(state.walkwayBudget - state.usedBudget)))
     }
 
     /// Walkway tiles already connected to an open (or opening-at-0) gate,
@@ -208,6 +223,10 @@ public final class AutoPlanner {
                     path.append(Tile(col: cursor % state.grid.width, row: cursor / state.grid.width))
                     cursor = parent[cursor] ?? startIndex
                 }
+                // Include the start tile: it is the tile adjacent to the
+                // stall, and without it the painted path never touches the
+                // stall (invisible on plaza maps, fatal on ground lanes).
+                path.append(start)
                 return path.reversed()
             }
         }
