@@ -6,14 +6,14 @@
 | --- | --- |
 | Game number and slug | 05 · `dispatch` |
 | Code prefix | `DS` (packages `DSCore`, `DSContent`, `DSAI`, `DSRender`, `DSAudio`, `DSPlatform`, `DSMeta`) |
-| Bundle ID (placeholder) | `com.zyniker.dispatch` |
+| Bundle ID | `GEIST_BUNDLE_ID` build setting, set by the maintainer (`_CONVENTIONS.md` §2) |
 | Subgenre | Real-time-with-pause operational wargame |
 | Difficulty tier | Hardcore |
 | Scope | Small team |
 | Session length | 45–120 minute scenarios; save anywhere |
 | Renderer | SpriteKit (2D staff map) plus PencilKit annotation layer |
 | Players | Solo vs AI |
-| Conventions | [`_CONVENTIONS.md`](../_shared/_CONVENTIONS.md) v1.0 (read first) |
+| Conventions | [`_CONVENTIONS.md`](../_shared/_CONVENTIONS.md) v2.0 (read first) |
 
 ## 1. Summary and Design Pillars
 
@@ -143,7 +143,7 @@ Targets (AI vs AI Hard, 300 runs per scenario, both sides): side balance 40–60
 
 ## 8. Phases, Tasks, and Gates
 
-### P0 Setup (Owner: GLM)
+### P0 Setup
 - Standard tasks S0.1–S0.7.
 - DS-P0.1 Hex math (axial coordinates, distance, line of sight with elevation) with tests.
 - DS-P0.2 Spike: PencilKit overlay above a SpriteKit map with synchronized pan/zoom. Acceptance: strokes stay registered to map hexes across zoom 0.5×–4×.
@@ -152,7 +152,7 @@ Targets (AI vs AI Hard, 300 runs per scenario, both sides): side balance 40–60
 GATE G0 — Setup: standard checks; annotation spike registered within 1 pt at all zooms · Sign-off: GLM-SELF
 ```
 
-### P1 Rules Engine Prototype (Owner: GLM)
+### P1 Rules Engine Prototype
 - Standard tasks S1.1–S1.4.
 - DS-P1.1 Map, terrain, forces, and officers (R-1 to R-4).
 - DS-P1.2 Orders, couriers, wire network, and arrival (R-5 to R-8).
@@ -169,7 +169,7 @@ Checks:
 Sign-off: GLM-SELF
 ```
 
-### P2 Core Loop Vertical Slice (Owner: GLM)
+### P2 Core Loop Vertical Slice
 - Standard tasks S2.1–S2.5.
 - DS-P2.1 Staff map showing belief only: report markers with age shading and timestamps; tap a marker to read the source dispatch.
 - DS-P2.2 Order composer: tap an officer card → choose order type → tap/drag on map to set objective or line → choose courier with a projected arrival time → send. Orders in transit appear on a "sent" rail with ETA.
@@ -184,21 +184,20 @@ Checks:
   [ ] UI test completes the slice scenario at 16× with scripted orders on iPad and Mac
   [ ] INV-1 checked live in debug builds (assertion if belief leaks truth)
   [ ] After-action replay reproduces final hash
-Sign-off: REVIEW: GROK (is latency interesting, not frustrating?) + REVIEW: MAHLER
-🛑 GLM STOP
+Sign-off: GLM-SELF
 ```
 
-### P3 Content and Systems (Owner: GLM)
+### P3 Content and Systems
 - DS-P3.1 All order types and unit types; supply and ammunition; engineers and wire repair.
 - DS-P3.2 Voices (5) and templates; officer roster generation.
 - DS-P3.3 Three scenarios including a guided tutorial (8 steps: read a dispatch, send an order, choose a courier, barrage, reserve, wire cut, initiative, victory).
 - DS-P3.4 Officer dossier screen (traits revealed gradually through play: hidden until observed behavior, a pillar-supporting choice recorded as an ADR).
 
 ```
-GATE G3 — Content and Systems: G3 counts; content-lint 0 errors; tutorial UI test · Sign-off: GLM-SELF; REVIEW: CLAUDE async
+GATE G3 — Content and Systems: G3 counts; content-lint 0 errors; tutorial UI test · Sign-off: GLM-SELF
 ```
 
-### P4 AI Opponents (Owner: GLM)
+### P4 AI Opponents
 - DS-P4.1 Influence maps, operational planner, tactical executor, and three difficulties.
 - DS-P4.2 `Tools/sim --ai hard:hard` per scenario; balance report.
 
@@ -211,7 +210,7 @@ Checks:
 Sign-off: GLM-SELF
 ```
 
-### P5 Meta and Replayability (Owner: GLM)
+### P5 Meta and Replayability
 - DS-P5.1 Procedural front generator (terrain, objectives, OOBs, officer rosters) with constraints validated by sims.
 - DS-P5.2 Six handmade scenarios; a five-operation campaign with carried-over casualties and officer fates.
 - DS-P5.3 Ironman (autosave only, no reload) and scenario editor (JSON-backed, in-app basic placement).
@@ -223,58 +222,57 @@ Checks:
   [ ] 200 generated fronts each pass a 2-sided AI sim with balance 30–70%
   [ ] Campaign completes in an accelerated UI test
   [ ] Coverage thresholds; docs/HANDOFF.md complete
-Sign-off: REVIEW: CLAUDE + GROK + MAHLER
-🛑 GLM FINAL STOP
+Sign-off: GLM-SELF
 ```
 
-### P6 Aesthetics and Audio Pass (Owner: GROK + CLAUDE)
+### P6 Aesthetics and Audio Pass
 - DS-P6.1 Final staff-map rendering (contours, hatching, hand-lettered labels), typewriter dispatch slips, and carbon textures.
 - DS-P6.2 Score and battlefield ambience tied to reported intensity (not truth).
 
 ```
-GATE G6 — Aesthetics: snapshots approved; ambience uses belief-only intensity (test) · Sign-off: REVIEW: MAHLER
+GATE G6 — Aesthetics: snapshots approved; ambience uses belief-only intensity (test) · Sign-off: GLM-SELF
 ```
 
-### P7 Platform Features (Owner: CLAUDE)
+### P7 Platform Features
 - DS-P7.1 Pencil annotations with pressure, hover preview of order paths, squeeze for the order palette; double-tap toggles eraser.
 - DS-P7.2 Multi-window: dispatch board in a separate window on Mac and iPad Stage Manager.
 - DS-P7.3 Game Center achievements and leaderboards (campaign score, Ironman wins); iCloud saves including annotation drawings.
 - DS-P7.4 Mac menus and extensive keyboard shortcuts (N new order, space pause, 1–4 speeds, Tab cycles dispatches).
 
 ```
-GATE G7 — Platform: annotations sync via iCloud iPad ↔ Mac; multi-window works · Sign-off: REVIEW: GROK
+GATE G7 — Platform: annotations sync via iCloud iPad ↔ Mac; multi-window works · Sign-off: GLM-SELF
 ```
 
-### P8 Polish, Accessibility, and Performance (Owner: CLAUDE)
+### P8 Polish, Accessibility, and Performance
 - DS-P8.1 VoiceOver reading of dispatches and order composer; Dynamic Type for dispatch text.
 - DS-P8.2 Friendly/enemy distinguished by symbol shape and hatching as well as color.
 - DS-P8.3 Perf at 16× with 120 battalions.
 
 ```
-GATE G8 — Polish: 60 fps at 16× on iPad (A16), 120 fps on iPad Pro idle pan; cold start < 2.0 s · Sign-off: REVIEW: GROK + MAHLER
+GATE G8 — Polish: 60 fps at 16× on iPad (A16), 120 fps on iPad Pro idle pan; cold start < 2.0 s · Sign-off: GLM-SELF
 ```
 
 ### P9 Beta and TestFlight / P10 Release Prep
-- Standard tasks; DS-P9.1 recruit wargame-experienced testers (Mahler approves any external group).
+- Standard tasks; DS-P9.1 recruit wargame-experienced testers (external testers are a maintainer item; `_CONVENTIONS.md` §8.2).
 
 ```
-GATE G9 — Beta: crash-free ≥ 99.5%; no S1/S2 · Sign-off: REVIEW: MAHLER
-GATE G10 — Release: assets approved · Sign-off: REVIEW: MAHLER (Mahler submits)
+GATE G9 — Beta: crash-free ≥ 99.5%; no S1/S2 · Sign-off: GLM-SELF
+GATE G10 — Release: assets approved · Sign-off: GLM-SELF
 ```
 
-## 9. Handoff to Grok and Claude
+## 9. Fragile Areas and Priorities
 
 - Fragile areas: truth/belief separation (INV-1), wire-network graph updates, and interpretation formulas.
-- First pickups: GROK — officer voice writing and scenario design; CLAUDE — multi-window architecture and PencilKit sync.
+- Priorities for P6–P10: officer voice writing and scenario design; multi-window architecture and PencilKit sync.
 
 ## 10. Risks and Mitigations
 
 | Risk | Likelihood | Impact | Mitigation | Owner |
 | --- | --- | --- | --- | --- |
-| Latency feels like lag, not strategy | Medium | High | Clear ETAs, anticipatory tools (timed orders), and tutorial framing | GROK |
-| Historical sensitivity | Low | Medium | Fictional sectors and officers; respectful tone | MAHLER |
+| Latency feels like lag, not strategy | Medium | High | Clear ETAs, anticipatory tools (timed orders), and tutorial framing | GLM |
+| Historical sensitivity | Low | Medium | Fictional sectors and officers; respectful tone | GLM |
 | Sim complexity breaks determinism | Medium | High | Fixed-point, checkpoint hash tests | GLM |
-| Niche audience size | High | Medium | Premium price, Mac emphasis, wargame community outreach | MAHLER |
+| Niche audience size | High | Medium | Premium price, Mac emphasis, wargame community outreach | GLM |
 
 ## 11. Out of Scope
 
@@ -290,14 +288,14 @@ Multiplayer; tactical-level control of battalions; aircraft combat; 3D terrain; 
 | P3 | GLM | 12–16 |
 | P4 | GLM | 12–18 |
 | P5 | GLM | 14–20 |
-| P6 | GROK + CLAUDE | 12–18 |
-| P7 | CLAUDE | 8–12 |
-| P8 | CLAUDE | 6–9 |
-| P9 | GROK + CLAUDE | 12–18 |
-| P10 | CLAUDE + GROK | 3–5 |
+| P6 | GLM | 12–18 |
+| P7 | GLM | 8–12 |
+| P8 | GLM | 6–9 |
+| P9 | GLM | 12–18 |
+| P10 | GLM | 3–5 |
 | **Total** | | **108–156** |
 
-## 13. Open Questions for Mahler
+## 13. Open Questions
 
 1. Fictional or real place names? Default: fictional, historically plausible.
 2. Should players also command at brigade level? Default: no; division orders only.

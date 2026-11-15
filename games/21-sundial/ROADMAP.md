@@ -2,7 +2,7 @@
 
 > An abstract where a sun crosses the board each turn, and the shadows your stone pillars cast capture whatever they fall across.
 
-Read [`_CONVENTIONS.md`](../_shared/_CONVENTIONS.md) v1.0 in full before starting. This roadmap only adds what is specific to Sundial.
+Read [`_CONVENTIONS.md`](../_shared/_CONVENTIONS.md) v2.0 in full before starting. This roadmap only adds what is specific to Sundial.
 
 ## 0. Metadata
 
@@ -10,14 +10,14 @@ Read [`_CONVENTIONS.md`](../_shared/_CONVENTIONS.md) v1.0 in full before startin
 | --- | --- |
 | Game number and slug | 21 · `sundial` |
 | Code prefix | `SDL` (packages `SDLCore`, `SDLContent`, `SDLAI`, `SDLRender`, `SDLAudio`, `SDLPlatform`, `SDLMeta`) |
-| Bundle ID (placeholder) | `com.zyniker.sundial` |
+| Bundle ID | `GEIST_BUNDLE_ID` build setting, set by the maintainer (`_CONVENTIONS.md` §2) |
 | Subgenre | Two-player abstract strategy (perfect information, no luck) |
 | Difficulty tier | Deep |
 | Scope | Solo-indie |
 | Session length | 10–20 min |
 | Renderer | RealityKit (3D limestone board with a directional sun light) plus a SpriteKit 2D schematic view; both read the same Core shadow map |
 | Players | Solo vs AI (5 tiers), local pass-and-play, async online via GameKit turn-based matches (perfect information, so no commit scheme needed) |
-| Conventions | [`_CONVENTIONS.md`](../_shared/_CONVENTIONS.md) v1.0 (read first) |
+| Conventions | [`_CONVENTIONS.md`](../_shared/_CONVENTIONS.md) v2.0 (read first) |
 
 ## 1. Summary and Design Pillars
 
@@ -233,7 +233,7 @@ Position string (`position` field): ranks 7 to 1 separated by `/`; each square i
 
 ## 8. Phases, Tasks, and Gates
 
-### P0 Setup (Owner: GLM)
+### P0 Setup
 
 Standard tasks S0.1–S0.7.
 
@@ -247,7 +247,7 @@ Checks:
 Sign-off: GLM-SELF
 ```
 
-### P1 Rules Engine Prototype (Owner: GLM)
+### P1 Rules Engine Prototype
 
 Standard tasks S1.1–S1.4.
 
@@ -266,7 +266,7 @@ Checks:
 Sign-off: GLM-SELF
 ```
 
-### P2 Core Loop Vertical Slice (Owner: GLM)
+### P2 Core Loop Vertical Slice
 
 Standard tasks S2.1–S2.5. Slice scope: equinox 7×7, apprentice AI, both views.
 
@@ -283,12 +283,10 @@ Checks:
   [ ] Scrub preview equals Core's simulated shadow maps for 1–6 steps (test)
   [ ] Physical shadow direction matches rule-shadow direction for every arc step (render test)
   [ ] Resume to identical hash; docs/media/slice.mp4 recorded
-  [ ] REVIEW: GROK — is planning for the sun the core skill? Are captures foreseeable?
-  [ ] REVIEW: MAHLER — fun enough to continue?
-Sign-off: REVIEW: GROK + MAHLER · 🛑 GLM STOP
+Sign-off: GLM-SELF
 ```
 
-### P3 Content and Systems (Owner: GLM)
+### P3 Content and Systems
 
 - **SDL-P3.1** Six arcs and eight variants with a rules card each.
 - **SDL-P3.2** Tutorial: 7 interactive lessons (place, shadows by elevation, occlusion, sheltering, two-step capture, night reset, seasons).
@@ -299,11 +297,10 @@ Sign-off: REVIEW: GROK + MAHLER · 🛑 GLM STOP
 GATE G3 — Content and Systems
 Checks:
   [ ] 8 variants each pass 1,000-game sims; tutorial UI test passes
-  [ ] REVIEW: CLAUDE (async)
-Sign-off: GLM-SELF + REVIEW: CLAUDE (async)
+Sign-off: GLM-SELF
 ```
 
-### P4 AI Opponents (Owner: GLM)
+### P4 AI Opponents
 
 - **SDL-P4.1** Five tiers (§7); TT; move ordering; quiescence.
 - **SDL-P4.2** First-move balance tuning per variant (adjust the d4 restriction or a "Dusk wins equal-capture ties" rule; log ADRs).
@@ -318,7 +315,7 @@ Checks:
 Sign-off: GLM-SELF
 ```
 
-### P5 Meta and Replayability (Owner: GLM)
+### P5 Meta and Replayability
 
 - **SDL-P5.1 Daily puzzle** (UTC date) with streaks; generator and solver in CI for 60 days ahead.
 - **SDL-P5.2 Puzzle library** of 60 handpicked puzzles by difficulty.
@@ -326,16 +323,15 @@ Sign-off: GLM-SELF
 - **SDL-P5.4 Stats** and achievements list (bound in P7).
 
 ```
-GATE G5 — Meta and Replayability (Final GLM Handoff)
+GATE G5 — Meta and Replayability
 Checks:
   [ ] 60 dailies generated, each with a verified unique solution
   [ ] Fake async service plays a full game between two local clients
   [ ] All standard tests and coverage thresholds pass; docs/HANDOFF.md complete
-  [ ] REVIEW: CLAUDE + GROK + MAHLER
-Sign-off: REVIEW: CLAUDE + GROK + MAHLER · 🛑 GLM FINAL STOP
+Sign-off: GLM-SELF
 ```
 
-### P6 Aesthetics and Audio Pass (Owner: GROK + CLAUDE)
+### P6 Aesthetics and Audio Pass
 
 - **SDL-P6.1** Final limestone PBR materials, weathering, and lichen variants; sky dome gradients per step; night stars.
 - **SDL-P6.2** Capture crumble effect (particles of sand).
@@ -346,11 +342,10 @@ GATE G6 — Aesthetics
 Checks:
   [ ] Pillar 2 test: 10 random positions, both views, a tester names heights and shaded squares without error
   [ ] 120 fps on iPad Pro (M4) in the 3D view
-  [ ] REVIEW: MAHLER
-Sign-off: REVIEW: MAHLER
+Sign-off: GLM-SELF
 ```
 
-### P7 Platform Features (Owner: CLAUDE)
+### P7 Platform Features
 
 - **SDL-P7.1 Pencil.** Hover over a square previews the shadow a pillar there (or raised) would cast for the next 3 steps; squeeze toggles 2D/3D.
 - **SDL-P7.2 GameKit turn-based** async matches with rematch; ranked leaderboard (rating) and daily puzzle streak leaderboard.
@@ -361,11 +356,10 @@ Sign-off: REVIEW: MAHLER
 GATE G7 — Platform
 Checks:
   [ ] Two sandbox accounts complete an async game across iPad and Mac
-  [ ] REVIEW: GROK
-Sign-off: REVIEW: GROK
+Sign-off: GLM-SELF
 ```
 
-### P8 Polish, Accessibility, and Performance (Owner: CLAUDE)
+### P8 Polish, Accessibility, and Performance
 
 - **SDL-P8.1** Side tints distinguishable by pattern (Dawn diagonal hatch, Dusk dots) as well as color.
 - **SDL-P8.2** VoiceOver: full play by square names, with shade and counter readouts; notation entry.
@@ -376,22 +370,20 @@ GATE G8 — Polish
 Checks:
   [ ] A full game playable with VoiceOver only (UI test)
   [ ] Budgets met on real devices; master tier ≤ 4 s on A16
-  [ ] REVIEW: GROK + MAHLER
-Sign-off: REVIEW: GROK + MAHLER
+Sign-off: GLM-SELF
 ```
 
-### P9 Beta and TestFlight (Owner: GROK + CLAUDE)
+### P9 Beta and TestFlight
 
 ```
 GATE G9 — Beta
 Checks:
-  [ ] Internal TestFlight (Mahler creates records); crash-free ≥ 99.5%
+  [ ] Internal TestFlight; crash-free ≥ 99.5%
   [ ] Daily puzzle solve rate 40–75% among testers
-  [ ] REVIEW: MAHLER
-Sign-off: REVIEW: MAHLER
+Sign-off: GLM-SELF
 ```
 
-### P10 Release Prep (Owner: CLAUDE + GROK)
+### P10 Release Prep
 
 Standard P10 tasks; preview is a time-lapse of a full day over a midgame position with a capture at sunset.
 
@@ -399,23 +391,22 @@ Standard P10 tasks; preview is a time-lapse of a full day over a midgame positio
 GATE G10 — Release
 Checks:
   [ ] RC full CI green; metadata, privacy, and age-rating drafts reviewed
-  [ ] REVIEW: MAHLER (submits)
-Sign-off: REVIEW: MAHLER
+Sign-off: GLM-SELF
 ```
 
-## 9. Handoff to Grok and Claude
+## 9. Fragile Areas and Priorities
 
 - **Fragile areas:** occlusion (R-14) with equal heights; simultaneous captures; physical-vs-rule shadow alignment in 3D.
-- **First tasks:** Grok — variant balance and puzzle quality (curate the 60 handpicked); Claude — the 3D board polish and VoiceOver flow.
+- **Priorities for P6–P10:** variant balance and puzzle quality (curate the 60 handpicked); the 3D board polish and VoiceOver flow.
 
 ## 10. Risks and Mitigations
 
 | Risk | Likelihood | Impact | Mitigation | Owner |
 | --- | --- | --- | --- | --- |
-| Physical shadows confuse rule shadows | Medium | High | Crisp rule tints; schematic view; render test | CLAUDE |
+| Physical shadows confuse rule shadows | Medium | High | Crisp rule tints; schematic view; render test | GLM |
 | First-player advantage | Medium | Medium | Self-play tuning and tie rules | GLM |
-| Game too abstract for broad audience | Medium | Medium | Daily puzzles and gentle tutorial | GROK |
-| Puzzle generator yields dull puzzles | Medium | Medium | Difficulty rating and human curation | GROK |
+| Game too abstract for broad audience | Medium | Medium | Daily puzzles and gentle tutorial | GLM |
+| Puzzle generator yields dull puzzles | Medium | Medium | Difficulty rating and human curation | GLM |
 
 ## 11. Out of Scope
 
@@ -434,17 +425,17 @@ Sign-off: REVIEW: MAHLER
 | P3 Content and Systems | GLM | 4–6 |
 | P4 AI | GLM | 5–8 |
 | P5 Meta | GLM | 4–6 |
-| P6 Aesthetics and Audio | GROK + CLAUDE | 8–12 |
-| P7 Platform | CLAUDE | 4–6 |
-| P8 Polish | CLAUDE | 4–6 |
-| P9 Beta | GROK + CLAUDE | 4–8 |
-| P10 Release | CLAUDE + GROK | 2–3 |
+| P6 Aesthetics and Audio | GLM | 8–12 |
+| P7 Platform | GLM | 4–6 |
+| P8 Polish | GLM | 4–6 |
+| P9 Beta | GLM | 4–8 |
+| P10 Release | GLM | 2–3 |
 | **Total** | | **49–75** |
 
-## 13. Open Questions for Mahler
+## 13. Open Questions
 
 1. Capture threshold of two consecutive steps (fixed) or a variant with three? **Default:** two only.
 2. Ship the 9×9 Great Court in v1.0? **Default:** yes, as an unlockable variant.
 3. Should ranked async use a client-computed rating on a Game Center leaderboard (simple, cheatable) or only win counts? **Default:** win counts plus local rating display.
 4. Player names "Dawn" and "Dusk"? **Default:** yes.
-5. Price? **Default:** Mahler decides in P10.
+5. Price? **Default:** the maintainer decides; GLM leaves the price unset.

@@ -6,14 +6,14 @@
 | --- | --- |
 | Game number and slug | 07 · `meridian` |
 | Code prefix | `MR` (packages `MRCore`, `MRContent`, `MRAI`, `MRRender`, `MRAudio`, `MRPlatform`, `MRMeta`) |
-| Bundle ID (placeholder) | `com.zyniker.meridian` |
+| Bundle ID | `GEIST_BUNDLE_ID` build setting, set by the maintainer (`_CONVENTIONS.md` §2) |
 | Subgenre | Age of Sail exploration 4X (turn-based) |
 | Difficulty tier | Hardcore |
 | Scope | Larger team |
 | Session length | 2–6 hour campaigns, played in 20-minute sittings |
 | Renderer | SpriteKit chart view with Metal compute for chart texture generation; RealityKit globe view added in P6 |
 | Players | Solo vs AI crowns (2–5 crowns); async online via GameKit turn-based (up to 4 humans) in P7 |
-| Conventions | [`_CONVENTIONS.md`](../_shared/_CONVENTIONS.md) v1.0 (read first) |
+| Conventions | [`_CONVENTIONS.md`](../_shared/_CONVENTIONS.md) v2.0 (read first) |
 
 ## 1. Summary and Design Pillars
 
@@ -134,7 +134,7 @@ Targets (AI-only games, 200 per preset, Hard): each crown wins 12–28% in 5-cro
 
 ## 8. Phases, Tasks, and Gates
 
-### P0 Setup (Owner: GLM)
+### P0 Setup
 - Standard tasks S0.1–S0.7.
 - MR-P0.1 Cylindrical hex math (wrap distance, neighbors, lines) with tests.
 - MR-P0.2 Spike: Metal chart tile renderer from 2,000 coast segments; pan/zoom at 120 fps on Mac.
@@ -143,7 +143,7 @@ Targets (AI-only games, 200 per preset, Hard): each crown wins 12–28% in 5-cro
 GATE G0 — Setup: standard checks; chart spike perf logged · Sign-off: GLM-SELF
 ```
 
-### P1 Rules Engine Prototype (Owner: GLM)
+### P1 Rules Engine Prototype
 - Standard tasks S1.1–S1.4.
 - MR-P1.1 World generation (R-1, INV-5) with 500-seed validation.
 - MR-P1.2 Charts, sighting error, and compilation (R-3 to R-5, R-7).
@@ -160,7 +160,7 @@ Checks:
 Sign-off: GLM-SELF
 ```
 
-### P2 Core Loop Vertical Slice (Owner: GLM)
+### P2 Core Loop Vertical Slice
 - Standard tasks S2.1–S2.5.
 - MR-P2.1 Chart view: pan, pinch, coast confidence by line style, unknown fog with placeholder monsters.
 - MR-P2.2 Voyage plotter: drag waypoints on the chart; projected provisions and risk shown; commission ship and captain.
@@ -174,11 +174,10 @@ Checks:
   [ ] UI test plays 40 turns with scripted voyages on iPad and Mac
   [ ] INV-1 live assertion in debug; end-of-game reveal compares chart vs truth
   [ ] Save/resume identical hash
-Sign-off: REVIEW: GROK (is charting with error compelling?) + REVIEW: MAHLER
-🛑 GLM STOP
+Sign-off: GLM-SELF
 ```
 
-### P3 Content and Systems (Owner: GLM)
+### P3 Content and Systems
 - MR-P3.1 Colonies, markets, and goods to G3 counts.
 - MR-P3.2 Diplomacy screens, chart trading UI (preview what a trade reveals at a summary level), and espionage/forgery.
 - MR-P3.3 Naval combat resolution UI.
@@ -186,10 +185,10 @@ Sign-off: REVIEW: GROK (is charting with error compelling?) + REVIEW: MAHLER
 - MR-P3.5 Tutorial campaign: 10 guided turns.
 
 ```
-GATE G3 — Content and Systems: G3 counts; content-lint 0 errors; tutorial UI test · Sign-off: GLM-SELF; REVIEW: CLAUDE async
+GATE G3 — Content and Systems: G3 counts; content-lint 0 errors; tutorial UI test · Sign-off: GLM-SELF
 ```
 
-### P4 AI Opponents (Owner: GLM)
+### P4 AI Opponents
 - MR-P4.1 Crown AI with planners and personalities; difficulty tiers.
 - MR-P4.2 AI-only sims and balance report.
 
@@ -202,7 +201,7 @@ Checks:
 Sign-off: GLM-SELF
 ```
 
-### P5 Meta and Replayability (Owner: GLM)
+### P5 Meta and Replayability
 - MR-P5.1 Five crowns, four world presets, and "The Spice Race" scenario.
 - MR-P5.2 End-of-game reveal and "Hall of Charts" gallery (save finished charts as images).
 - MR-P5.3 Achievements (30), stats, and game setup options (turn limit, land percentage, AI count).
@@ -212,57 +211,56 @@ GATE G5 — Meta and Replayability
 Checks:
   [ ] All presets pass INV-5 for 500 seeds and AI sims within targets
   [ ] Coverage thresholds; docs/HANDOFF.md complete
-Sign-off: REVIEW: CLAUDE + GROK + MAHLER
-🛑 GLM FINAL STOP
+Sign-off: GLM-SELF
 ```
 
-### P6 Aesthetics and Audio Pass (Owner: GROK + CLAUDE)
+### P6 Aesthetics and Audio Pass
 - MR-P6.1 Final portolan rendering: rhumb lines, compass roses, cartouches, monsters, and gold leaf; ink line weights by confidence.
 - MR-P6.2 RealityKit globe view using the chart texture.
 - MR-P6.3 Score and sea ambience.
 
 ```
-GATE G6 — Aesthetics: globe ≥ 60 fps on iPad (A16); snapshots approved · Sign-off: REVIEW: MAHLER
+GATE G6 — Aesthetics: globe ≥ 60 fps on iPad (A16); snapshots approved · Sign-off: GLM-SELF
 ```
 
-### P7 Platform Features (Owner: CLAUDE)
+### P7 Platform Features
 - MR-P7.1 Pencil: annotate charts (private notes layer), sketch routes, hover to show coast confidence and provenance.
 - MR-P7.2 GameKit turn-based async for up to 4 humans (season turns; simultaneous orders committed then resolved by the host device's deterministic reducer, verified by state hashes on all devices).
 - MR-P7.3 iCloud saves (large saves compressed with LZFSE).
 - MR-P7.4 Mac: menus, shortcuts, multiple windows (chart and ledger).
 
 ```
-GATE G7 — Platform: async 3-human game completes in sandbox with matching hashes; iCloud round-trip · Sign-off: REVIEW: GROK
+GATE G7 — Platform: async 3-human game completes in sandbox with matching hashes; iCloud round-trip · Sign-off: GLM-SELF
 ```
 
-### P8 Polish, Accessibility, and Performance (Owner: CLAUDE)
+### P8 Polish, Accessibility, and Performance
 - MR-P8.1 Ledger views accessible to VoiceOver; chart summaries by region.
 - MR-P8.2 Memory budget with 160×80 world and full chart: < 1.0 GB.
 
 ```
-GATE G8 — Polish: perf budgets; cold start < 2.0 s; load save < 2.0 s · Sign-off: REVIEW: GROK + MAHLER
+GATE G8 — Polish: perf budgets; cold start < 2.0 s; load save < 2.0 s · Sign-off: GLM-SELF
 ```
 
 ### P9 Beta and TestFlight / P10 Release Prep
 - Standard tasks.
 
 ```
-GATE G9 — Beta: crash-free ≥ 99.5%; no S1/S2 · Sign-off: REVIEW: MAHLER
-GATE G10 — Release: assets approved · Sign-off: REVIEW: MAHLER (Mahler submits)
+GATE G9 — Beta: crash-free ≥ 99.5%; no S1/S2 · Sign-off: GLM-SELF
+GATE G10 — Release: assets approved · Sign-off: GLM-SELF
 ```
 
-## 9. Handoff to Grok and Claude
+## 9. Fragile Areas and Priorities
 
 - Fragile areas: knowledge provenance (INV-1), compilation merge math, and multiplayer hash verification.
-- First pickups: GROK — crown asymmetry, events writing, and AI personalities; CLAUDE — chart renderer and multiplayer.
+- Priorities for P6–P10: crown asymmetry, events writing, and AI personalities; chart renderer and multiplayer.
 
 ## 10. Risks and Mitigations
 
 | Risk | Likelihood | Impact | Mitigation | Owner |
 | --- | --- | --- | --- | --- |
-| Scope too large | High | High | Cut combat depth and Map of the World project first; ship 3 crowns if needed | MAHLER |
-| Error mechanic feels unfair | Medium | High | Clear provenance, risk projections, and fixed-position mechanics | GROK |
-| Colonial-era themes | Medium | Medium | Fictional crowns; natives as polities with agency; Mahler review | MAHLER |
+| Scope too large | High | High | Cut combat depth and Map of the World project first; ship 3 crowns if needed | GLM |
+| Error mechanic feels unfair | Medium | High | Clear provenance, risk projections, and fixed-position mechanics | GLM |
+| Colonial-era themes | Medium | Medium | Fictional crowns; natives as polities with agency; maintainer review filed as an item | GLM |
 | AI too slow | Medium | Medium | Background turns, cached frontier evaluation | GLM |
 
 ## 11. Out of Scope
@@ -279,14 +277,14 @@ Land warfare beyond colony defense values; religion systems; real-time battles; 
 | P3 | GLM | 25–35 |
 | P4 | GLM | 20–30 |
 | P5 | GLM | 15–20 |
-| P6 | GROK + CLAUDE | 25–40 |
-| P7 | CLAUDE | 15–20 |
-| P8 | CLAUDE | 10–15 |
-| P9 | GROK + CLAUDE | 15–25 |
-| P10 | CLAUDE + GROK | 4–6 |
+| P6 | GLM | 25–40 |
+| P7 | GLM | 15–20 |
+| P8 | GLM | 10–15 |
+| P9 | GLM | 15–25 |
+| P10 | GLM | 4–6 |
 | **Total** | | **176–256** |
 
-## 13. Open Questions for Mahler
+## 13. Open Questions
 
 1. Fictionalized crowns vs historical nations? Default: fictionalized.
 2. Ship v1 without online multiplayer? Default: yes if P7 is late; async is the first cut.

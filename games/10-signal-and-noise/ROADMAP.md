@@ -6,14 +6,14 @@
 | --- | --- |
 | Game number and slug | 10 · `signal-and-noise` |
 | Code prefix | `SN` (packages `SNCore`, `SNContent`, `SNAI`, `SNRender`, `SNAudio`, `SNPlatform`, `SNMeta`) |
-| Bundle ID (placeholder) | `com.zyniker.signal-and-noise` |
+| Bundle ID | `GEIST_BUNDLE_ID` build setting, set by the maintainer (`_CONVENTIONS.md` §2) |
 | Subgenre | Asymmetric hidden-movement duel |
 | Difficulty tier | Deep |
 | Scope | Small team |
 | Session length | 20–40 minutes |
 | Renderer | SpriteKit (2D screen-print city map) |
 | Players | Solo vs AI (either side); local two-device play (iPad board plus iPhone private hand via MultipeerConnectivity); pass-and-play; async online via GameKit turn-based |
-| Conventions | [`_CONVENTIONS.md`](../_shared/_CONVENTIONS.md) v1.0 (read first) |
+| Conventions | [`_CONVENTIONS.md`](../_shared/_CONVENTIONS.md) v2.0 (read first) |
 
 ## 1. Summary and Design Pillars
 
@@ -126,7 +126,7 @@ Targets (AI vs AI Hard, 2,000 games per city): Network win rate 45–55%; median
 
 ## 8. Phases, Tasks, and Gates
 
-### P0 Setup (Owner: GLM)
+### P0 Setup
 - Standard tasks S0.1–S0.7.
 - SN-P0.1 `Bitset128` with tests.
 
@@ -134,7 +134,7 @@ Targets (AI vs AI Hard, 2,000 games per city): Network win rate 45–55%; median
 GATE G0 — Setup: standard checks · Sign-off: GLM-SELF
 ```
 
-### P1 Rules Engine Prototype (Owner: GLM)
+### P1 Rules Engine Prototype
 - Standard tasks S1.1–S1.4.
 - SN-P1.1 City graph, setup, and missions (R-1 to R-4).
 - SN-P1.2 Network movement, drops, and tools (R-5 to R-8).
@@ -150,7 +150,7 @@ Checks:
 Sign-off: GLM-SELF
 ```
 
-### P2 Core Loop Vertical Slice (Owner: GLM)
+### P2 Core Loop Vertical Slice
 - Standard tasks S2.1–S2.5.
 - SN-P2.1 City map; drag a piece along streets to move (path snaps to graph edges); tap tools from a tray.
 - SN-P2.2 Possibility heat overlay for CI (assist on), case board panel with the event history.
@@ -164,20 +164,19 @@ Checks:
   [ ] UI test completes a game as each side on iPad and Mac
   [ ] Render receives only View types (compile-time: SNRender has no access to GameState; test via module boundaries)
   [ ] Save/resume identical hash
-Sign-off: REVIEW: GROK (are both sides fun?) + REVIEW: MAHLER
-🛑 GLM STOP
+Sign-off: GLM-SELF
 ```
 
-### P3 Content and Systems (Owner: GLM)
+### P3 Content and Systems
 - SN-P3.1 All tools, roadblocks, and informant; second city.
 - SN-P3.2 Tutorials for both sides (6 steps each).
 - SN-P3.3 Assist toggle (off: CI marks suspicions manually on the case board).
 
 ```
-GATE G3 — Content and Systems: counts; content-lint 0 errors; both tutorials pass UI tests · Sign-off: GLM-SELF; REVIEW: CLAUDE async
+GATE G3 — Content and Systems: counts; content-lint 0 errors; both tutorials pass UI tests · Sign-off: GLM-SELF
 ```
 
-### P4 AI Opponents (Owner: GLM)
+### P4 AI Opponents
 - SN-P4.1 CI AI and Network ISMCTS with three difficulties; balance report.
 
 ```
@@ -189,7 +188,7 @@ Checks:
 Sign-off: GLM-SELF
 ```
 
-### P5 Meta and Replayability (Owner: GLM)
+### P5 Meta and Replayability
 - SN-P5.1 City generator (validated for connectivity, district balance, and drop-site spacing); 5 cities.
 - SN-P5.2 Roles for agents and watchers; 24 mission cards.
 - SN-P5.3 AI ladder (10 opponents per side), stats, and 24 achievements.
@@ -199,19 +198,18 @@ GATE G5 — Meta and Replayability
 Checks:
   [ ] 300 generated cities each pass AI balance within 35–65%
   [ ] Coverage thresholds; docs/HANDOFF.md complete
-Sign-off: REVIEW: CLAUDE + GROK + MAHLER
-🛑 GLM FINAL STOP
+Sign-off: GLM-SELF
 ```
 
-### P6 Aesthetics and Audio Pass (Owner: GROK + CLAUDE)
+### P6 Aesthetics and Audio Pass
 - SN-P6.1 Screen-print rendering with misregistration offset, halftone districts, and stamped reveals.
 - SN-P6.2 Jazz stems layered by tension (CI possibility size, drops completed).
 
 ```
-GATE G6 — Aesthetics: snapshots approved · Sign-off: REVIEW: MAHLER
+GATE G6 — Aesthetics: snapshots approved · Sign-off: GLM-SELF
 ```
 
-### P7 Platform Features (Owner: CLAUDE)
+### P7 Platform Features
 - SN-P7.1 Two-device local play: iPad board plus iPhone Network hand using MultipeerConnectivity, with commitment/reveal so the host never displays hidden info; reconnection handling.
 - SN-P7.2 GameKit turn-based async with commitments (hidden moves encrypted to the mover; the opponent's device receives only public events and digests; at reveal rounds the mover's device publishes the reveal payload, verified against digests).
 - SN-P7.3 Pencil: mark suspicions on the case board and map; hover highlights reachable nodes.
@@ -222,37 +220,37 @@ GATE G7 — Platform
 Checks:
   [ ] Two-device game completes with Wi-Fi interruption and reconnection
   [ ] Async game between sandbox accounts; tamper test (altered reveal) is rejected
-Sign-off: REVIEW: GROK
+Sign-off: GLM-SELF
 ```
 
-### P8 Polish, Accessibility, and Performance (Owner: CLAUDE)
+### P8 Polish, Accessibility, and Performance
 - SN-P8.1 Watchers and agents distinguished by shape; reveals and traces by stamp shape.
 - SN-P8.2 VoiceOver navigation by district and node with possibility counts.
 
 ```
-GATE G8 — Polish: perf budgets; VoiceOver plays a CI game · Sign-off: REVIEW: GROK + MAHLER
+GATE G8 — Polish: perf budgets; VoiceOver plays a CI game · Sign-off: GLM-SELF
 ```
 
 ### P9 Beta and TestFlight / P10 Release Prep
 - Standard tasks.
 
 ```
-GATE G9 — Beta: crash-free ≥ 99.5%; no S1/S2 · Sign-off: REVIEW: MAHLER
-GATE G10 — Release: assets approved · Sign-off: REVIEW: MAHLER (Mahler submits)
+GATE G9 — Beta: crash-free ≥ 99.5%; no S1/S2 · Sign-off: GLM-SELF
+GATE G10 — Release: assets approved · Sign-off: GLM-SELF
 ```
 
-## 9. Handoff to Grok and Claude
+## 9. Fragile Areas and Priorities
 
 - Fragile areas: view separation (INV-1), deduction soundness (INV-2), and commitment protocol.
-- First pickups: GROK — side balance and tool design; CLAUDE — two-device networking and async protocol.
+- Priorities for P6–P10: side balance and tool design; two-device networking and async protocol.
 
 ## 10. Risks and Mitigations
 
 | Risk | Likelihood | Impact | Mitigation | Owner |
 | --- | --- | --- | --- | --- |
-| Hidden info leaks in async | Medium | High | Commitments; views by construction; tamper tests | CLAUDE |
-| One side boring | Medium | High | Equal-depth tools; sims plus playtests per side | GROK |
-| Deduction assist removes challenge | Medium | Medium | Assist toggle and ranked mode with assist off | GROK |
+| Hidden info leaks in async | Medium | High | Commitments; views by construction; tamper tests | GLM |
+| One side boring | Medium | High | Equal-depth tools; sims plus playtests per side | GLM |
+| Deduction assist removes challenge | Medium | Medium | Assist toggle and ranked mode with assist off | GLM |
 
 ## 11. Out of Scope
 
@@ -268,14 +266,14 @@ More than 2 players; voice chat; real cities' exact maps; narrative campaign.
 | P3 | GLM | 6–9 |
 | P4 | GLM | 10–14 |
 | P5 | GLM | 8–12 |
-| P6 | GROK + CLAUDE | 8–12 |
-| P7 | CLAUDE | 10–15 |
-| P8 | CLAUDE | 4–6 |
-| P9 | GROK + CLAUDE | 8–12 |
-| P10 | CLAUDE + GROK | 2–4 |
+| P6 | GLM | 8–12 |
+| P7 | GLM | 10–15 |
+| P8 | GLM | 4–6 |
+| P9 | GLM | 8–12 |
+| P10 | GLM | 2–4 |
 | **Total** | | **74–110** |
 
-## 13. Open Questions for Mahler
+## 13. Open Questions
 
 1. Era-specific (1960s Cold War) or timeless? Default: 1960s with fictional agencies.
 2. Is two-device local play a v1 must-have? Default: yes; it is the signature feature.

@@ -2,7 +2,7 @@
 
 > Guide ships into harbor through fog by placing lighthouses, buoys, and foghorns along a coastline that grows more treacherous every night.
 
-Read [`_CONVENTIONS.md`](../_shared/_CONVENTIONS.md) v1.0 in full before starting. This roadmap only adds what is specific to Beacon Coast. Where this file says "per conventions," the shared rule applies unchanged.
+Read [`_CONVENTIONS.md`](../_shared/_CONVENTIONS.md) v2.0 in full before starting. This roadmap only adds what is specific to Beacon Coast. Where this file says "per conventions," the shared rule applies unchanged.
 
 ## 0. Metadata
 
@@ -10,7 +10,7 @@ Read [`_CONVENTIONS.md`](../_shared/_CONVENTIONS.md) v1.0 in full before startin
 | --- | --- |
 | Game number and slug | 14 · `beacon-coast` |
 | Code prefix | `BCN` (packages `BCNCore`, `BCNContent`, `BCNAI`, `BCNRender`, `BCNAudio`, `BCNPlatform`, `BCNMeta`) |
-| Bundle ID (placeholder) | `com.zyniker.beacon-coast` |
+| Bundle ID | `GEIST_BUNDLE_ID` build setting, set by the maintainer (`_CONVENTIONS.md` §2) |
 | Subgenre | Puzzle logistics (real-time with pause) |
 | Difficulty tier | Approachable |
 | Scope | Solo-indie |
@@ -18,7 +18,7 @@ Read [`_CONVENTIONS.md`](../_shared/_CONVENTIONS.md) v1.0 in full before startin
 | Renderer | SpriteKit (2D) + one Metal 4 compute/fragment pass for volumetric fog and beam light (`BCNRender/Fog`) |
 | Players | Solo only (score attack, daily, and weekly challenges); no multiplayer in v1.0 |
 | Simulation | Fixed tick, 30 ticks per second, integer and `Fixed` math only |
-| Conventions | [`_CONVENTIONS.md`](../_shared/_CONVENTIONS.md) v1.0 (read first) |
+| Conventions | [`_CONVENTIONS.md`](../_shared/_CONVENTIONS.md) v2.0 (read first) |
 
 ## 1. Summary and Design Pillars
 
@@ -324,7 +324,7 @@ Determinism: AI code uses only the run RNG or seeds derived by `SplitMix64(runSe
 
 ## 8. Phases, Tasks, and Gates
 
-### P0 Setup (Owner: GLM)
+### P0 Setup
 
 Standard tasks S0.1–S0.7.
 
@@ -342,7 +342,7 @@ Checks:
 Sign-off: GLM-SELF
 ```
 
-### P1 Rules Engine Prototype (Owner: GLM)
+### P1 Rules Engine Prototype
 
 Standard tasks S1.1–S1.4.
 
@@ -367,7 +367,7 @@ Checks:
 Sign-off: GLM-SELF
 ```
 
-### P2 Core Loop Vertical Slice (Owner: GLM)
+### P2 Core Loop Vertical Slice
 
 Standard tasks S2.1–S2.5. Slice scope: the Maine coastline, nights 1–5, lighthouse (sweep and sector), buoy, foghorn, 3 hulls, 6 upgrades, placeholder art in the final palette, simple Metal fog (or a SpriteKit alpha overlay if Metal is not ready; log an ADR).
 
@@ -378,7 +378,7 @@ Standard tasks S2.1–S2.5. Slice scope: the Maine coastline, nights 1–5, ligh
 - **BCN-P2.5 Harbor Phase screen.** Two upgrade cards, a "Set Sail" button, and drag-to-rearrange aids. Acceptance: XCUITest picks an upgrade and starts night 2.
 - **BCN-P2.6 Results screen.** Score, nights, ships docked by hull, cause of end with a replay of the last 5 seconds (ring buffer of render states, no re-simulation needed).
 
-Slice-specific G2 checks: (a) a new tester docks ≥ 5 ships on night 1 with no instructions (Mahler judges); (b) a full scripted run to wreck plays in XCUITest on iPad and Mac; (c) fog and beams read clearly in screenshots at iPad 11".
+Slice-specific G2 checks: (a) a new tester docks ≥ 5 ships on night 1 with no instructions (playtest; `_CONVENTIONS.md` §8.2); (b) a full scripted run to wreck plays in XCUITest on iPad and Mac; (c) fog and beams read clearly in screenshots at iPad 11".
 
 ```
 GATE G2 — Vertical Slice
@@ -388,12 +388,10 @@ Checks:
   [ ] Save mid-night, kill app, resume → identical state hash
   [ ] Heading-line warning precedes every wreck in 200 sim runs (INV-8 visual equivalent)
   [ ] docs/media/slice.mp4 recorded
-  [ ] REVIEW: GROK — is placing and nudging light an interesting decision every 10–20 seconds? Are upgrades meaningful?
-  [ ] REVIEW: MAHLER — is it calm, readable, and fun enough to continue?
-Sign-off: REVIEW: GROK + MAHLER · 🛑 GLM STOP
+Sign-off: GLM-SELF
 ```
 
-### P3 Content and Systems (Owner: GLM)
+### P3 Content and Systems
 
 - **BCN-P3.1 Full aids and patterns.** Flash pattern, bell buoys, and all modifiers. Acceptance: rule tests updated; content-lint validates `aids.json`.
 - **BCN-P3.2 Hulls.** All 6 hull classes with sprites (placeholder) and tier gating.
@@ -411,11 +409,10 @@ Checks:
   [ ] content-lint: 0 errors; every content ID referenced by code exists
   [ ] Tutorial completes in XCUITest on iPad and Mac
   [ ] All rule tests green; Core coverage ≥ 90%
-  [ ] REVIEW: CLAUDE (async, non-blocking): architecture and code-quality notes logged in STATUS.md
-Sign-off: GLM-SELF + REVIEW: CLAUDE (async)
+Sign-off: GLM-SELF
 ```
 
-### P4 AI Opponents (Owner: GLM)
+### P4 AI Opponents
 
 For Beacon Coast this phase builds the bots and generators in §7.
 
@@ -434,7 +431,7 @@ Checks:
 Sign-off: GLM-SELF
 ```
 
-### P5 Meta and Replayability (Owner: GLM)
+### P5 Meta and Replayability
 
 - **BCN-P5.1 Daily fog** (`DailySeed`, `DailyFogGenerator`, verifier). One attempt counts for the leaderboard; unlimited practice attempts after.
 - **BCN-P5.2 Weekly challenge.** One mutator plus one coast per ISO week (UTC).
@@ -444,20 +441,19 @@ Sign-off: GLM-SELF
 - **BCN-P5.6 Endless sandbox.** No wrecks end the run (wreck costs 1 reputation instead); scores excluded from leaderboards.
 
 ```
-GATE G5 — Meta and Replayability (Final GLM Handoff)
+GATE G5 — Meta and Replayability
 Checks:
   [ ] Daily seeds for the next 60 days generate and verify in CI (expert survives ≥ 3 nights each)
   [ ] Same daily seed produces identical maps on iPad and Mac (hash compare)
   [ ] Unlock thresholds reachable: expert bot hits Brittany unlock within 25 sim runs
   [ ] All standard tests and coverage thresholds (§5 of conventions) pass
   [ ] docs/HANDOFF.md complete (all 10 items in conventions §9 plus §9 below)
-  [ ] REVIEW: CLAUDE (architecture), GROK (replayability and balance), MAHLER (play 3 dailies)
-Sign-off: REVIEW: CLAUDE + GROK + MAHLER · 🛑 GLM FINAL STOP
+Sign-off: GLM-SELF
 ```
 
-### P6 Aesthetics and Audio Pass (Owner: GROK + CLAUDE)
+### P6 Aesthetics and Audio Pass
 
-- **BCN-P6.1** Final Metal fog pass: two octaves of animated noise inside fog density, beam scattering (brighter where fog is thicker), and a soft vignette. Claude implements; Grok directs.
+- **BCN-P6.1** Final Metal fog pass: two octaves of animated noise inside fog density, beam scattering (brighter where fog is thicker), and a soft vignette. GLM implements.
 - **BCN-P6.2** Final coastline art per region (Maine granite and spruce, Cornwall cliffs, Hokkaido snow, Brittany standing stones as land silhouettes); palettes per coast within the master palette.
 - **BCN-P6.3** Ship silhouettes, wake trails, and the docking glow.
 - **BCN-P6.4** Music stems (3 per tier band) and SFX set; mix with ducking on wreck.
@@ -466,13 +462,12 @@ Sign-off: REVIEW: CLAUDE + GROK + MAHLER · 🛑 GLM FINAL STOP
 ```
 GATE G6 — Aesthetics
 Checks:
-  [ ] Pillar 1 screenshot test: 10 random frames, Grok identifies the next hazard in each within 5 s
+  [ ] Pillar 1 screenshot test: 10 random frames saved to `docs/media/`, the next hazard identifiable in each within 5 s (GLM self-assessment; human check playtest; `_CONVENTIONS.md` §8.2)
   [ ] 120 fps on iPad Pro (M4) with final fog at 30 ships
-  [ ] REVIEW: MAHLER — art and audio approved
-Sign-off: REVIEW: MAHLER
+Sign-off: GLM-SELF
 ```
 
-### P7 Platform Features (Owner: CLAUDE)
+### P7 Platform Features
 
 - **BCN-P7.1 Apple Pencil.** Hover over a lighthouse previews its beam for the next 120 ticks as a faint swept area (preview only, never commits). Squeeze opens the inventory palette at the tip. Pencil drag places and moves aids. Finger fallback for everything.
 - **BCN-P7.2 Game Center.** Auth, leaderboards (`bcn.daily`, `bcn.weekly`, four coast bests), 20 achievements, and Game Center challenges bound to the daily leaderboard.
@@ -487,10 +482,10 @@ Checks:
   [ ] Game Center sandbox: submit and read back scores for daily and one coast
   [ ] iCloud: run started on iPad resumes on Mac with identical hash
   [ ] Mac: every action reachable by keyboard
-Sign-off: REVIEW: GROK
+Sign-off: GLM-SELF
 ```
 
-### P8 Polish, Accessibility, and Performance (Owner: CLAUDE)
+### P8 Polish, Accessibility, and Performance
 
 - **BCN-P8.1** Color-blind modes: warning lines also dash; hazards use a hatch pattern; beam color stays warm but warning switches to magenta `#D14FD1` in deuteranopia mode.
 - **BCN-P8.2** VoiceOver: aids, ships (hull, state, distance to harbor), and an audio "next danger" readout on demand.
@@ -504,16 +499,15 @@ Checks:
   [ ] Conventions §7 budgets met on real devices (PERF.md)
   [ ] Accessibility Inspector audit: 0 issues on main screens
   [ ] Color-blind simulation screenshots reviewed
-  [ ] REVIEW: GROK + MAHLER
-Sign-off: REVIEW: GROK + MAHLER
+Sign-off: GLM-SELF
 ```
 
-### P9 Beta and TestFlight (Owner: GROK + CLAUDE)
+### P9 Beta and TestFlight
 
-- **BCN-P9.1** Internal TestFlight build (Mahler creates the App Store Connect record and TestFlight group; agents never do).
+- **BCN-P9.1** Internal TestFlight build.
 - **BCN-P9.2** Opt-in stats export (a JSON file the tester shares manually): nights, cause of end, coast, and upgrade picks.
 - **BCN-P9.3** Balance passes from exported stats; update `balance.json` only through PRs with sim evidence.
-- **BCN-P9.4** External group only after Mahler approves.
+- **BCN-P9.4** External group is a maintainer item (`_CONVENTIONS.md` §8.2).
 
 ```
 GATE G9 — Beta
@@ -521,11 +515,10 @@ Checks:
   [ ] Crash-free sessions ≥ 99.5% over ≥ 200 sessions
   [ ] Median tester run 8–15 min; ≥ 70% of testers finish the tutorial
   [ ] No open S1/S2 issues
-  [ ] REVIEW: MAHLER
-Sign-off: REVIEW: MAHLER
+Sign-off: GLM-SELF
 ```
 
-### P10 Release Prep (Owner: CLAUDE + GROK)
+### P10 Release Prep
 
 - **BCN-P10.1** App Store metadata draft (name, subtitle, keywords, description), 10 screenshots per size class, a 30-second app preview from a scripted replay.
 - **BCN-P10.2** Privacy label (Data Not Collected; Game Center is Apple's), age rating draft (expected 4+), accessibility nutrition labels.
@@ -535,30 +528,29 @@ Sign-off: REVIEW: MAHLER
 GATE G10 — Release
 Checks:
   [ ] Release candidate passes the full CI and a clean-install smoke on all device classes
-  [ ] All metadata drafts reviewed by Grok (copy) and Claude (technical accuracy)
-  [ ] REVIEW: MAHLER — submits (only Mahler submits)
-Sign-off: REVIEW: MAHLER
+  [ ] All metadata drafts self-reviewed for copy and technical accuracy against the build
+Sign-off: GLM-SELF
 ```
 
-## 9. Handoff to Grok and Claude
+## 9. Fragile Areas and Priorities
 
 Emphasize in `docs/HANDOFF.md`:
 
 - The **heading-line warning** logic (BCN-P2.2) is the fairness backbone; any change needs a sim proving INV-8 still holds.
 - **Fragile areas:** angle wraparound at 0/4096 in beam coverage; A* replanning budget under heavy fog (ships can visibly stall if the round-robin starves); the tide boundary where a reef becomes exposed mid-path.
 - **Fixed vs float:** Render interpolates positions with `Float`; it must never write back to Core.
-- **First tasks for the finishing agents:** Grok — read `docs/BALANCE.md` and tune nights 4–8 toward the expert target; Claude — replace the placeholder fog with the final Metal pass and profile on an A16 iPad.
+- **Priorities for P6–P10:** read `docs/BALANCE.md` and tune nights 4–8 toward the expert target; replace the placeholder fog with the final Metal pass and profile on an A16 iPad.
 
 ## 10. Risks and Mitigations
 
 | Risk | Likelihood | Impact | Mitigation | Owner |
 | --- | --- | --- | --- | --- |
-| Too similar to Mini Metro in the eyes of players and press | Medium | Medium | Lean on light geometry and fog visuals in all marketing; light is the verb (pillar 2) | GROK |
-| Wrecks feel random in thick fog | Medium | High | INV-8 plus heading-line warnings; sim assertion in CI | GLM → GROK |
-| Metal fog pass too expensive on A16 | Low | Medium | Fog texture is one texel per tile; fall back to SpriteKit alpha overlay | CLAUDE |
+| Too similar to Mini Metro in the eyes of players and press | Medium | Medium | Lean on light geometry and fog visuals in all marketing; light is the verb (pillar 2) | GLM |
+| Wrecks feel random in thick fog | Medium | High | INV-8 plus heading-line warnings; sim assertion in CI | GLM |
+| Metal fog pass too expensive on A16 | Low | Medium | Fog texture is one texel per tile; fall back to SpriteKit alpha overlay | GLM |
 | A* cost spikes with many ships | Medium | Medium | Round-robin cap; cache paths; measure test in CI | GLM |
 | Dailies occasionally unwinnable | Low | High | Verifier with expert bot and salted retries | GLM |
-| Real-world coast names imply accuracy | Low | Low | Call them "inspired by"; no real map data | GROK |
+| Real-world coast names imply accuracy | Low | Low | Call them "inspired by"; no real map data | GLM |
 
 ## 11. Out of Scope
 
@@ -579,17 +571,17 @@ Emphasize in `docs/HANDOFF.md`:
 | P3 Content and Systems | GLM | 6–9 |
 | P4 AI and Generators | GLM | 4–6 |
 | P5 Meta | GLM | 4–6 |
-| P6 Aesthetics and Audio | GROK + CLAUDE | 8–12 |
-| P7 Platform | CLAUDE | 4–6 |
-| P8 Polish | CLAUDE | 5–7 |
-| P9 Beta | GROK + CLAUDE | 5–10 |
-| P10 Release | CLAUDE + GROK | 2–4 |
+| P6 Aesthetics and Audio | GLM | 8–12 |
+| P7 Platform | GLM | 4–6 |
+| P8 Polish | GLM | 5–7 |
+| P9 Beta | GLM | 5–10 |
+| P10 Release | GLM | 2–4 |
 | **Total** | | **52–81** |
 
-## 13. Open Questions for Mahler
+## 13. Open Questions
 
 1. Should one wreck always end the run, or should the base game grant one free wreck? **Default:** one wreck ends the run; `salvage_tug` upgrade provides the exception.
 2. Is a fourth aid type (a radio beacon unlocked late) wanted for v1.0? **Default:** no; listed in Out of Scope until after launch.
 3. Display typeface for titles? **Default:** SF Pro Display Light, wide tracking.
 4. Are regional names (Maine, Cornwall, Hokkaido, Brittany) acceptable, or should coasts be fictional? **Default:** "inspired by" real regions, with fictional harbor names.
-5. Price point? **Default:** none set by agents; a Mahler decision in P10.
+5. Price point? **Default:** none set by agents; a maintainer decision; GLM leaves the price unset.

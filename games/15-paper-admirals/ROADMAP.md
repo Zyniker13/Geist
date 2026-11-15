@@ -2,7 +2,7 @@
 
 > Simultaneous-order naval battles on a folded-paper sea, where wind, current, and the creases of the map decide who holds the weather gauge.
 
-Read [`_CONVENTIONS.md`](../_shared/_CONVENTIONS.md) v1.0 in full before starting. This roadmap only adds what is specific to Paper Admirals.
+Read [`_CONVENTIONS.md`](../_shared/_CONVENTIONS.md) v2.0 in full before starting. This roadmap only adds what is specific to Paper Admirals.
 
 ## 0. Metadata
 
@@ -10,14 +10,14 @@ Read [`_CONVENTIONS.md`](../_shared/_CONVENTIONS.md) v1.0 in full before startin
 | --- | --- |
 | Game number and slug | 15 · `paper-admirals` |
 | Code prefix | `PAD` (packages `PADCore`, `PADContent`, `PADAI`, `PADRender`, `PADAudio`, `PADPlatform`, `PADMeta`) |
-| Bundle ID (placeholder) | `com.zyniker.paper-admirals` |
+| Bundle ID | `GEIST_BUNDLE_ID` build setting, set by the maintainer (`_CONVENTIONS.md` §2) |
 | Subgenre | Simultaneous-turn fleet tactics with a short campaign |
 | Difficulty tier | Intermediate |
 | Scope | Small team |
 | Session length | 10–20 min per battle; campaign 2–3 hours over 8 battles |
 | Renderer | SpriteKit (2D, top-down hex sea) + `SKShader` for paper creases and ink-wash water; no Metal compute |
 | Players | Solo vs AI (skirmish and campaign), local pass-and-play, async online via GameKit turn-based matches (commit-reveal) |
-| Conventions | [`_CONVENTIONS.md`](../_shared/_CONVENTIONS.md) v1.0 (read first) |
+| Conventions | [`_CONVENTIONS.md`](../_shared/_CONVENTIONS.md) v2.0 (read first) |
 
 ## 1. Summary and Design Pillars
 
@@ -323,7 +323,7 @@ Simultaneous moves mean the AI must reason about a distribution of opponent orde
 
 ## 8. Phases, Tasks, and Gates
 
-### P0 Setup (Owner: GLM)
+### P0 Setup
 
 Standard tasks S0.1–S0.7.
 
@@ -339,7 +339,7 @@ Checks:
 Sign-off: GLM-SELF
 ```
 
-### P1 Rules Engine Prototype (Owner: GLM)
+### P1 Rules Engine Prototype
 
 Standard tasks S1.1–S1.4.
 
@@ -363,7 +363,7 @@ Checks:
 Sign-off: GLM-SELF
 ```
 
-### P2 Core Loop Vertical Slice (Owner: GLM)
+### P2 Core Loop Vertical Slice
 
 Standard tasks S2.1–S2.5. Slice scope: one skirmish map (`twin_folds`), 3 ship classes (sloop, brig, frigate), 3v3, vs the `easy` AI, plus local pass-and-play.
 
@@ -374,7 +374,7 @@ Standard tasks S2.1–S2.5. Slice scope: one skirmish map (`twin_folds`), 3 ship
 - **PAD-P2.5 Pass-and-play.** A "Hand over to the other admiral" screen hides the board between plots.
 - **PAD-P2.6 Wind rose and weather gauge indicator.**
 
-Slice checks: Mahler can plot a 3-ship turn in under 45 seconds after two battles; the board reads clearly at iPad 11".
+Slice checks: a player (playtest; `_CONVENTIONS.md` §8.2) can plot a 3-ship turn in under 45 seconds after two battles; the board reads clearly at iPad 11".
 
 ```
 GATE G2 — Vertical Slice
@@ -384,12 +384,10 @@ Checks:
   [ ] Preview equals resolved movement in 200 random cases (unit test across PADRender preview adapter and Core)
   [ ] ≥ 60 fps in debug overlay during resolution playback with 6 ships
   [ ] docs/media/slice.mp4 recorded
-  [ ] REVIEW: GROK — is predicting the opponent the core skill? Is wind meaningful?
-  [ ] REVIEW: MAHLER — fun enough to continue?
-Sign-off: REVIEW: GROK + MAHLER · 🛑 GLM STOP
+Sign-off: GLM-SELF
 ```
 
-### P3 Content and Systems (Owner: GLM)
+### P3 Content and Systems
 
 - **PAD-P3.1** All 8 ship classes including `fire_ship` and `bomb_ketch` rules (add rule IDs R-60+ to RULES.md with ADRs).
 - **PAD-P3.2** 12 skirmish maps; 16 captain traits.
@@ -405,11 +403,10 @@ Checks:
   [ ] content-lint 0 errors; all rule tests green
   [ ] Campaign completes end-to-end in XCUITest using the debug "auto-resolve battles" switch
   [ ] Tutorial battles complete in XCUITest
-  [ ] REVIEW: CLAUDE (async)
-Sign-off: GLM-SELF + REVIEW: CLAUDE (async)
+Sign-off: GLM-SELF
 ```
 
-### P4 AI Opponents (Owner: GLM)
+### P4 AI Opponents
 
 - **PAD-P4.1** `CandidateGenerator` with pruning of dominated courses.
 - **PAD-P4.2** Easy, medium, hard, and admiral tiers (§7).
@@ -427,7 +424,7 @@ Checks:
 Sign-off: GLM-SELF
 ```
 
-### P5 Meta and Replayability (Owner: GLM)
+### P5 Meta and Replayability
 
 - **PAD-P5.1 Daily Battle.** A daily map (procedural) and fixed fleets vs the hard AI; score = VP margin + turns remaining bonus.
 - **PAD-P5.2 Admiralty unlocks.** Ship classes and maps unlock via campaign progress; all earnable.
@@ -436,17 +433,16 @@ Sign-off: GLM-SELF
 - **PAD-P5.5 Replays.** Save any battle replay and play it back from the results screen.
 
 ```
-GATE G5 — Meta and Replayability (Final GLM Handoff)
+GATE G5 — Meta and Replayability
 Checks:
   [ ] Two-client fake async test plays 12 turns with commit-reveal; tampering test forfeits
   [ ] Daily battles generate deterministically for 60 days; hard AI does not lose to easy AI from the player seat more than 10%
   [ ] All standard tests and coverage thresholds pass
   [ ] docs/HANDOFF.md complete
-  [ ] REVIEW: CLAUDE + GROK + MAHLER
-Sign-off: REVIEW: CLAUDE + GROK + MAHLER · 🛑 GLM FINAL STOP
+Sign-off: GLM-SELF
 ```
 
-### P6 Aesthetics and Audio Pass (Owner: GROK + CLAUDE)
+### P6 Aesthetics and Audio Pass
 
 - **PAD-P6.1** Final origami ship sprites (8 classes × 6 headings × 2 sides × damage states: intact, damaged, burning, struck).
 - **PAD-P6.2** Washi water shader, crease shading, ink smoke particles.
@@ -456,13 +452,12 @@ Sign-off: REVIEW: CLAUDE + GROK + MAHLER · 🛑 GLM FINAL STOP
 ```
 GATE G6 — Aesthetics
 Checks:
-  [ ] Pillar 2 screenshot test: Grok names the gauge holder in 10/10 random frames
+  [ ] Pillar 2 screenshot test: the gauge holder is identifiable in 10/10 random frames (GLM self-assessment; human check playtest; `_CONVENTIONS.md` §8.2)
   [ ] 120 fps on iPad Pro (M4) during resolution
-  [ ] REVIEW: MAHLER
-Sign-off: REVIEW: MAHLER
+Sign-off: GLM-SELF
 ```
 
-### P7 Platform Features (Owner: CLAUDE)
+### P7 Platform Features
 
 - **PAD-P7.1 Pencil.** Draw courses with Pencil; hover over a ship previews its arcs and range; squeeze opens the shot wheel.
 - **PAD-P7.2 GameKit turn-based.** Bind `TurnBasedMatchService` to `GKTurnBasedMatch` with `SHA256Verifier`; matchmaking, rematch, and turn notifications.
@@ -475,11 +470,10 @@ GATE G7 — Platform
 Checks:
   [ ] Two sandbox Game Center accounts complete an async match on iPad + Mac
   [ ] matchData stays < 64 KB through 16 turns
-  [ ] REVIEW: GROK
-Sign-off: REVIEW: GROK
+Sign-off: GLM-SELF
 ```
 
-### P8 Polish, Accessibility, and Performance (Owner: CLAUDE)
+### P8 Polish, Accessibility, and Performance
 
 - **PAD-P8.1** Color-blind: sides distinguished by sail pattern (striped vs plain) as well as color.
 - **PAD-P8.2** VoiceOver: ship cards, course summary ("Frigate Kestrel: forward two, turn right, forward one; round shot; fire at first chance").
@@ -491,13 +485,12 @@ GATE G8 — Polish
 Checks:
   [ ] Budgets met on real devices; hard AI p95 ≤ 1.5 s on iPad (A16)
   [ ] Accessibility audit clean
-  [ ] REVIEW: GROK + MAHLER
-Sign-off: REVIEW: GROK + MAHLER
+Sign-off: GLM-SELF
 ```
 
-### P9 Beta and TestFlight (Owner: GROK + CLAUDE)
+### P9 Beta and TestFlight
 
-- **PAD-P9.1** Internal TestFlight (Mahler creates records and groups).
+- **PAD-P9.1** Internal TestFlight.
 - **PAD-P9.2** Async matches among testers; collect desync reports.
 - **PAD-P9.3** Balance from opt-in exported stats.
 
@@ -506,11 +499,10 @@ GATE G9 — Beta
 Checks:
   [ ] 0 desyncs across ≥ 50 tester async matches
   [ ] Crash-free ≥ 99.5%
-  [ ] REVIEW: MAHLER
-Sign-off: REVIEW: MAHLER
+Sign-off: GLM-SELF
 ```
 
-### P10 Release Prep (Owner: CLAUDE + GROK)
+### P10 Release Prep
 
 Standard P10 tasks plus a 30-second preview showing a plotted turn and its resolution.
 
@@ -519,26 +511,25 @@ GATE G10 — Release
 Checks:
   [ ] RC passes full CI and clean-install smoke
   [ ] Metadata, screenshots, privacy and age-rating drafts reviewed
-  [ ] REVIEW: MAHLER (submits)
-Sign-off: REVIEW: MAHLER
+Sign-off: GLM-SELF
 ```
 
-## 9. Handoff to Grok and Claude
+## 9. Fragile Areas and Priorities
 
-- **Fragile areas:** the impulse allocation table (R-14) and simultaneous damage (R-24) are where subtle bugs hide; the commit-reveal pipeline (R-51) must be audited by Claude before P7 binds it to GameKit.
+- **Fragile areas:** the impulse allocation table (R-14) and simultaneous damage (R-24) are where subtle bugs hide; the commit-reveal pipeline (R-51) must be audited (GLM, with tamper tests) before P7 binds it to GameKit.
 - **Balance hot spots:** weather gauge strength and grapple odds; boarding can dominate if crew numbers are too high.
-- **First tasks:** Grok — review `docs/BALANCE.md` gauge and class pick rates; Claude — audit the protocol and bind GameKit.
+- **Priorities for P6–P10:** review `docs/BALANCE.md` gauge and class pick rates; audit the protocol and bind GameKit.
 
 ## 10. Risks and Mitigations
 
 | Risk | Likelihood | Impact | Mitigation | Owner |
 | --- | --- | --- | --- | --- |
-| Simultaneous turns feel random | Medium | High | Preview scrub, clear arcs, expected-damage hints in tutorial | GROK |
-| Hard AI too slow on A16 | Medium | Medium | Resolution cache, reduce candidate counts adaptively by measured time | GLM → CLAUDE |
-| Async cheating by reading matchData | Low | Medium | Commit-reveal (R-50–R-54) | CLAUDE |
+| Simultaneous turns feel random | Medium | High | Preview scrub, clear arcs, expected-damage hints in tutorial | GLM |
+| Hard AI too slow on A16 | Medium | Medium | Resolution cache, reduce candidate counts adaptively by measured time | GLM |
+| Async cheating by reading matchData | Low | Medium | Commit-reveal (R-50–R-54) | GLM |
 | matchData size limit | Medium | Medium | Pruning and snapshots | GLM |
-| Course drawing fiddly on iPhone | Medium | Medium | Step buttons fallback on compact width | CLAUDE |
-| Campaign scope creep | Medium | Medium | Fixed at 1 chart and 30 events for v1.0 | GROK |
+| Course drawing fiddly on iPhone | Medium | Medium | Step buttons fallback on compact width | GLM |
+| Campaign scope creep | Medium | Medium | Fixed at 1 chart and 30 events for v1.0 | GLM |
 
 ## 11. Out of Scope
 
@@ -558,17 +549,17 @@ Sign-off: REVIEW: MAHLER
 | P3 Content and Systems | GLM | 12–16 |
 | P4 AI | GLM | 8–12 |
 | P5 Meta | GLM | 5–8 |
-| P6 Aesthetics and Audio | GROK + CLAUDE | 12–18 |
-| P7 Platform | CLAUDE | 7–10 |
-| P8 Polish | CLAUDE | 5–8 |
-| P9 Beta | GROK + CLAUDE | 8–12 |
-| P10 Release | CLAUDE + GROK | 2–4 |
+| P6 Aesthetics and Audio | GLM | 12–18 |
+| P7 Platform | GLM | 7–10 |
+| P8 Polish | GLM | 5–8 |
+| P9 Beta | GLM | 8–12 |
+| P10 Release | GLM | 2–4 |
 | **Total** | | **79–117** |
 
-## 13. Open Questions for Mahler
+## 13. Open Questions
 
 1. Fixed-committer async protocol (two GameKit passes per turn) is the default; acceptable? **Default:** yes.
 2. Title display face? **Default:** New York Large.
 3. Should the campaign have one fixed narrative or be fully procedural? **Default:** fixed chart shape, procedural node contents.
 4. Include fire ships and bomb ketches in v1.0? **Default:** yes, unlocked mid-campaign.
-5. Price? **Default:** Mahler decides in P10.
+5. Price? **Default:** the maintainer decides; GLM leaves the price unset.

@@ -6,14 +6,14 @@
 | --- | --- |
 | Game number and slug | 12 · `murmuration` |
 | Code prefix | `MU` (packages `MUCore`, `MUContent`, `MUAI`, `MURender`, `MUAudio`, `MUPlatform`, `MUMeta`) |
-| Bundle ID (placeholder) | `com.zyniker.murmuration` |
+| Bundle ID | `GEIST_BUNDLE_ID` build setting, set by the maintainer (`_CONVENTIONS.md` §2) |
 | Subgenre | Real-time territory control |
 | Difficulty tier | Approachable |
 | Scope | Solo-indie |
 | Session length | 5–10 minutes per day |
 | Renderer | Metal (MTKView) instanced rendering for birds and landscape layers, hosted in SwiftUI (no SpriteKit) |
 | Players | Solo vs AI flock; local two-flock versus on one iPad |
-| Conventions | [`_CONVENTIONS.md`](../_shared/_CONVENTIONS.md) v1.0 (read first) |
+| Conventions | [`_CONVENTIONS.md`](../_shared/_CONVENTIONS.md) v2.0 (read first) |
 
 ## 1. Summary and Design Pillars
 
@@ -130,7 +130,7 @@ Targets (Autoplayer vs Gentle/Normal/Hard rival, 500 days per region): Autoplaye
 
 ## 8. Phases, Tasks, and Gates
 
-### P0 Setup (Owner: GLM)
+### P0 Setup
 - Standard tasks S0.1–S0.7.
 - MU-P0.1 Spike: 4,000 fixed-point boids at 30 Hz on CPU plus Metal instanced rendering at 120 fps on Mac; record tick time.
 
@@ -138,7 +138,7 @@ Targets (Autoplayer vs Gentle/Normal/Hard rival, 500 days per region): Autoplaye
 GATE G0 — Setup: standard checks; boid tick ≤ 4 ms for 4,000 birds on Mac Release build · Sign-off: GLM-SELF
 ```
 
-### P1 Rules Engine Prototype (Owner: GLM)
+### P1 Rules Engine Prototype
 - Standard tasks S1.1–S1.4.
 - MU-P1.1 Spatial hash and boids (R-6, R-7, INV-4).
 - MU-P1.2 Leader paths, splits, condense, and merges (R-3 to R-5).
@@ -155,7 +155,7 @@ Checks:
 Sign-off: GLM-SELF
 ```
 
-### P2 Core Loop Vertical Slice (Owner: GLM)
+### P2 Core Loop Vertical Slice
 - Standard tasks S2.1–S2.5.
 - MU-P2.1 `FlockRenderer` with interpolation, simple landscape layers, and region palette.
 - MU-P2.2 Gesture input: one-finger path, two-finger split, pinch condense; visual trace of the leader path fading over 1 s.
@@ -169,27 +169,26 @@ Checks:
   [ ] UI test plays three days with Autoplayer-generated gestures on iPad and Mac
   [ ] 120 fps on Mac and 60 fps on iPad simulator with 3,000 birds
   [ ] Pause/resume preserves checkpoint hashes
-Sign-off: REVIEW: GROK (is steering satisfying and strategic?) + REVIEW: MAHLER (is it beautiful?)
-🛑 GLM STOP
+Sign-off: GLM-SELF
 ```
 
-### P3 Content and Systems (Owner: GLM)
+### P3 Content and Systems
 - MU-P3.1 Six regions with obstacles and wind patterns; two falcon behaviors.
 - MU-P3.2 Tutorial (5 steps) and solo-objective regions.
 - MU-P3.3 Local two-flock versus on one iPad (each player owns half the screen's touches by flock color nearest).
 
 ```
-GATE G3 — Content and Systems: counts; content-lint 0 errors; tutorial UI test; versus mode UI test · Sign-off: GLM-SELF; REVIEW: CLAUDE async
+GATE G3 — Content and Systems: counts; content-lint 0 errors; tutorial UI test; versus mode UI test · Sign-off: GLM-SELF
 ```
 
-### P4 AI Opponents (Owner: GLM)
+### P4 AI Opponents
 - MU-P4.1 Rival flock AI with three difficulties; falcon AI tuning; balance report.
 
 ```
 GATE G4 — AI: 500 days per region with 0 crashes; win rates within targets or ADR; AI budget met · Sign-off: GLM-SELF
 ```
 
-### P5 Meta and Replayability (Owner: GLM)
+### P5 Meta and Replayability
 - MU-P5.1 Twelve-region migration campaign with carried flock size between regions.
 - MU-P5.2 Daily wind map and 6 modifiers; local best scores.
 - MU-P5.3 Achievements (20) and stats (largest flock, longest unbroken flight).
@@ -200,54 +199,53 @@ Checks:
   [ ] Campaign completes in an Autoplayer UI test
   [ ] Daily identical across devices for 30 dates
   [ ] Coverage thresholds; docs/HANDOFF.md complete
-Sign-off: REVIEW: CLAUDE + GROK + MAHLER
-🛑 GLM FINAL STOP
+Sign-off: GLM-SELF
 ```
 
-### P6 Aesthetics and Audio Pass (Owner: GROK + CLAUDE)
+### P6 Aesthetics and Audio Pass
 - MU-P6.1 Ink-wash bird shader with motion blur and iridescence; layered dusk landscapes per region.
 - MU-P6.2 Granular wingbeat synthesis driven by flock size, density, and turning rate; regional pads.
 
 ```
-GATE G6 — Aesthetics: snapshots and screen recordings approved · Sign-off: REVIEW: MAHLER
+GATE G6 — Aesthetics: snapshots and screen recordings approved · Sign-off: GLM-SELF
 ```
 
-### P7 Platform Features (Owner: CLAUDE)
+### P7 Platform Features
 - MU-P7.1 ProMotion: verify 120 Hz interpolation; Game Center daily leaderboard, campaign leaderboards, 20 achievements; iCloud progress.
 - MU-P7.2 Pencil: path drawing with hover preview of the leader path; Mac trackpad gestures (two-finger pan to split).
 
 ```
-GATE G7 — Platform: iCloud round-trip; leaderboards post in sandbox · Sign-off: REVIEW: GROK
+GATE G7 — Platform: iCloud round-trip; leaderboards post in sandbox · Sign-off: GLM-SELF
 ```
 
-### P8 Polish, Accessibility, and Performance (Owner: CLAUDE)
+### P8 Polish, Accessibility, and Performance
 - MU-P8.1 Reduce Motion: lower bird count rendering and no camera sway; high-contrast rival flock patterning.
 - MU-P8.2 Assist steering option (auto-avoid falcons).
 - MU-P8.3 Thermal testing for 30 minutes.
 
 ```
-GATE G8 — Polish: 120 fps on iPad Pro M4 with 4,000 birds; 60 fps on iPad (A16); no serious thermal state in 30 min · Sign-off: REVIEW: GROK + MAHLER
+GATE G8 — Polish: 120 fps on iPad Pro M4 with 4,000 birds; 60 fps on iPad (A16); no serious thermal state in 30 min · Sign-off: GLM-SELF
 ```
 
 ### P9 Beta and TestFlight / P10 Release Prep
 - Standard tasks.
 
 ```
-GATE G9 — Beta: crash-free ≥ 99.5%; no S1/S2 · Sign-off: REVIEW: MAHLER
-GATE G10 — Release: assets approved · Sign-off: REVIEW: MAHLER (Mahler submits)
+GATE G9 — Beta: crash-free ≥ 99.5%; no S1/S2 · Sign-off: GLM-SELF
+GATE G10 — Release: assets approved · Sign-off: GLM-SELF
 ```
 
-## 9. Handoff to Grok and Claude
+## 9. Fragile Areas and Priorities
 
 - Fragile areas: fixed-point boid stability (oscillation at high cohesion), determinism across devices, and thermal load.
-- First pickups: CLAUDE — rendering and thermal optimization; GROK — region design and rival tuning.
+- Priorities for P6–P10: rendering and thermal optimization; region design and rival tuning.
 
 ## 10. Risks and Mitigations
 
 | Risk | Likelihood | Impact | Mitigation | Owner |
 | --- | --- | --- | --- | --- |
-| Shallow strategy | Medium | High | Splits, falcons, wind, and contested roosts; G2 review on decision depth | GROK |
-| CPU sim too heavy on older iPads | Medium | Medium | Bird cap scaling by device class (documented, deterministic per mode) | CLAUDE |
+| Shallow strategy | Medium | High | Splits, falcons, wind, and contested roosts; G2 review on decision depth | GLM |
+| CPU sim too heavy on older iPads | Medium | Medium | Bird cap scaling by device class (documented, deterministic per mode) | GLM |
 | Steering feels imprecise | Medium | High | Leader point visualization and tuned leader weight | GLM |
 
 ## 11. Out of Scope
@@ -264,13 +262,13 @@ Online multiplayer; other bird species as playable flocks (post-launch idea); na
 | P3 | GLM | 4–6 |
 | P4 | GLM | 4–6 |
 | P5 | GLM | 4–6 |
-| P6 | GROK + CLAUDE | 8–12 |
-| P7 | CLAUDE | 3–5 |
-| P8 | CLAUDE | 4–6 |
-| P9 | GROK + CLAUDE | 4–6 |
-| P10 | CLAUDE + GROK | 2–3 |
+| P6 | GLM | 8–12 |
+| P7 | GLM | 3–5 |
+| P8 | GLM | 4–6 |
+| P9 | GLM | 4–6 |
+| P10 | GLM | 2–3 |
 | **Total** | | **49–73** |
 
-## 13. Open Questions for Mahler
+## 13. Open Questions
 
 1. Should device-class bird caps be allowed (breaking cross-device leaderboard parity)? Default: leaderboards use a fixed cap of 3,000 on all devices; visuals may render fewer.

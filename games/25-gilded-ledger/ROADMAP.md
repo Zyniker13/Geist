@@ -2,7 +2,7 @@
 
 > Run a merchant house in a Renaissance republic, where double-entry bookkeeping is the board and credit is the sharpest weapon.
 
-Read [`_CONVENTIONS.md`](../_shared/_CONVENTIONS.md) v1.0 in full before starting. This roadmap only adds what is specific to Gilded Ledger.
+Read [`_CONVENTIONS.md`](../_shared/_CONVENTIONS.md) v2.0 in full before starting. This roadmap only adds what is specific to Gilded Ledger.
 
 ## 0. Metadata
 
@@ -10,14 +10,14 @@ Read [`_CONVENTIONS.md`](../_shared/_CONVENTIONS.md) v1.0 in full before startin
 | --- | --- |
 | Game number and slug | 25 · `gilded-ledger` |
 | Code prefix | `GLD` (packages `GLDCore`, `GLDContent`, `GLDAI`, `GLDRender`, `GLDAudio`, `GLDPlatform`, `GLDMeta`) |
-| Bundle ID (placeholder) | `com.zyniker.gilded-ledger` |
+| Bundle ID | `GEIST_BUNDLE_ID` build setting, set by the maintainer (`_CONVENTIONS.md` §2) |
 | Subgenre | Economic strategy (credit, markets, and politics) |
 | Difficulty tier | Deep |
 | Scope | Small team |
 | Session length | 45–90 min (16 quarters over 4 years) |
 | Renderer | SwiftUI for the ledger board and most surfaces; SpriteKit for the harbor/city scene and coin animations (`SpriteView` embedded); `SKShader` for marbled paper |
 | Players | Solo vs 2–3 AI rival houses; local hot-seat for 2–4 humans |
-| Conventions | [`_CONVENTIONS.md`](../_shared/_CONVENTIONS.md) v1.0 (read first) |
+| Conventions | [`_CONVENTIONS.md`](../_shared/_CONVENTIONS.md) v2.0 (read first) |
 
 ## 1. Summary and Design Pillars
 
@@ -269,7 +269,7 @@ The game is stochastic with hidden information and a large action space; AI uses
 
 ## 8. Phases, Tasks, and Gates
 
-### P0 Setup (Owner: GLM)
+### P0 Setup
 
 Standard tasks S0.1–S0.7.
 
@@ -283,7 +283,7 @@ Checks:
 Sign-off: GLM-SELF
 ```
 
-### P1 Rules Engine Prototype (Owner: GLM)
+### P1 Rules Engine Prototype
 
 Standard tasks S1.1–S1.4.
 
@@ -307,7 +307,7 @@ Checks:
 Sign-off: GLM-SELF
 ```
 
-### P2 Core Loop Vertical Slice (Owner: GLM)
+### P2 Core Loop Vertical Slice
 
 Standard tasks S2.1–S2.5. Slice scope: 3 houses (player + 2 clerk AIs), 2 cities (Republic and Northern Fair), 4 goods, bills, loans, voyages, 20 events, no council.
 
@@ -325,12 +325,10 @@ Checks:
   [ ] Every Event.posted is visible in the journal view (UI data test)
   [ ] Forecast panel equals LiquidityForecaster output (test)
   [ ] Save and resume mid-quarter to identical hash; docs/media/slice.mp4 recorded
-  [ ] REVIEW: GROK — is liquidity the source of tension? Are the books readable?
-  [ ] REVIEW: MAHLER — compelling enough to continue?
-Sign-off: REVIEW: GROK + MAHLER · 🛑 GLM STOP
+Sign-off: GLM-SELF
 ```
 
-### P3 Content and Systems (Owner: GLM)
+### P3 Content and Systems
 
 - **GLD-P3.1** Third city, all 6 goods, note market and squeezes, council and 20 policies.
 - **GLD-P3.2** 60 events, 10 house traits, 12 commissions, 5 scenarios.
@@ -343,11 +341,10 @@ GATE G3 — Content and Systems
 Checks:
   [ ] Counts: 3 cities, 6 goods, 60 events, 20 policies, 10 traits, 12 commissions, 5 scenarios
   [ ] content-lint 0 errors; tutorial UI tests pass
-  [ ] REVIEW: CLAUDE (async)
-Sign-off: GLM-SELF + REVIEW: CLAUDE (async)
+Sign-off: GLM-SELF
 ```
 
-### P4 AI Opponents (Owner: GLM)
+### P4 AI Opponents
 
 - **GLD-P4.1** LiquidityForecaster and SqueezeDetector with unit tests against crafted scenarios.
 - **GLD-P4.2** Clerk, factor, and magnate tiers; personalities.
@@ -362,7 +359,7 @@ Checks:
 Sign-off: GLM-SELF
 ```
 
-### P5 Meta and Replayability (Owner: GLM)
+### P5 Meta and Replayability
 
 - **GLD-P5.1** Scenario selection and unlocks (scenarios unlock by wins; all earnable).
 - **GLD-P5.2** Weekly Ledger (ISO-week seed): a fixed scenario and deck vs magnate AIs; one ranked attempt.
@@ -370,30 +367,28 @@ Sign-off: GLM-SELF
 - **GLD-P5.4** Export a finished game's full ledger as CSV (share sheet), a fitting extra for the audience.
 
 ```
-GATE G5 — Meta and Replayability (Final GLM Handoff)
+GATE G5 — Meta and Replayability
 Checks:
   [ ] Weekly seeds deterministic for 12 weeks ahead; CSV export balances (debits = credits) for 100 sim games
   [ ] All standard tests and coverage thresholds pass; docs/HANDOFF.md complete
-  [ ] REVIEW: CLAUDE + GROK + MAHLER
-Sign-off: REVIEW: CLAUDE + GROK + MAHLER · 🛑 GLM FINAL STOP
+Sign-off: GLM-SELF
 ```
 
-### P6 Aesthetics and Audio Pass (Owner: GROK + CLAUDE)
+### P6 Aesthetics and Audio Pass
 
 - **GLD-P6.1** Marbled paper and ledger styling, ink-drawing animations for entries, wax seals, coin sprites.
 - **GLD-P6.2** Harbor and city engravings; council chamber view.
 - **GLD-P6.3** Consort music and ambience; SFX; haptics.
-- **GLD-P6.4** Grok writes memo text for journal entries (period flavor, readable modern English).
+- **GLD-P6.4** GLM writes memo text for journal entries (period flavor, readable modern English).
 
 ```
 GATE G6 — Aesthetics
 Checks:
-  [ ] Ledger readability: Grok and Mahler read a quarter's journal and explain each entry correctly
-  [ ] REVIEW: MAHLER
-Sign-off: REVIEW: MAHLER
+  [ ] Ledger readability: every entry in a sampled quarter's journal has a plain-language memo and an "explain this entry" view, verified by UI test; human readability check (playtest; `_CONVENTIONS.md` §8.2)
+Sign-off: GLM-SELF
 ```
 
-### P7 Platform Features (Owner: CLAUDE)
+### P7 Platform Features
 
 - **GLD-P7.1 Pencil.** Sign bills and letters with Pencil (the signature is cosmetic and stored with the save; signing is the confirm gesture alternative to the seal button); hover over an account shows its recent entries; squeeze opens the Forecast panel.
 - **GLD-P7.2 Game Center.** Weekly leaderboard, achievements, challenges.
@@ -405,11 +400,10 @@ GATE G7 — Platform
 Checks:
   [ ] Signature confirm produces the same Actions as the seal button
   [ ] Game Center sandbox and iCloud round trips; Mac multi-window
-  [ ] REVIEW: GROK
-Sign-off: REVIEW: GROK
+Sign-off: GLM-SELF
 ```
 
-### P8 Polish, Accessibility, and Performance (Owner: CLAUDE)
+### P8 Polish, Accessibility, and Performance
 
 - **GLD-P8.1** VoiceOver for every ledger table, bill card, and the forecast (with amounts read in lire).
 - **GLD-P8.2** Dynamic Type throughout; a "modern numerals" toggle (decimal lire) on by default for accessibility.
@@ -420,22 +414,20 @@ Sign-off: REVIEW: GROK
 GATE G8 — Polish
 Checks:
   [ ] Accessibility audit clean; budgets met on real devices
-  [ ] REVIEW: GROK + MAHLER
-Sign-off: REVIEW: GROK + MAHLER
+Sign-off: GLM-SELF
 ```
 
-### P9 Beta and TestFlight (Owner: GROK + CLAUDE)
+### P9 Beta and TestFlight
 
 ```
 GATE G9 — Beta
 Checks:
-  [ ] Internal TestFlight (Mahler creates records); crash-free ≥ 99.5%
-  [ ] ≥ 60% of testers can explain a squeeze after the tutorial (survey Mahler approves)
-  [ ] REVIEW: MAHLER
-Sign-off: REVIEW: MAHLER
+  [ ] Internal TestFlight; crash-free ≥ 99.5%
+  [ ] ≥ 60% of testers can explain a squeeze after the tutorial (survey drafted in `docs/release/`; playtest; `_CONVENTIONS.md` §8.2)
+Sign-off: GLM-SELF
 ```
 
-### P10 Release Prep (Owner: CLAUDE + GROK)
+### P10 Release Prep
 
 Standard P10 tasks; preview shows coins moving between accounts, a fair, and a squeeze at audit. Copy describes the setting as a fictional republic.
 
@@ -443,25 +435,24 @@ Standard P10 tasks; preview shows coins moving between accounts, a fair, and a s
 GATE G10 — Release
 Checks:
   [ ] RC full CI green; metadata, privacy, and age-rating drafts reviewed
-  [ ] REVIEW: MAHLER (submits)
-Sign-off: REVIEW: MAHLER
+Sign-off: GLM-SELF
 ```
 
-## 9. Handoff to Grok and Claude
+## 9. Fragile Areas and Priorities
 
 - **Fragile areas:** cross-ledger consistency of bills (INV-2) during note transfers and bankruptcies; settlement ordering (R-42); Observation leaks (INV-5).
-- **UX:** the ledger-as-board concept succeeds only if the journal is readable; Claude owns the SwiftUI layout and Grok the memo voice.
-- **First tasks:** Claude — ledger board ergonomics on iPhone compact width; Grok — squeeze balance and event deck tuning.
+- **UX:** the ledger-as-board concept succeeds only if the journal is readable; both the SwiftUI layout and the memo voice need care.
+- **Priorities for P6–P10:** ledger board ergonomics on iPhone compact width; squeeze balance and event deck tuning.
 
 ## 10. Risks and Mitigations
 
 | Risk | Likelihood | Impact | Mitigation | Owner |
 | --- | --- | --- | --- | --- |
-| Too dry for most players | High | Medium | Strong presentation, tutorials, forecast panel, chronicle; accept a niche audience | GROK |
-| Accounting confuses players | Medium | High | Plain-language memos, debit/credit labels, "explain this entry" tap | CLAUDE |
-| Squeeze too strong or never used | Medium | Medium | Sims with predator personality; tunable thresholds | GLM → GROK |
+| Too dry for most players | High | Medium | Strong presentation, tutorials, forecast panel, chronicle; accept a niche audience | GLM |
+| Accounting confuses players | Medium | High | Plain-language memos, debit/credit labels, "explain this entry" tap | GLM |
+| Squeeze too strong or never used | Medium | Medium | Sims with predator personality; tunable thresholds | GLM |
 | AI slow with sampled futures | Medium | Medium | Candidate pruning; adaptive sample counts | GLM |
-| Historical inaccuracy complaints | Low | Low | Fictional republic; flavor inspired by history | GROK |
+| Historical inaccuracy complaints | Low | Low | Fictional republic; flavor inspired by history | GLM |
 
 ## 11. Out of Scope
 
@@ -481,17 +472,17 @@ Sign-off: REVIEW: MAHLER
 | P3 Content and Systems | GLM | 10–14 |
 | P4 AI | GLM | 8–12 |
 | P5 Meta | GLM | 3–5 |
-| P6 Aesthetics and Audio | GROK + CLAUDE | 10–14 |
-| P7 Platform | CLAUDE | 4–6 |
-| P8 Polish | CLAUDE | 5–7 |
-| P9 Beta | GROK + CLAUDE | 6–10 |
-| P10 Release | CLAUDE + GROK | 2–4 |
+| P6 Aesthetics and Audio | GLM | 10–14 |
+| P7 Platform | GLM | 4–6 |
+| P8 Polish | GLM | 5–7 |
+| P9 Beta | GLM | 6–10 |
+| P10 Release | GLM | 2–4 |
 | **Total** | | **72–105** |
 
-## 13. Open Questions for Mahler
+## 13. Open Questions
 
 1. Period money (L/s/d) by default or decimal lire? **Default:** decimal lire by default, period money as an option.
 2. Four houses by default? **Default:** yes (player + 3 AIs).
 3. Include the CSV ledger export? **Default:** yes.
 4. Hot-seat in v1.0? **Default:** yes.
-5. Price? **Default:** Mahler decides in P10.
+5. Price? **Default:** the maintainer decides; GLM leaves the price unset.

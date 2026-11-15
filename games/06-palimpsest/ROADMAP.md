@@ -6,14 +6,14 @@
 | --- | --- |
 | Game number and slug | 06 · `palimpsest` |
 | Code prefix | `PS` (packages `PSCore`, `PSContent`, `PSAI`, `PSRender`, `PSAudio`, `PSPlatform`, `PSMeta`) |
-| Bundle ID (placeholder) | `com.zyniker.palimpsest` |
+| Bundle ID | `GEIST_BUNDLE_ID` build setting, set by the maintainer (`_CONVENTIONS.md` §2) |
 | Subgenre | Puzzle tactics (turn-based, deterministic) |
 | Difficulty tier | Hardcore |
 | Scope | Small team |
 | Session length | 15–30 minutes per island; 1–2 hour campaign run |
 | Renderer | SpriteKit (2D isometric-free top-down grid) with SKShader ghost effects |
 | Players | Solo |
-| Conventions | [`_CONVENTIONS.md`](../_shared/_CONVENTIONS.md) v1.0 (read first) |
+| Conventions | [`_CONVENTIONS.md`](../_shared/_CONVENTIONS.md) v2.0 (read first) |
 
 ## 1. Summary and Design Pillars
 
@@ -138,14 +138,14 @@ Targets (TurnSolver beam 64 as player proxy, 1,000 runs): Standard squad campaig
 
 ## 8. Phases, Tasks, and Gates
 
-### P0 Setup (Owner: GLM)
+### P0 Setup
 - Standard tasks S0.1–S0.7.
 
 ```
 GATE G0 — Setup: standard checks · Sign-off: GLM-SELF
 ```
 
-### P1 Rules Engine Prototype (Owner: GLM)
+### P1 Rules Engine Prototype
 - Standard tasks S1.1–S1.4.
 - PS-P1.1 Board, tiles, units, and deployment (R-1 to R-3).
 - PS-P1.2 Turn structure and player actions with Rewind (R-4 to R-6).
@@ -162,7 +162,7 @@ Checks:
 Sign-off: GLM-SELF
 ```
 
-### P2 Core Loop Vertical Slice (Owner: GLM)
+### P2 Core Loop Vertical Slice
 - Standard tasks S2.1–S2.5.
 - PS-P2.1 `BattleScene`: tap a Scribe, tap a destination (reachable cells highlighted), tap an ability, tap a target.
 - PS-P2.2 Intent overlay (numbered enemy attacks with target cells) and echo preview (ghost paths for next Echo phase).
@@ -177,21 +177,20 @@ Checks:
   [ ] UI test plays a full island with scripted actions on iPad and Mac
   [ ] INV-2 verified in UI: preview outcome hash equals executed outcome hash on 200 scripted turns
   [ ] Rewind restores the exact pre-phase hash
-Sign-off: REVIEW: GROK (are echoes a source of clever plans rather than confusion?) + REVIEW: MAHLER
-🛑 GLM STOP
+Sign-off: GLM-SELF
 ```
 
-### P3 Content and Systems (Owner: GLM)
+### P3 Content and Systems
 - PS-P3.1 Reach G3 content counts; tile hazards; Husk rubble.
 - PS-P3.2 Island map screen with map choice and rewards; shop with upgrades.
 - PS-P3.3 Tutorial: 7 steps (move, attack, intents, push, first echo, friendly fire, rewind).
 - PS-P3.4 Bonus objectives UI and tracking.
 
 ```
-GATE G3 — Content and Systems: counts met; content-lint 0 errors; tutorial UI test · Sign-off: GLM-SELF; REVIEW: CLAUDE async
+GATE G3 — Content and Systems: counts met; content-lint 0 errors; tutorial UI test · Sign-off: GLM-SELF
 ```
 
-### P4 AI Opponents (Owner: GLM)
+### P4 AI Opponents
 - PS-P4.1 Enemy intent planner with Easy (ignores echoes), Normal, and Hard (anticipates echoes and baits friendly fire).
 - PS-P4.2 TurnSolver and MapVerifier; balance report via `Tools/sim campaign --solver beam64 N=1000`.
 
@@ -204,7 +203,7 @@ Checks:
 Sign-off: GLM-SELF
 ```
 
-### P5 Meta and Replayability (Owner: GLM)
+### P5 Meta and Replayability
 - PS-P5.1 All 6 squads and echo-rule variants; unlocks by achievements (e.g. "Win with no friendly fire" unlocks Silent).
 - PS-P5.2 Three biomes, bosses, and the campaign structure (R-18).
 - PS-P5.3 Daily map; local leaderboards; perfect-run tracking.
@@ -216,55 +215,54 @@ Checks:
   [ ] Each squad's solver completion within ±10 points of Standard
   [ ] Daily identical across devices for 30 dates
   [ ] Coverage thresholds; docs/HANDOFF.md complete
-Sign-off: REVIEW: CLAUDE + GROK + MAHLER
-🛑 GLM FINAL STOP
+Sign-off: GLM-SELF
 ```
 
-### P6 Aesthetics and Audio Pass (Owner: GROK + CLAUDE)
+### P6 Aesthetics and Audio Pass
 - PS-P6.1 Cyanotype art set, drafting-grid tiles, echo ghost shader with light leaks.
 - PS-P6.2 Tape-delay synth score whose delay time is tied to echo playback; SFX.
 
 ```
-GATE G6 — Aesthetics: snapshots approved; echo readability test (5 testers identify echoes vs units ≥ 95%) · Sign-off: REVIEW: MAHLER
+GATE G6 — Aesthetics: snapshots approved; echo readability test (5 testers identify echoes vs units ≥ 95%) · Sign-off: GLM-SELF
 ```
 
-### P7 Platform Features (Owner: CLAUDE)
+### P7 Platform Features
 - PS-P7.1 Game Center: daily leaderboard, campaign wins by squad, 30 achievements, daily challenge.
 - PS-P7.2 iCloud saves at map boundaries and mid-battle.
 - PS-P7.3 Pencil hover previews path and echo outcome for the hovered cell; squeeze opens the ability wheel.
 - PS-P7.4 Controller support (MFi/Xbox/DualSense) for couch play on Mac and iPad.
 
 ```
-GATE G7 — Platform: iCloud round-trip; controller completes a map · Sign-off: REVIEW: GROK
+GATE G7 — Platform: iCloud round-trip; controller completes a map · Sign-off: GLM-SELF
 ```
 
-### P8 Polish, Accessibility, and Performance (Owner: CLAUDE)
+### P8 Polish, Accessibility, and Performance
 - PS-P8.1 VoiceOver: full board description, intents list, and echo forecast list.
 - PS-P8.2 Shapes and patterns distinguish enemies, Scribes, and Echoes beyond color; Reduce Motion skips ghost animation.
 
 ```
-GATE G8 — Polish: perf budgets; VoiceOver completes the tutorial · Sign-off: REVIEW: GROK + MAHLER
+GATE G8 — Polish: perf budgets; VoiceOver completes the tutorial · Sign-off: GLM-SELF
 ```
 
 ### P9 Beta and TestFlight / P10 Release Prep
 - Standard tasks.
 
 ```
-GATE G9 — Beta: crash-free ≥ 99.5%; no S1/S2 · Sign-off: REVIEW: MAHLER
-GATE G10 — Release: assets approved · Sign-off: REVIEW: MAHLER (Mahler submits)
+GATE G9 — Beta: crash-free ≥ 99.5%; no S1/S2 · Sign-off: GLM-SELF
+GATE G10 — Release: assets approved · Sign-off: GLM-SELF
 ```
 
-## 9. Handoff to Grok and Claude
+## 9. Fragile Areas and Priorities
 
 - Fragile areas: echo blocking rules (R-8, R-10) and enemy redirect rules (R-15).
-- First pickups: GROK — squad and enemy design for clever echo interactions; CLAUDE — preview/timeline UX and performance of solver tools.
+- Priorities for P6–P10: squad and enemy design for clever echo interactions; preview/timeline UX and performance of solver tools.
 
 ## 10. Risks and Mitigations
 
 | Risk | Likelihood | Impact | Mitigation | Owner |
 | --- | --- | --- | --- | --- |
-| Echoes overwhelm players | High | High | Strong previews, timeline scrub, Rewind, and gentle first island | GROK |
-| Too close to Into the Breach | Medium | Medium | Echo mechanic is core; distinct art and run structure | GROK |
+| Echoes overwhelm players | High | High | Strong previews, timeline scrub, Rewind, and gentle first island | GLM |
+| Too close to Into the Breach | Medium | Medium | Echo mechanic is core; distinct art and run structure | GLM |
 | Solver too slow for verification | Medium | Low | Run verification offline in Tools, cache verified templates | GLM |
 
 ## 11. Out of Scope
@@ -281,14 +279,14 @@ Multiplayer; level editor; voice acting; narrative campaign beyond short island 
 | P3 | GLM | 10–14 |
 | P4 | GLM | 8–12 |
 | P5 | GLM | 10–14 |
-| P6 | GROK + CLAUDE | 12–18 |
-| P7 | CLAUDE | 5–8 |
-| P8 | CLAUDE | 5–8 |
-| P9 | GROK + CLAUDE | 8–12 |
-| P10 | CLAUDE + GROK | 3–4 |
+| P6 | GLM | 12–18 |
+| P7 | GLM | 5–8 |
+| P8 | GLM | 5–8 |
+| P9 | GLM | 8–12 |
+| P10 | GLM | 3–4 |
 | **Total** | | **81–118** |
 
-## 13. Open Questions for Mahler
+## 13. Open Questions
 
 1. Theme of the Scribes and enemies (archival mages vs creeping ink)? Default: archival scribes vs "Blots", an ink corruption.
 2. Include the Rewind in Hard mode? Default: one per battle on Normal, none on Hard.

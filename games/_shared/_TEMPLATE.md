@@ -1,14 +1,14 @@
 # NN — <Game Title> Roadmap
 
 <!--
-TEMPLATE v1.0 (2026-11-15). Copy this file to `../NN-<slug>/ROADMAP.md` and fill every section.
+TEMPLATE v2.0 (2026-11-15). Copy this file to `../NN-<slug>/ROADMAP.md` and fill every section.
 Rules for authors:
 - Keep every section heading and number exactly as below so agents can navigate by section number.
 - Do NOT restate the shared stack, standards, CI, or standard tasks from _CONVENTIONS.md; reference them (e.g. "S0.1–S0.7").
 - Game-specific task IDs use the game prefix: <PFX>-P<phase>.<n> (e.g. CG-P3.4).
 - Every task has: ID, title, deliverable (files/modules), and acceptance criteria.
 - Every gate lists objective checks (commands, numbers, demonstrable features) and the sign-off code.
-- Mark GLM stops with "🛑 GLM STOP" exactly.
+- Every gate is GLM-SELF. Steps only the maintainer can do use the local substitutes in _CONVENTIONS.md §8.2.
 - Use the serial comma and Title Case headings.
 -->
 
@@ -18,20 +18,20 @@ Rules for authors:
 | --- | --- |
 | Game number and slug | NN · `slug` |
 | Code prefix | `PFX` (packages `PFXCore`, `PFXContent`, `PFXAI`, `PFXRender`, `PFXAudio`, `PFXPlatform`, `PFXMeta`) |
-| Bundle ID (placeholder) | `com.zyniker.slug` |
+| Bundle ID | `GEIST_BUNDLE_ID` build setting, set by the maintainer (`_CONVENTIONS.md` §2) |
 | Subgenre | … |
 | Difficulty tier | Approachable / Intermediate / Deep / Hardcore |
 | Scope | Solo-indie / Small team / Larger team |
 | Session length | … |
 | Renderer | SpriteKit (2D) / RealityKit (3D) / + Metal for … |
 | Players | Solo vs AI / local pass-and-play / async online (GameKit turn-based) |
-| Conventions | `_CONVENTIONS.md` v1.0 (read first) |
+| Conventions | `_CONVENTIONS.md` v2.0 (read first) |
 
 ## 1. Summary and Design Pillars
 
 - **Hook:** one line (from the concepts Page).
 - **Summary:** one paragraph.
-- **Pillars (3–5):** each a short, testable statement, used to judge every gate review.
+- **Pillars (3–5):** each a short, testable statement, used to judge every gate and self-assessment.
 - **Aesthetic spec:** palette (hex values), shapes/linework, typography, motion, music, SFX, and haptics.
 - **Inspirations:** from the research.
 
@@ -68,12 +68,12 @@ GATE Gn — <name>
 Checks:
   [ ] check 1 (command / metric / demonstrable feature)
   [ ] …
-Sign-off: GLM-SELF | REVIEW: … | 🛑 GLM STOP
+Sign-off: GLM-SELF
 ```
 
-## 9. Handoff to Grok and Claude
+## 9. Fragile Areas and Priorities
 
-Game-specific additions to `_CONVENTIONS.md` §9: what to emphasize, fragile areas, and the first tasks the finishing agents should pick up.
+Game-specific additions to `_CONVENTIONS.md` §9: what to emphasize, fragile areas, and what to prioritize in P6–P10.
 
 ## 10. Risks and Mitigations
 
@@ -87,6 +87,6 @@ Explicit list of things not to build (for v1.0).
 
 Table: phase, owner, engineer-days range. Total.
 
-## 13. Open Questions for Mahler
+## 13. Open Questions
 
-Numbered; each with GLM's default if unanswered.
+Numbered; each with the default GLM uses unless the maintainer answers it in an issue.

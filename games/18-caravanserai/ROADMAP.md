@@ -2,7 +2,7 @@
 
 > Lead a camel caravan across a procedurally generated Silk Road, buying low, selling high, and choosing which oasis legends to believe.
 
-Read [`_CONVENTIONS.md`](../_shared/_CONVENTIONS.md) v1.0 in full before starting. This roadmap only adds what is specific to Caravanserai.
+Read [`_CONVENTIONS.md`](../_shared/_CONVENTIONS.md) v2.0 in full before starting. This roadmap only adds what is specific to Caravanserai.
 
 ## 0. Metadata
 
@@ -10,14 +10,14 @@ Read [`_CONVENTIONS.md`](../_shared/_CONVENTIONS.md) v1.0 in full before startin
 | --- | --- |
 | Game number and slug | 18 · `caravanserai` |
 | Code prefix | `CVS` (packages `CVSCore`, `CVSContent`, `CVSAI`, `CVSRender`, `CVSAudio`, `CVSPlatform`, `CVSMeta`) |
-| Bundle ID (placeholder) | `com.zyniker.caravanserai` |
+| Bundle ID | `GEIST_BUNDLE_ID` build setting, set by the maintainer (`_CONVENTIONS.md` §2) |
 | Subgenre | Trading roguelite with a branching route map |
 | Difficulty tier | Intermediate |
 | Scope | Small team |
 | Session length | 30–60 min per run (3 acts) |
 | Renderer | SpriteKit (2D) with a miniature-painting style; `SKShader` for gold-leaf shimmer and heat haze |
 | Players | Solo only |
-| Conventions | [`_CONVENTIONS.md`](../_shared/_CONVENTIONS.md) v1.0 (read first) |
+| Conventions | [`_CONVENTIONS.md`](../_shared/_CONVENTIONS.md) v2.0 (read first) |
 
 ## 1. Summary and Design Pillars
 
@@ -259,7 +259,7 @@ No opponent; AI covers rival caravans (market actors), bots for balance sims, th
 
 ## 8. Phases, Tasks, and Gates
 
-### P0 Setup (Owner: GLM)
+### P0 Setup
 
 Standard tasks S0.1–S0.7.
 
@@ -272,7 +272,7 @@ Checks:
 Sign-off: GLM-SELF
 ```
 
-### P1 Rules Engine Prototype (Owner: GLM)
+### P1 Rules Engine Prototype
 
 Standard tasks S1.1–S1.4.
 
@@ -294,7 +294,7 @@ Checks:
 Sign-off: GLM-SELF
 ```
 
-### P2 Core Loop Vertical Slice (Owner: GLM)
+### P2 Core Loop Vertical Slice
 
 Standard tasks S2.1–S2.5. Slice scope: act 1 only (Salt Desert), 8 goods, 2 masters, 12 events, 4 legends, 3 rivals.
 
@@ -304,7 +304,7 @@ Standard tasks S2.1–S2.5. Slice scope: act 1 only (Salt Desert), 8 goods, 2 ma
 - **CVS-P2.4 Event and legend cards** with choices and honest odds bands.
 - **CVS-P2.5 Ledger.** Day count, silver, morale, camels, and crew HUD.
 
-Slice checks: a new player completes act 1 with a profit in their second attempt (Mahler); departures present a non-obvious choice (Grok).
+Slice checks: a new player completes act 1 with a profit in their second attempt (playtest; `_CONVENTIONS.md` §8.2); departures present a non-obvious choice (GLM self-assessment).
 
 ```
 GATE G2 — Vertical Slice
@@ -312,12 +312,10 @@ Checks:
   [ ] XCUITest completes act 1 (scripted) to the Grand Bazaar on iPad and Mac
   [ ] Save and resume mid-leg and mid-market to identical hash
   [ ] docs/media/slice.mp4 recorded
-  [ ] REVIEW: GROK — are load-out and route decisions interesting? Is information valuable?
-  [ ] REVIEW: MAHLER — fun enough to continue?
-Sign-off: REVIEW: GROK + MAHLER · 🛑 GLM STOP
+Sign-off: GLM-SELF
 ```
 
-### P3 Content and Systems (Owner: GLM)
+### P3 Content and Systems
 
 - **CVS-P3.1** Regions 2 and 3 with goods, hazards, and weather.
 - **CVS-P3.2** 60 events, 18 legends, 8 masters, 30 relics.
@@ -331,11 +329,10 @@ Checks:
   [ ] Counts: 3 regions, 36 goods, 60 events, 18 legends, 8 masters, 30 relics
   [ ] content-lint 0 errors; every event outcome references valid IDs
   [ ] Tutorial UI test passes
-  [ ] REVIEW: CLAUDE (async)
-Sign-off: GLM-SELF + REVIEW: CLAUDE (async)
+Sign-off: GLM-SELF
 ```
 
-### P4 AI Opponents (Owner: GLM)
+### P4 AI Opponents
 
 - **CVS-P4.1** Rival caravan behavior tuning (they must neither crash markets nor be invisible: rivals should move a good's price ≥ 10% in 20–40% of player visits).
 - **CVS-P4.2** TraderBot tiers and `RoutePlanner`.
@@ -349,7 +346,7 @@ Checks:
 Sign-off: GLM-SELF
 ```
 
-### P5 Meta and Replayability (Owner: GLM)
+### P5 Meta and Replayability
 
 - **CVS-P5.1 Masters unlock** by completed runs and achievements; all earnable.
 - **CVS-P5.2 Daily Route.** Date-derived seed; same maps, markets, and master for everyone; one ranked attempt.
@@ -357,17 +354,16 @@ Sign-off: GLM-SELF
 - **CVS-P5.4 Stats:** best fortune per master, most profitable goods, legends survived.
 
 ```
-GATE G5 — Meta and Replayability (Final GLM Handoff)
+GATE G5 — Meta and Replayability
 Checks:
   [ ] Daily Route deterministic and verified for 60 dates
   [ ] Hard Roads levels each reduce expert completion monotonically (sim)
   [ ] All standard tests and coverage thresholds pass
   [ ] docs/HANDOFF.md complete
-  [ ] REVIEW: CLAUDE + GROK + MAHLER
-Sign-off: REVIEW: CLAUDE + GROK + MAHLER · 🛑 GLM FINAL STOP
+Sign-off: GLM-SELF
 ```
 
-### P6 Aesthetics and Audio Pass (Owner: GROK + CLAUDE)
+### P6 Aesthetics and Audio Pass
 
 - **CVS-P6.1** Three region panels in final miniature style, ornamental borders, and node roundels.
 - **CVS-P6.2** Market scenes for city and caravanserai (illustrated headers).
@@ -376,11 +372,10 @@ Sign-off: REVIEW: CLAUDE + GROK + MAHLER · 🛑 GLM FINAL STOP
 ```
 GATE G6 — Aesthetics
 Checks:
-  [ ] REVIEW: MAHLER
-Sign-off: REVIEW: MAHLER
+Sign-off: GLM-SELF
 ```
 
-### P7 Platform Features (Owner: CLAUDE)
+### P7 Platform Features
 
 - **CVS-P7.1 Pencil journal.** A PencilKit notebook page per run for jotting prices (saved with the run, never read by rules); hover over a node previews the leg.
 - **CVS-P7.2 Game Center.** Daily and best-fortune leaderboards, 30 achievements, challenges.
@@ -391,11 +386,10 @@ Sign-off: REVIEW: MAHLER
 GATE G7 — Platform
 Checks:
   [ ] Journal persists across devices; Game Center sandbox round trip
-  [ ] REVIEW: GROK
-Sign-off: REVIEW: GROK
+Sign-off: GLM-SELF
 ```
 
-### P8 Polish, Accessibility, and Performance (Owner: CLAUDE)
+### P8 Polish, Accessibility, and Performance
 
 - **CVS-P8.1** VoiceOver for markets (good, price, trend, remembered elsewhere).
 - **CVS-P8.2** Dynamic Type throughout the SwiftUI market.
@@ -406,22 +400,20 @@ Sign-off: REVIEW: GROK
 GATE G8 — Polish
 Checks:
   [ ] Budgets met on real devices; accessibility audit clean
-  [ ] REVIEW: GROK + MAHLER
-Sign-off: REVIEW: GROK + MAHLER
+Sign-off: GLM-SELF
 ```
 
-### P9 Beta and TestFlight (Owner: GROK + CLAUDE)
+### P9 Beta and TestFlight
 
 ```
 GATE G9 — Beta
 Checks:
-  [ ] Internal TestFlight (Mahler creates records); crash-free ≥ 99.5%
+  [ ] Internal TestFlight; crash-free ≥ 99.5%
   [ ] Tester completion rate of act 1 on first run 30–60%
-  [ ] REVIEW: MAHLER
-Sign-off: REVIEW: MAHLER
+Sign-off: GLM-SELF
 ```
 
-### P10 Release Prep (Owner: CLAUDE + GROK)
+### P10 Release Prep
 
 Standard P10 tasks; preview shows a departure, a market haggle, and a legend gamble.
 
@@ -429,24 +421,23 @@ Standard P10 tasks; preview shows a departure, a market haggle, and a legend gam
 GATE G10 — Release
 Checks:
   [ ] RC full CI green; metadata, privacy, and age-rating drafts reviewed
-  [ ] REVIEW: MAHLER (submits)
-Sign-off: REVIEW: MAHLER
+Sign-off: GLM-SELF
 ```
 
-## 9. Handoff to Grok and Claude
+## 9. Fragile Areas and Priorities
 
 - **Fragile areas:** the price model's interaction with rivals (runaway crashes); INV-4 no-arbitrage is a regression guard for any economy change.
-- **Content voice:** event and legend texts set the tone; Grok owns them after G5. Avoid stereotypes of real peoples; regions and cities are fictional composites (Q2).
-- **First tasks:** Grok — tune goods tables and legends for pillar 1 and 3; Claude — market UI ergonomics on iPhone compact width.
+- **Content voice:** event and legend texts set the tone; keep them consistent through P6–P10. Avoid stereotypes of real peoples; regions and cities are fictional composites (Q2).
+- **Priorities for P6–P10:** tune goods tables and legends for pillar 1 and 3; market UI ergonomics on iPhone compact width.
 
 ## 10. Risks and Mitigations
 
 | Risk | Likelihood | Impact | Mitigation | Owner |
 | --- | --- | --- | --- | --- |
-| Spreadsheet feel | Medium | High | Painted panels, quick trade steppers, strong arrival moments | GROK |
-| Dominant trade route or good | Medium | Medium | Elasticity, rivals, and sims | GLM → GROK |
-| Cultural depiction concerns | Medium | Medium | Fictional composites, respectful research, consultant review if budget allows (Mahler) | GROK + MAHLER |
-| Too much attrition (frustration) | Medium | Medium | Honest bands, hazard visibility with guides, Hard Roads opt-in | GROK |
+| Spreadsheet feel | Medium | High | Painted panels, quick trade steppers, strong arrival moments | GLM |
+| Dominant trade route or good | Medium | Medium | Elasticity, rivals, and sims | GLM |
+| Cultural depiction concerns | Medium | Medium | Fictional composites, respectful research, consultant review if budget allows (maintainer item) | GLM |
+| Too much attrition (frustration) | Medium | Medium | Honest bands, hazard visibility with guides, Hard Roads opt-in | GLM |
 
 ## 11. Out of Scope
 
@@ -465,17 +456,17 @@ Sign-off: REVIEW: MAHLER
 | P3 Content and Systems | GLM | 10–14 |
 | P4 AI and Bots | GLM | 5–8 |
 | P5 Meta | GLM | 4–6 |
-| P6 Aesthetics and Audio | GROK + CLAUDE | 12–18 |
-| P7 Platform | CLAUDE | 4–6 |
-| P8 Polish | CLAUDE | 4–6 |
-| P9 Beta | GROK + CLAUDE | 6–10 |
-| P10 Release | CLAUDE + GROK | 2–4 |
+| P6 Aesthetics and Audio | GLM | 12–18 |
+| P7 Platform | GLM | 4–6 |
+| P8 Polish | GLM | 4–6 |
+| P9 Beta | GLM | 6–10 |
+| P10 Release | GLM | 2–4 |
 | **Total** | | **66–99** |
 
-## 13. Open Questions for Mahler
+## 13. Open Questions
 
 1. Three acts per run? **Default:** yes, with a short one-act "Caravan Day" mode later (out of scope v1.0).
 2. Fictional city names inspired by the Silk Road, or historical names? **Default:** fictional composites.
 3. Display typeface with Persian-style calligraphy? **Default:** New York for v1.0; revisit if a licensed face is approved.
 4. Allow undo for trades within a market visit? **Default:** yes until departure.
-5. Price? **Default:** Mahler decides in P10.
+5. Price? **Default:** the maintainer decides; GLM leaves the price unset.

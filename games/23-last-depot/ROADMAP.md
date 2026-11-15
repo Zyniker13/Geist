@@ -2,7 +2,7 @@
 
 > Plan a polar expedition depot by depot, where every pound of food you cache for the return is a pound your team cannot haul toward the pole.
 
-Read [`_CONVENTIONS.md`](../_shared/_CONVENTIONS.md) v1.0 in full before starting. This roadmap only adds what is specific to Last Depot.
+Read [`_CONVENTIONS.md`](../_shared/_CONVENTIONS.md) v2.0 in full before starting. This roadmap only adds what is specific to Last Depot.
 
 ## 0. Metadata
 
@@ -10,7 +10,7 @@ Read [`_CONVENTIONS.md`](../_shared/_CONVENTIONS.md) v1.0 in full before startin
 | --- | --- |
 | Game number and slug | 23 · `last-depot` |
 | Code prefix | `LDP` (packages `LDPCore`, `LDPContent`, `LDPAI`, `LDPRender`, `LDPAudio`, `LDPPlatform`, `LDPMeta`) |
-| Bundle ID (placeholder) | `com.zyniker.last-depot` |
+| Bundle ID | `GEIST_BUNDLE_ID` build setting, set by the maintainer (`_CONVENTIONS.md` §2) |
 | Subgenre | Logistics roguelite (expedition planning and survival) |
 | Difficulty tier | Hardcore |
 | Scope | Small team |
@@ -18,7 +18,7 @@ Read [`_CONVENTIONS.md`](../_shared/_CONVENTIONS.md) v1.0 in full before startin
 | Renderer | SpriteKit (2D) for the ice-sheet map and sledging scenes; SwiftUI for planning ledgers and the diary; `SKShader` for blowing snow and photographic grain |
 | Players | Solo only |
 | Simulation | Day-based turns with auto-advance ("march until something happens") |
-| Conventions | [`_CONVENTIONS.md`](../_shared/_CONVENTIONS.md) v1.0 (read first) |
+| Conventions | [`_CONVENTIONS.md`](../_shared/_CONVENTIONS.md) v2.0 (read first) |
 
 ## 1. Summary and Design Pillars
 
@@ -258,7 +258,7 @@ No opponent. AI covers the supply solver (used by both the planner UI and bots),
 
 ## 8. Phases, Tasks, and Gates
 
-### P0 Setup (Owner: GLM)
+### P0 Setup
 
 Standard tasks S0.1–S0.7.
 
@@ -272,7 +272,7 @@ Checks:
 Sign-off: GLM-SELF
 ```
 
-### P1 Rules Engine Prototype (Owner: GLM)
+### P1 Rules Engine Prototype
 
 Standard tasks S1.1–S1.4.
 
@@ -295,7 +295,7 @@ Checks:
 Sign-off: GLM-SELF
 ```
 
-### P2 Core Loop Vertical Slice (Owner: GLM)
+### P2 Core Loop Vertical Slice
 
 Standard tasks S2.1–S2.5. Slice scope: one sheet, a short "Coastal Survey" variant (laying season plus a 40-day push to a landmark instead of the pole), man-hauling and dogs only, 12 incidents.
 
@@ -312,29 +312,26 @@ Checks:
   [ ] Planner numbers equal engine outcomes under fixed weather for 50 plans (INV-4 via UI adapter)
   [ ] Save and resume mid-march to identical hash
   [ ] docs/media/slice.mp4 recorded
-  [ ] REVIEW: GROK — is the supply arithmetic dramatic and legible?
-  [ ] REVIEW: MAHLER — compelling enough to continue?
-Sign-off: REVIEW: GROK + MAHLER · 🛑 GLM STOP
+Sign-off: GLM-SELF
 ```
 
-### P3 Content and Systems (Owner: GLM)
+### P3 Content and Systems
 
 - **LDP-P3.1** Ponies and motor sledges with all rules; winter decisions and hut events.
 - **LDP-P3.2** Full polar season with support parties and the pole.
 - **LDP-P3.3** 36 incidents, 10 sponsors, 24 items, crew roster generator.
 - **LDP-P3.4** Tutorial: "The First Depot" (lay one depot 3 days out and return), then "The Margin" (a guided plan that fails without margin and succeeds with it).
-- **LDP-P3.5** Diary templates (≥ 150) with tone review notes for Grok.
+- **LDP-P3.5** Diary templates (≥ 150) with tone review notes.
 
 ```
 GATE G3 — Content and Systems
 Checks:
   [ ] Counts: 4 transports, 24 items, 36 incidents, 10 sponsors, 150 diary templates
   [ ] content-lint 0 errors; tutorial UI tests pass
-  [ ] REVIEW: CLAUDE (async)
-Sign-off: GLM-SELF + REVIEW: CLAUDE (async)
+Sign-off: GLM-SELF
 ```
 
-### P4 AI Opponents (Owner: GLM)
+### P4 AI Opponents
 
 - **LDP-P4.1** PlannerBot tiers (margin 0, 20, 40) and the Advisor.
 - **LDP-P4.2** SheetGenerator with validation.
@@ -349,7 +346,7 @@ Checks:
 Sign-off: GLM-SELF
 ```
 
-### P5 Meta and Replayability (Owner: GLM)
+### P5 Meta and Replayability
 
 - **LDP-P5.1** Legacy lessons (24) and the Memorial.
 - **LDP-P5.2** Weekly Expedition (ISO week seed): fixed sheet, sponsor, and roster; one ironman attempt per week.
@@ -357,30 +354,28 @@ Sign-off: GLM-SELF
 - **LDP-P5.4** Difficulty presets (Gentle Season, Standard, Heroic Age) changing weather severity and budget.
 
 ```
-GATE G5 — Meta and Replayability (Final GLM Handoff)
+GATE G5 — Meta and Replayability
 Checks:
   [ ] Weekly expeditions deterministic and verified for 12 weeks ahead
   [ ] Archive replays match recorded hashes
   [ ] All standard tests and coverage thresholds pass; docs/HANDOFF.md complete
-  [ ] REVIEW: CLAUDE + GROK + MAHLER
-Sign-off: REVIEW: CLAUDE + GROK + MAHLER · 🛑 GLM FINAL STOP
+Sign-off: GLM-SELF
 ```
 
-### P6 Aesthetics and Audio Pass (Owner: GROK + CLAUDE)
+### P6 Aesthetics and Audio Pass
 
 - **LDP-P6.1** Final map engraving style, photographic sledging scenes with grain and vignette, hut interior for winter.
 - **LDP-P6.2** Diary visual design (paper, pencil, pressed-flower margins for milestones).
 - **LDP-P6.3** Wind engine (layered by weather), violin themes, SFX, haptic cadence.
-- **LDP-P6.4** Grok edits diary templates and incident texts for restraint and dignity.
+- **LDP-P6.4** GLM edits diary templates and incident texts for restraint and dignity.
 
 ```
 GATE G6 — Aesthetics
 Checks:
-  [ ] REVIEW: MAHLER
-Sign-off: REVIEW: MAHLER
+Sign-off: GLM-SELF
 ```
 
-### P7 Platform Features (Owner: CLAUDE)
+### P7 Platform Features
 
 - **LDP-P7.1 Pencil.** Handwritten diary notes alongside auto entries (PencilKit, stored with the save); hover over a depot shows contents and bad-weather margin; squeeze opens the planner.
 - **LDP-P7.2 Game Center.** Weekly expedition leaderboard, achievements (gallant failure, no losses, and so on), challenges.
@@ -392,11 +387,10 @@ GATE G7 — Platform
 Checks:
   [ ] Ironman cannot be rolled back via iCloud conflicts (test: older day never overwrites newer)
   [ ] Game Center sandbox round trip; Mac multi-window works
-  [ ] REVIEW: GROK
-Sign-off: REVIEW: GROK
+Sign-off: GLM-SELF
 ```
 
-### P8 Polish, Accessibility, and Performance (Owner: CLAUDE)
+### P8 Polish, Accessibility, and Performance
 
 - **LDP-P8.1** VoiceOver for the planner tables and daily log; Dynamic Type throughout SwiftUI surfaces.
 - **LDP-P8.2** High-contrast mode for snow scenes (white-on-white risk).
@@ -407,22 +401,20 @@ Sign-off: REVIEW: GROK
 GATE G8 — Polish
 Checks:
   [ ] Budgets met on real devices; accessibility audit clean
-  [ ] REVIEW: GROK + MAHLER
-Sign-off: REVIEW: GROK + MAHLER
+Sign-off: GLM-SELF
 ```
 
-### P9 Beta and TestFlight (Owner: GROK + CLAUDE)
+### P9 Beta and TestFlight
 
 ```
 GATE G9 — Beta
 Checks:
-  [ ] Internal TestFlight (Mahler creates records); crash-free ≥ 99.5%
-  [ ] ≥ 60% of testers report understanding why their expedition failed (survey Mahler approves)
-  [ ] REVIEW: MAHLER
-Sign-off: REVIEW: MAHLER
+  [ ] Internal TestFlight; crash-free ≥ 99.5%
+  [ ] ≥ 60% of testers report understanding why their expedition failed (survey drafted in `docs/release/`; playtest; `_CONVENTIONS.md` §8.2)
+Sign-off: GLM-SELF
 ```
 
-### P10 Release Prep (Owner: CLAUDE + GROK)
+### P10 Release Prep
 
 Standard P10 tasks; preview shows planning a depot, a whiteout search, and a returning party reaching the hut. Store copy states clearly that the game is fiction inspired by the Heroic Age of exploration.
 
@@ -430,23 +422,22 @@ Standard P10 tasks; preview shows planning a depot, a whiteout search, and a ret
 GATE G10 — Release
 Checks:
   [ ] RC full CI green; metadata, privacy, and age-rating drafts reviewed
-  [ ] REVIEW: MAHLER (submits)
-Sign-off: REVIEW: MAHLER
+Sign-off: GLM-SELF
 ```
 
-## 9. Handoff to Grok and Claude
+## 9. Fragile Areas and Priorities
 
 - **Fragile areas:** planner/engine parity (INV-4), conservation (INV-1), depot-finding probabilities in whiteout, and auto-advance interrupt coverage (a missed interrupt can kill a party unfairly).
-- **Tone:** diary and incident text must stay restrained; Grok owns the voice after G5.
-- **First tasks:** Grok — margin tuning so pillar 2 holds on all sheets; Claude — planner UX on iPhone and Mac multi-window.
+- **Tone:** diary and incident text must stay restrained; keep the voice consistent through P6–P10.
+- **Priorities for P6–P10:** margin tuning so pillar 2 holds on all sheets; planner UX on iPhone and Mac multi-window.
 
 ## 10. Risks and Mitigations
 
 | Risk | Likelihood | Impact | Mitigation | Owner |
 | --- | --- | --- | --- | --- |
-| Too spreadsheet-like | High | High | Strong scenes and diary, Advisor summaries, collapsible tables | GROK + CLAUDE |
-| Deaths feel unfair | Medium | High | Visible probabilities, interrupts, margins | GLM → GROK |
-| Insensitive treatment of real history | Low | Medium | Fiction inspired by history; invented crew; restrained tone | GROK + MAHLER |
+| Too spreadsheet-like | High | High | Strong scenes and diary, Advisor summaries, collapsible tables | GLM |
+| Deaths feel unfair | Medium | High | Visible probabilities, interrupts, margins | GLM |
+| Insensitive treatment of real history | Low | Medium | Fiction inspired by history; invented crew; restrained tone | GLM |
 | Long sessions without saves | Low | Medium | Daily autosave; resume anywhere | GLM |
 | Monte Carlo slow on device | Medium | Medium | Cache by plan hash, sample counts adaptive | GLM |
 
@@ -467,17 +458,17 @@ Sign-off: REVIEW: MAHLER
 | P3 Content and Systems | GLM | 10–14 |
 | P4 Bots and Generators | GLM | 5–8 |
 | P5 Meta | GLM | 4–6 |
-| P6 Aesthetics and Audio | GROK + CLAUDE | 10–14 |
-| P7 Platform | CLAUDE | 4–6 |
-| P8 Polish | CLAUDE | 5–7 |
-| P9 Beta | GROK + CLAUDE | 6–10 |
-| P10 Release | CLAUDE + GROK | 2–4 |
+| P6 Aesthetics and Audio | GLM | 10–14 |
+| P7 Platform | GLM | 4–6 |
+| P8 Polish | GLM | 5–7 |
+| P9 Beta | GLM | 6–10 |
+| P10 Release | GLM | 2–4 |
 | **Total** | | **70–102** |
 
-## 13. Open Questions for Mahler
+## 13. Open Questions
 
 1. Ironman by default with a separate Practice mode? **Default:** yes.
 2. Imperial units by default (period feel) with a metric toggle? **Default:** yes.
 3. Include the Winter phase, or skip straight to the Polar Season? **Default:** include as six quick decisions.
 4. Should a rival expedition (racing to the pole) exist in v1.0? **Default:** no; post-launch.
-5. Price? **Default:** Mahler decides in P10.
+5. Price? **Default:** the maintainer decides; GLM leaves the price unset.

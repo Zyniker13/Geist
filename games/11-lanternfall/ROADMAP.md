@@ -6,14 +6,14 @@
 | --- | --- |
 | Game number and slug | 11 · `lanternfall` |
 | Code prefix | `LF` (packages `LFCore`, `LFContent`, `LFAI`, `LFRender`, `LFAudio`, `LFPlatform`, `LFMeta`) |
-| Bundle ID (placeholder) | `com.zyniker.lanternfall` |
+| Bundle ID | `GEIST_BUNDLE_ID` build setting, set by the maintainer (`_CONVENTIONS.md` §2) |
 | Subgenre | Real-time-with-pause defense (roguelite run of nights) |
 | Difficulty tier | Intermediate |
 | Scope | Small team |
 | Session length | 15–25 minutes per night; 7-night run |
 | Renderer | SpriteKit (2D) plus Metal 2D lighting pass |
 | Players | Solo |
-| Conventions | [`_CONVENTIONS.md`](../_shared/_CONVENTIONS.md) v1.0 (read first) |
+| Conventions | [`_CONVENTIONS.md`](../_shared/_CONVENTIONS.md) v2.0 (read first) |
 
 ## 1. Summary and Design Pillars
 
@@ -125,7 +125,7 @@ Targets (Autoplayer, 1,000 runs): run completion 25–40% at default difficulty;
 
 ## 8. Phases, Tasks, and Gates
 
-### P0 Setup (Owner: GLM)
+### P0 Setup
 - Standard tasks S0.1–S0.7.
 - LF-P0.1 Spike: Metal 2D lighting pass with 40 lights and occluder shadows at 120 fps on Mac.
 
@@ -133,7 +133,7 @@ Targets (Autoplayer, 1,000 runs): run completion 25–40% at default difficulty;
 GATE G0 — Setup: standard checks; lighting spike logged · Sign-off: GLM-SELF
 ```
 
-### P1 Rules Engine Prototype (Owner: GLM)
+### P1 Rules Engine Prototype
 - Standard tasks S1.1–S1.4.
 - LF-P1.1 Grid, occluders, and shadowcast light grid (R-1 to R-3) with golden light maps.
 - LF-P1.2 Wind and oil (R-4, R-5).
@@ -149,7 +149,7 @@ Checks:
 Sign-off: GLM-SELF
 ```
 
-### P2 Core Loop Vertical Slice (Owner: GLM)
+### P2 Core Loop Vertical Slice
 - Standard tasks S2.1–S2.5.
 - LF-P2.1 `VillageScene` with placeholder silhouettes and the Metal lighting pass.
 - LF-P2.2 Drag lights from a tray onto valid cells (valid cells highlighted); drag from a villager to a target to assign a job; pinch on a lantern to swap color if the village stocks that color.
@@ -164,20 +164,19 @@ Checks:
   [ ] UI test completes 3 nights on iPad and Mac with scripted actions
   [ ] Visual light and gameplay light agree: snapshot test compares lit/dark classification within 1 cell
   [ ] 60 fps on iPad simulator with 40 lights and 60 creatures
-Sign-off: REVIEW: GROK + REVIEW: MAHLER
-🛑 GLM STOP
+Sign-off: GLM-SELF
 ```
 
-### P3 Content and Systems (Owner: GLM)
+### P3 Content and Systems
 - LF-P3.1 All G3 creatures, lights, relics, layouts, and modifiers.
 - LF-P3.2 Day phase screens: market, house upgrades, and relic draft.
 - LF-P3.3 Tutorial (6 steps).
 
 ```
-GATE G3 — Content and Systems: counts; content-lint 0 errors; tutorial UI test · Sign-off: GLM-SELF; REVIEW: CLAUDE async
+GATE G3 — Content and Systems: counts; content-lint 0 errors; tutorial UI test · Sign-off: GLM-SELF
 ```
 
-### P4 AI Opponents (Owner: GLM)
+### P4 AI Opponents
 - LF-P4.1 Creature Director with Easy, Normal, and Hard pacing; Autoplayer; balance report.
 
 ```
@@ -188,7 +187,7 @@ Checks:
 Sign-off: GLM-SELF
 ```
 
-### P5 Meta and Replayability (Owner: GLM)
+### P5 Meta and Replayability
 - LF-P5.1 Procedural village generator (validated: every house reachable by creatures, wells reachable by villagers).
 - LF-P5.2 G5 creatures, bosses, relics, and modifiers; unlockable villages and starting relics.
 - LF-P5.3 Daily night; 25 achievements.
@@ -199,55 +198,54 @@ Checks:
   [ ] 500 generated villages pass validation and sims
   [ ] Daily identical across devices for 30 dates
   [ ] Coverage thresholds; docs/HANDOFF.md complete
-Sign-off: REVIEW: CLAUDE + GROK + MAHLER
-🛑 GLM FINAL STOP
+Sign-off: GLM-SELF
 ```
 
-### P6 Aesthetics and Audio Pass (Owner: GROK + CLAUDE)
+### P6 Aesthetics and Audio Pass
 - LF-P6.1 Cut-paper silhouettes with jointed animation, flame flicker, ember particles, and dawn transition.
 - LF-P6.2 Heartbeat drum tied to threat, crickets that fall silent near creatures, and fire SFX.
 
 ```
-GATE G6 — Aesthetics: snapshots approved · Sign-off: REVIEW: MAHLER
+GATE G6 — Aesthetics: snapshots approved · Sign-off: GLM-SELF
 ```
 
-### P7 Platform Features (Owner: CLAUDE)
+### P7 Platform Features
 - LF-P7.1 Pencil hover previews a light's coverage before placement; squeeze opens the light tray; pressure sets lantern shutter width for directional lanterns (relic).
 - LF-P7.2 Game Center: daily leaderboard, best run per village, 25 achievements; iCloud saves at day boundaries and mid-night.
 - LF-P7.3 Mac menus and shortcuts; controller support.
 
 ```
-GATE G7 — Platform: iCloud round-trip; controller completes a night · Sign-off: REVIEW: GROK
+GATE G7 — Platform: iCloud round-trip; controller completes a night · Sign-off: GLM-SELF
 ```
 
-### P8 Polish, Accessibility, and Performance (Owner: CLAUDE)
+### P8 Polish, Accessibility, and Performance
 - LF-P8.1 High-contrast darkness overlay; creature outlines option; color alternatives (light colors also differ by flame shape).
 - LF-P8.2 Assist mode (slower creatures, longer oil).
 
 ```
-GATE G8 — Polish: 120 fps on iPad Pro M4 with 60 lights and 80 creatures; 60 fps on iPad (A16); cold start < 2.0 s · Sign-off: REVIEW: GROK + MAHLER
+GATE G8 — Polish: 120 fps on iPad Pro M4 with 60 lights and 80 creatures; 60 fps on iPad (A16); cold start < 2.0 s · Sign-off: GLM-SELF
 ```
 
 ### P9 Beta and TestFlight / P10 Release Prep
 - Standard tasks.
 
 ```
-GATE G9 — Beta: crash-free ≥ 99.5%; no S1/S2 · Sign-off: REVIEW: MAHLER
-GATE G10 — Release: assets approved · Sign-off: REVIEW: MAHLER (Mahler submits)
+GATE G9 — Beta: crash-free ≥ 99.5%; no S1/S2 · Sign-off: GLM-SELF
+GATE G10 — Release: assets approved · Sign-off: GLM-SELF
 ```
 
-## 9. Handoff to Grok and Claude
+## 9. Fragile Areas and Priorities
 
 - Fragile areas: the agreement between visual and gameplay light; shadowcast recomputation triggers.
-- First pickups: GROK — creature roster and relic synergies; CLAUDE — lighting pass performance.
+- Priorities for P6–P10: creature roster and relic synergies; lighting pass performance.
 
 ## 10. Risks and Mitigations
 
 | Risk | Likelihood | Impact | Mitigation | Owner |
 | --- | --- | --- | --- | --- |
-| Visual light misleads players | Medium | High | Darkness overlay and agreement tests | CLAUDE |
-| Micromanagement overload | Medium | Medium | Pause, job queues, and villager auto-refill relic | GROK |
-| Too similar to Thronefall/Kingdom | Low | Medium | Light-as-territory mechanic is unique | GROK |
+| Visual light misleads players | Medium | High | Darkness overlay and agreement tests | GLM |
+| Micromanagement overload | Medium | Medium | Pause, job queues, and villager auto-refill relic | GLM |
+| Too similar to Thronefall/Kingdom | Low | Medium | Light-as-territory mechanic is unique | GLM |
 
 ## 11. Out of Scope
 
@@ -263,13 +261,13 @@ Combat units; base building beyond house upgrades; multiplayer; story campaign.
 | P3 | GLM | 8–12 |
 | P4 | GLM | 5–8 |
 | P5 | GLM | 8–12 |
-| P6 | GROK + CLAUDE | 12–18 |
-| P7 | CLAUDE | 5–8 |
-| P8 | CLAUDE | 5–8 |
-| P9 | GROK + CLAUDE | 8–12 |
-| P10 | CLAUDE + GROK | 2–4 |
+| P6 | GLM | 12–18 |
+| P7 | GLM | 5–8 |
+| P8 | GLM | 5–8 |
+| P9 | GLM | 8–12 |
+| P10 | GLM | 2–4 |
 | **Total** | | **74–111** |
 
-## 13. Open Questions for Mahler
+## 13. Open Questions
 
 1. Tone: eerie but gentle (all ages) or genuinely scary? Default: eerie but gentle, 9+ rating.

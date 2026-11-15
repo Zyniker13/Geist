@@ -6,14 +6,14 @@
 | --- | --- |
 | Game number and slug | 04 · `night-market` |
 | Code prefix | `NM` (packages `NMCore`, `NMContent`, `NMAI`, `NMRender`, `NMAudio`, `NMPlatform`, `NMMeta`) |
-| Bundle ID (placeholder) | `com.zyniker.night-market` |
+| Bundle ID | `GEIST_BUNDLE_ID` build setting, set by the maintainer (`_CONVENTIONS.md` §2) |
 | Subgenre | City logistics (real-time, pausable) |
 | Difficulty tier | Approachable |
 | Scope | Solo-indie |
 | Session length | 10–20 minutes |
 | Renderer | SpriteKit (2D) with additive-blend glow shaders |
 | Players | Solo |
-| Conventions | [`_CONVENTIONS.md`](../_shared/_CONVENTIONS.md) v1.0 (read first) |
+| Conventions | [`_CONVENTIONS.md`](../_shared/_CONVENTIONS.md) v2.0 (read first) |
 
 ## 1. Summary and Design Pillars
 
@@ -129,18 +129,18 @@ Content counts — G3: 3 maps (Taipei, Bangkok, and Marrakesh), 6 stall colors, 
 | `darkPenalty` | 6 | 3–10 |
 | `rainPenalty` | 12 | 6–20 |
 
-Targets (AutoPlanner bot, 1,000 seeded nights per map): median survival 01:00–03:00; ≤ 10% of nights survive to dawn for the bot; first overflow never before 20:00 in ≥ 95% of nights; skilled human (Grok review) should reach dawn on Taipei within 5 attempts.
+Targets (AutoPlanner bot, 1,000 seeded nights per map): median survival 01:00–03:00; ≤ 10% of nights survive to dawn for the bot; first overflow never before 20:00 in ≥ 95% of nights; skilled human (playtest; `_CONVENTIONS.md` §8.2) should reach dawn on Taipei within 5 attempts.
 
 ## 7. AI Approach
 
 No opponent. P4 builds:
 - **AutoPlanner:** a heuristic player that, on each stall opening, paints the shortest walkway path (Steiner-tree approximation via successive shortest paths) from the gate network to the stall, places lanterns on the highest-traffic dark tiles, and picks upgrades by a fixed priority. Used only for sims and difficulty tuning.
-- **DirectorTuner:** a CLI that sweeps `spawnRate` and schedule jitter to hit targets and writes recommended values to `docs/BALANCE.md` (values only change in JSON after a human or Grok approves).
+- **DirectorTuner:** a CLI that sweeps `spawnRate` and schedule jitter to hit targets and writes recommended values to `docs/BALANCE.md` (values change in JSON only with an ADR that cites the sweep results).
 - **Daily challenge:** seed `hash("NM-daily-" + yyyyMMdd UTC)` picks map, schedule, stall jitter, rain plan, and one modifier; weekly uses ISO week.
 
 ## 8. Phases, Tasks, and Gates
 
-### P0 Setup (Owner: GLM)
+### P0 Setup
 - Standard tasks S0.1–S0.7.
 - NM-P0.1 Fixed-point 2D vector type with tests.
 - NM-P0.2 Spike: 600 pooled sprites moving at 120 fps in SpriteKit; record in `docs/PERF.md`.
@@ -152,7 +152,7 @@ Checks:
 Sign-off: GLM-SELF
 ```
 
-### P1 Rules Engine Prototype (Owner: GLM)
+### P1 Rules Engine Prototype
 - Standard tasks S1.1–S1.4.
 - NM-P1.1 Grid, walkways, budget (R-1, R-14).
 - NM-P1.2 Spawner and schedule with seeded jitter (R-6, R-7).
@@ -170,7 +170,7 @@ Checks:
 Sign-off: GLM-SELF
 ```
 
-### P2 Core Loop Vertical Slice (Owner: GLM)
+### P2 Core Loop Vertical Slice
 - Standard tasks S2.1–S2.5.
 - NM-P2.1 `MarketScene` with Taipei map, placeholder palette, and customers as colored dots.
 - NM-P2.2 Walkway painting by finger drag (tile snapping; Mini Motorways-style auto-joining tile art from a 16-tile autotile atlas); two-finger drag erases; budget counter.
@@ -185,11 +185,10 @@ Checks:
   [ ] UI test plays a full night on Taipei with scripted actions to the results screen on iPad and Mac
   [ ] 400 simultaneous customers at 60 fps on iPad simulator debug overlay
   [ ] Pause/resume and save/resume mid-night restore identical hashes
-Sign-off: REVIEW: GROK + REVIEW: MAHLER
-🛑 GLM STOP
+Sign-off: GLM-SELF
 ```
 
-### P3 Content and Systems (Owner: GLM)
+### P3 Content and Systems
 - NM-P3.1 Bangkok and Marrakesh maps with distinct zone weights and features (canals with bridges in Bangkok; narrow alleys in Marrakesh).
 - NM-P3.2 All 8 upgrade kinds; buskers; seating; bridges.
 - NM-P3.3 Rain with visual and pathing effects.
@@ -200,10 +199,10 @@ GATE G3 — Content and Systems
 Checks:
   [ ] G3 content counts; content-lint 0 errors
   [ ] Tutorial UI test; every upgrade has tests
-Sign-off: GLM-SELF; REVIEW: CLAUDE async
+Sign-off: GLM-SELF
 ```
 
-### P4 AI Opponents (Balance Bot) (Owner: GLM)
+### P4 AI Opponents (Balance Bot)
 - NM-P4.1 AutoPlanner and DirectorTuner; balance report.
 
 ```
@@ -214,7 +213,7 @@ Checks:
 Sign-off: GLM-SELF
 ```
 
-### P5 Meta and Replayability (Owner: GLM)
+### P5 Meta and Replayability
 - NM-P5.1 Three more maps; Festival and Monsoon schedules.
 - NM-P5.2 Daily and weekly challenges with 12 modifiers (e.g. "lanterns cost double", "two gates only", "everyone wants tea").
 - NM-P5.3 Unlocks: maps unlock by score thresholds; sandbox unlocks after first dawn.
@@ -226,29 +225,28 @@ Checks:
   [ ] Daily/weekly seeds identical across devices for 30 dates/8 weeks
   [ ] 6 maps pass AutoPlanner sims within targets
   [ ] Coverage thresholds; docs/HANDOFF.md complete
-Sign-off: REVIEW: CLAUDE + GROK + MAHLER
-🛑 GLM FINAL STOP
+Sign-off: GLM-SELF
 ```
 
-### P6 Aesthetics and Audio Pass (Owner: GROK + CLAUDE)
+### P6 Aesthetics and Audio Pass
 - NM-P6.1 Neon and lantern glow, steam, rain, and per-city palettes.
 - NM-P6.2 Four-stem music system tied to crowd density; ambience layers.
 
 ```
-GATE G6 — Aesthetics: snapshots approved; audio peak ≤ −1 dBFS · Sign-off: REVIEW: MAHLER
+GATE G6 — Aesthetics: snapshots approved; audio peak ≤ −1 dBFS · Sign-off: GLM-SELF
 ```
 
-### P7 Platform Features (Owner: CLAUDE)
+### P7 Platform Features
 - NM-P7.1 Game Center: per-map leaderboards, daily and weekly challenges, 20 achievements.
 - NM-P7.2 iCloud sync of profile and unlocks (nights are short; no mid-night cloud saves, only local).
 - NM-P7.3 Pencil: precise painting with hover showing the tile under the tip; squeeze toggles erase.
 - NM-P7.4 Mac menus, window resizing (map letterboxes), and full screen.
 
 ```
-GATE G7 — Platform: leaderboards post in sandbox; iCloud round-trip · Sign-off: REVIEW: GROK
+GATE G7 — Platform: leaderboards post in sandbox; iCloud round-trip · Sign-off: GLM-SELF
 ```
 
-### P8 Polish, Accessibility, and Performance (Owner: CLAUDE)
+### P8 Polish, Accessibility, and Performance
 - NM-P8.1 Stall shapes plus colors; a high-contrast mode.
 - NM-P8.2 VoiceOver summaries of queue states; an "assist" setting that lengthens overflow timers by 50%.
 - NM-P8.3 Perf with 600 customers.
@@ -258,29 +256,29 @@ GATE G8 — Polish
 Checks:
   [ ] 120 fps on iPad Pro M4 with 600 customers; 60 fps on iPad (A16); cold start < 2.0 s
   [ ] Color-blind simulation review passes for all 6 stall colors
-Sign-off: REVIEW: GROK + REVIEW: MAHLER
+Sign-off: GLM-SELF
 ```
 
 ### P9 Beta and TestFlight / P10 Release Prep
 - Standard tasks.
 
 ```
-GATE G9 — Beta: crash-free ≥ 99.5%; no S1/S2 · Sign-off: REVIEW: MAHLER
-GATE G10 — Release: assets approved · Sign-off: REVIEW: MAHLER (Mahler submits)
+GATE G9 — Beta: crash-free ≥ 99.5%; no S1/S2 · Sign-off: GLM-SELF
+GATE G10 — Release: assets approved · Sign-off: GLM-SELF
 ```
 
-## 9. Handoff to Grok and Claude
+## 9. Fragile Areas and Priorities
 
 - Fragile areas: flow-field invalidation, density slowdown tuning, and tick determinism across speed settings.
-- First pickups: GROK — map design and city palettes; CLAUDE — rendering performance and glow.
+- Priorities for P6–P10: map design and city palettes; rendering performance and glow.
 
 ## 10. Risks and Mitigations
 
 | Risk | Likelihood | Impact | Mitigation | Owner |
 | --- | --- | --- | --- | --- |
-| Too similar to Mini Motorways | Medium | High | Lean on light, rain, music, and seating mechanics plus the night-market identity | GROK |
+| Too similar to Mini Motorways | Medium | High | Lean on light, rain, music, and seating mechanics plus the night-market identity | GLM |
 | Crowd sim cost on older iPads | Medium | Medium | Cap customers at 600; flow fields not per-agent A* | GLM |
-| Cultural representation of real markets | Low | Medium | Abstract layouts; respectful palettes; review by Mahler | MAHLER |
+| Cultural representation of real markets | Low | Medium | Abstract layouts; respectful palettes; maintainer review filed as an item | GLM |
 
 ## 11. Out of Scope
 
@@ -296,14 +294,14 @@ Multiplayer; user-made maps sharing; character customization; economy beyond the
 | P3 | GLM | 5–8 |
 | P4 | GLM | 3–5 |
 | P5 | GLM | 5–8 |
-| P6 | GROK + CLAUDE | 8–12 |
-| P7 | CLAUDE | 4–6 |
-| P8 | CLAUDE | 4–6 |
-| P9 | GROK + CLAUDE | 5–8 |
-| P10 | CLAUDE + GROK | 2–3 |
+| P6 | GLM | 8–12 |
+| P7 | GLM | 4–6 |
+| P8 | GLM | 4–6 |
+| P9 | GLM | 5–8 |
+| P10 | GLM | 2–3 |
 | **Total** | | **51–78** |
 
-## 13. Open Questions for Mahler
+## 13. Open Questions
 
 1. Which six cities ship first? Default: Taipei, Bangkok, Marrakesh, Oaxaca, Seoul, and Istanbul.
-2. Should Night Market be pitched to Apple Arcade? Default: build premium-first; pitching is Mahler's call.
+2. Should Night Market be pitched to Apple Arcade? Default: build premium-first; pitching is the maintainer's call.
