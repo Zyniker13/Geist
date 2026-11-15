@@ -11,6 +11,20 @@
 
 import Foundation
 import NMCore
+import NMAI
+
+struct BotNightResult {
+    let seed: UInt64
+    let map: String
+    let illegal: Int
+    let served: Int
+    let score: Int
+    /// Hours after 18:00 when the bot went service-starved (no serve for a
+    /// full in-game hour after the first serve); 12.0 = serving continued to
+    /// dawn. This is the bot-collapse metric behind the §6 targets.
+    let collapseHour: Double
+    let firstOverflowTick: Int?
+}
 
 struct NightResult {
     let seed: UInt64
@@ -261,6 +275,68 @@ func runNight(seed: UInt64, checkInvariants: Bool, goldenActions: inout [TimedAc
     )
 }
 
+/// Plays one full night with the AutoPlanner (NM-P4.1). Mirrors runNight's
+/// driver timing: at most one player action per tick, applied before the tick
+/// advances. Counts reducer throws as illegal actions (G4 requires zero).
+func runBotNight(seed: UInt64, map: MapDefinition, spawnScale: Double = 1.0) throws -> BotNightResult {
+    var state = try GameState.initial(seed: seed, map: map)
+    if spawnScale != 1.0 {
+        state.spawnRates = Spawner.hourlyRates.map { max(1, Int((Double($0) * spawnScale).rounded())) }
+    }
+    var rng = SeededRNG(seed: seed)
+    let planner = AutoPlanner()
+    var illegal = 0
+    var servedCount = 0
+    var firstServeTick: Int?
+    var lastServeTick = 0
+    var firstOverflowTick: Int?
+
+    var lastEvents: [Event] = []
+    while !state.clock.isNightOver {
+        if let action = planner.nextAction(for: state, events: lastEvents) {
+            do {
+                let (next, _) = try Reducer.apply(action, to: state, rng: &rng)
+                state = next
+            } catch {
+                illegal += 1
+            }
+        }
+        let (next, events) = Tick.advance(state: state, rng: &rng)
+        state = next
+        lastEvents = events
+        for event in events {
+            switch event {
+            case .served:
+                servedCount += 1
+                if firstServeTick == nil { firstServeTick = state.clock.tick }
+                lastServeTick = state.clock.tick
+            case .overflowWarning:
+                if firstOverflowTick == nil { firstOverflowTick = state.clock.tick }
+            case .nightEnded:
+                break
+            default:
+                break
+            }
+        }
+    }
+
+    // Collapse metric (documented in docs/BALANCE.md): the first tick after
+    // serving began where a full in-game hour passed with no serve; a bot
+    // that never serves at all collapses at hour 0.
+    var collapseHour = 12.0
+    if let first = firstServeTick {
+        if state.clock.tick - lastServeTick >= 1800 {
+            collapseHour = Double(max(first, lastServeTick)) / 1800.0
+        }
+    } else {
+        collapseHour = 0
+    }
+    return BotNightResult(
+        seed: seed, map: map.id, illegal: illegal, served: servedCount, score: state.score,
+        collapseHour: collapseHour, firstOverflowTick: firstOverflowTick
+    )
+}
+
 /// Zero-padded lowercase hex (local to sim; independent of NMCore string APIs).
 func paddedHex(_ value: UInt64) -> String {
     var v = value
@@ -340,7 +416,7 @@ if let mapDir = argumentValue("--emit-maps") {
         let tileFn: (Int, Int) -> TileType
         let gates: [[Int]]
         let gateOpenTicks: [Int]
-        let stallZone: [Int]
+        let stallZones: [[Int]]
         let stallStride: Int
         let lanternSpots: [[Int]]
         let palette: String
@@ -358,8 +434,8 @@ if let mapDir = argumentValue("--emit-maps") {
             for col in 0..<width { tiles.append(tileFn(col, row)) }
         }
         let zones: [String: [[Int]]] = [
-            "noodles": [spec.stallZone], "tea": [spec.stallZone], "skewers": [spec.stallZone],
-            "dumplings": [spec.stallZone], "sweets": [spec.stallZone], "seafood": [spec.stallZone],
+            "noodles": spec.stallZones, "tea": spec.stallZones, "skewers": spec.stallZones,
+            "dumplings": spec.stallZones, "sweets": spec.stallZones, "seafood": spec.stallZones,
         ]
         let json: [String: Any] = [
             "id": name.lowercased(), "name": name,
@@ -390,7 +466,7 @@ if let mapDir = argumentValue("--emit-maps") {
                     return .ground
                 },
                 gates: [[0, 9], [0, 10]], gateOpenTicks: [0, 5400],
-                stallZone: [13, 9, 5, 3], stallStride: 2,
+                stallZones: [[13, 9, 5, 3]], stallStride: 2,
                 lanternSpots: [[14, 10], [17, 10]], palette: "neon_warm"))
         // Bangkok: a four-wide river down the middle; plazas on both banks;
         // three gates; stalls along the banks (bridge crossing required).
@@ -403,8 +479,8 @@ if let mapDir = argumentValue("--emit-maps") {
                     if row >= 8, row < 12, col >= 19, col < 24 { return .plaza }
                     return .ground
                 },
-                gates: [[0, 9], [31, 10], [15, 0]], gateOpenTicks: [0, 3600, 7200],
-                stallZone: [8, 8, 16, 4], stallStride: 1,
+                gates: [[0, 9], [31, 10], [18, 0]], gateOpenTicks: [0, 3600, 7200],
+                stallZones: [[8, 8, 6, 4], [19, 8, 5, 4]], stallStride: 1,
                 lanternSpots: [[10, 9], [21, 9]], palette: "river_gold",
                 zoneWeights: ["seafood": 3, "skewers": 2]))
         // Marrakesh: building blocks leave one-wide alleys between them.
@@ -417,11 +493,128 @@ if let mapDir = argumentValue("--emit-maps") {
                     return .ground
                 },
                 gates: [[0, 9], [0, 10]], gateOpenTicks: [0, 4500],
-                stallZone: [12, 7, 8, 6], stallStride: 1,
+                stallZones: [[12, 7, 8, 6]], stallStride: 1,
                 lanternSpots: [[13, 9], [18, 9]], palette: "earth_lantern",
                 zoneWeights: ["sweets": 3, "tea": 2]))
     } catch {
         print("EMIT FAILED: \(error)")
+        exitCode = 1
+    }
+} else if let tuneNights = argumentValue("--tune") {
+    // DirectorTuner (NM-P4.1): sweep the spawn ramp scale, evaluate the §6
+    // targets, and write docs/BALANCE.md with the recommended ramp.
+    let nights = Int(tuneNights) ?? 100
+    let mapsDir = argumentValue("--maps") ?? "Resources/Content/maps"
+    do {
+        let data = try Data(contentsOf: URL(fileURLWithPath: "\(mapsDir)/taipei.json"))
+        let map = try JSONDecoder().decode(MapDefinition.self, from: data)
+        let dateStamp = ISO8601DateFormatter().string(from: Date())
+        var lines: [String] = []
+        lines.append("# Night Market Balance Report")
+        lines.append("")
+        lines.append("_Generated by `Tools/sim --tune` (DirectorTuner), \(dateStamp). "
+            + "Collapse hour = the first in-game hour (after the first serve) where a full hour "
+            + "passes with no serve; 12.00 = serving continued to dawn._")
+        lines.append("")
+        lines.append("## §6 targets (AutoPlanner bot)")
+        lines.append("- median collapse hour in [1.00, 3.00]")
+        lines.append("- nights serving to dawn ≤ 10%")
+        lines.append("- first overflow before 20:00 in ≤ 5% of nights")
+        lines.append("")
+        lines.append("## Sweep (taipei, \(nights) seeded nights per point)")
+        lines.append("")
+        lines.append("| spawn scale | median collapse | dawn-serving | overflow < 20:00 |")
+        lines.append("| --- | --- | --- | --- |")
+        var best: (scale: Double, median: Double, dawn: Int, early: Int)?
+        for scale in [0.8, 0.9, 1.0, 1.1, 1.25, 1.4, 1.6, 1.8, 2.0] {
+            var collapses: [Double] = []
+            var dawn = 0
+            var early = 0
+            for index in 0..<nights {
+                let result = try runBotNight(seed: UInt64(5000 + index), map: map, spawnScale: scale)
+                collapses.append(result.collapseHour)
+                if result.collapseHour >= 12.0 { dawn += 1 }
+                if let tick = result.firstOverflowTick, tick < 3600 { early += 1 }
+            }
+            collapses.sort()
+            let median = collapses[collapses.count / 2]
+            lines.append(
+                String(format: "| %.2f | %.2f | %d/%d | %d/%d |", scale, median, dawn, nights, early, nights)
+            )
+            let fits = (1.0...3.0).contains(median) && Double(dawn) <= Double(nights) * 0.10
+                && Double(early) <= Double(nights) * 0.05
+            if fits, best == nil { best = (scale, median, dawn, early) }
+        }
+        lines.append("")
+        if let best {
+            let rates = Spawner.hourlyRates.map { max(1, Int((Double($0) * best.scale).rounded())) }
+            lines.append("## Recommended ramp")
+            lines.append("")
+            lines.append("Scale **\(String(format: "%.2f", best.scale))** is the smallest swept scale meeting all three targets.")
+            lines.append("")
+            lines.append("Recommended `spawnsPerHour`: **\(rates)**")
+            lines.append("")
+            lines.append("Adopting it means updating `Resources/Content/schedule_standard.json` and "
+                + "`Spawner.hourlyRates` together, regenerating the goldens, and recording an ADR "
+                + "that cites this sweep.")
+        } else {
+            lines.append("## Recommended ramp")
+            lines.append("")
+            lines.append("No swept scale met all three targets; keep the default ramp and record the "
+                + "out-of-target observations in a tuning ADR.")
+        }
+        let out = lines.joined(separator: "\n") + "\n"
+        try out.write(toFile: "docs/BALANCE.md", atomically: true, encoding: .utf8)
+        print(out)
+        print("TUNE OK (docs/BALANCE.md written)")
+    } catch {
+        print("TUNE FAILED: \(error)")
+        exitCode = 1
+    }
+} else if let nightsArg = argumentValue("--autopilot") {
+    // G4: AutoPlanner over the content maps; zero illegal actions required.
+    let nights = Int(nightsArg) ?? 1000
+    let mapsDir = argumentValue("--maps") ?? "Resources/Content/maps"
+    let spawnScale = Double(argumentValue("--spawn-scale") ?? "") ?? 1.0
+    do {
+        var totalIllegal = 0
+        let files = try FileManager.default.contentsOfDirectory(atPath: mapsDir).filter { $0.hasSuffix(".json") }.sorted()
+        for file in files {
+            let data = try Data(contentsOf: URL(fileURLWithPath: "\(mapsDir)/\(file)"))
+            let map = try JSONDecoder().decode(MapDefinition.self, from: data)
+            var collapses: [Double] = []
+            var dawnServing = 0
+            var earlyOverflow = 0
+            var overflowSeen = 0
+            var servedTotal = 0
+            for index in 0..<nights {
+                let result = try runBotNight(seed: UInt64(1000 + index), map: map, spawnScale: spawnScale)
+                totalIllegal += result.illegal
+                collapses.append(result.collapseHour)
+                if result.collapseHour >= 12.0 { dawnServing += 1 }
+                if let tick = result.firstOverflowTick {
+                    overflowSeen += 1
+                    if tick < 3600 { earlyOverflow += 1 }
+                }
+                servedTotal += result.served
+            }
+            collapses.sort()
+            let median = collapses.isEmpty ? 0 : collapses[collapses.count / 2]
+            print(
+                "AUTOPILOT map=\(map.id) nights=\(nights) illegal=\(totalIllegal) "
+                    + "medianCollapseHour=\(String(format: "%.2f", median)) "
+                    + "servedToDawn=\(dawnServing)/\(nights) "
+                    + "firstOverflowBefore2000=\(earlyOverflow)/\(overflowSeen) servedTotal=\(servedTotal)"
+            )
+        }
+        if totalIllegal > 0 {
+            print("AUTOPILOT FAILED: \(totalIllegal) illegal actions")
+            exitCode = 1
+        } else {
+            print("AUTOPILOT OK illegal=0 across \(files.count) maps × \(nights) nights")
+        }
+    } catch {
+        print("AUTOPILOT FAILED: \(error)")
         exitCode = 1
     }
 } else if let sweep = argumentValue("--invariant-sweep") {

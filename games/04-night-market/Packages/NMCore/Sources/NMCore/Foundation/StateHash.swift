@@ -5,7 +5,7 @@
 /// encoding is versioned: `ENCODING_VERSION` bumps whenever the field set
 /// changes, invalidating old golden hashes on purpose.
 public enum StateHash {
-    public static let encodingVersion: UInt8 = 3
+    public static let encodingVersion: UInt8 = 4
 
     /// FNV-1a 64-bit digest of the game state.
     public static func digest(_ state: GameState) -> UInt64 {
@@ -29,6 +29,8 @@ public enum StateHash {
             hasher.int(state.zoneWeights[color.debugName] ?? 1)
         }
         hasher.bool(state.calmFirstNight)
+        // Tunable spawn ramp (fixed length 12, canonical element order).
+        for rate in state.spawnRates { hasher.int(rate) }
         // Walkways: sorted so the digest never depends on Set iteration order.
         hasher.int(state.walkwayTiles.count)
         for tile in state.walkwayTiles.sorted(by: { ($0.col, $0.row) < ($1.col, $1.row) }) {

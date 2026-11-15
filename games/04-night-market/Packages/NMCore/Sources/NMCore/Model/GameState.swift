@@ -25,6 +25,9 @@ public struct GameState: Codable, Sendable, Equatable, Hashable {
     public var zoneWeights: [String: Int] = [:]
     /// Calm first-night mode (NM-P3.4): slower spawn ramp on night 1 only.
     public var calmFirstNight: Bool = false
+    /// Hourly spawn rates in effect (DirectorTuner sweeps these; default is
+    /// R-7's standard ramp).
+    public var spawnRates: [Int] = Spawner.hourlyRates
     /// Upgrade offers waiting at an hour boundary (R-5); non-empty implies paused-for-choice.
     public var pendingOffers: [UpgradeOffer]
     /// Bumped whenever geometry changes (walkways, fixtures, stall/gate opens, rain).
