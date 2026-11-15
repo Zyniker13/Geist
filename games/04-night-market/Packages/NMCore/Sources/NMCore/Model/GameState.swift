@@ -28,6 +28,12 @@ public struct GameState: Codable, Sendable, Equatable, Hashable {
     /// Hourly spawn rates in effect (DirectorTuner sweeps these; default is
     /// R-7's standard ramp).
     public var spawnRates: [Int] = Spawner.hourlyRates
+    /// Active challenge modifiers (NM-P5.2); behavior-affecting, hashed.
+    public var challengeModifiers: [ChallengeModifier] = []
+    /// Queue-capacity offset from the small-queues modifier (can be negative).
+    public var queueCapacityMod: Int = 0
+    /// Score per served customer (2 under double-serves; R-13 default 1).
+    public var scorePerServe: Int = 1
     /// Upgrade offers waiting at an hour boundary (R-5); non-empty implies paused-for-choice.
     public var pendingOffers: [UpgradeOffer]
     /// Bumped whenever geometry changes (walkways, fixtures, stall/gate opens, rain).
@@ -57,6 +63,10 @@ public struct GameState: Codable, Sendable, Equatable, Hashable {
         fixtureStock: FixtureStock = FixtureStock(),
         zoneWeights: [String: Int] = [:],
         calmFirstNight: Bool = false,
+        spawnRates: [Int] = Spawner.hourlyRates,
+        challengeModifiers: [ChallengeModifier] = [],
+        queueCapacityMod: Int = 0,
+        scorePerServe: Int = 1,
         pendingOffers: [UpgradeOffer] = [],
         fieldVersion: Int = 0,
         pathFields: PathFields = PathFields()
@@ -81,6 +91,10 @@ public struct GameState: Codable, Sendable, Equatable, Hashable {
         self.fixtureStock = fixtureStock
         self.zoneWeights = zoneWeights
         self.calmFirstNight = calmFirstNight
+        self.spawnRates = spawnRates
+        self.challengeModifiers = challengeModifiers
+        self.queueCapacityMod = queueCapacityMod
+        self.scorePerServe = scorePerServe
         self.pendingOffers = pendingOffers
         self.fieldVersion = fieldVersion
         self.pathFields = pathFields

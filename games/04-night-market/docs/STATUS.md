@@ -110,6 +110,22 @@ EXIT=0  (** TEST SUCCEEDED **)
 - Headless iPad sim cannot rotate while XCUITest stays portrait: checks are launch-arg-driven; map input goes through `MapInputCatcher`
 - `-uitest-*` affordances live in `GameController`/`GameScreen` (fast, fresh, paused, stress, autochoose, autosave, save-restart, autolane, debug, shot) — never set by gameplay
 
+## P5 (Meta and Replayability) — IN PROGRESS on `night-market/phase/P5-meta-replayability`
+
+- **Status:** P5.1 + P5.2 code-complete and tested; P5.3/P5.4 engine + app layer built; G5 evidence pending (6-map autopilot run in flight, coverage, HANDOFF refresh).
+- **Spec:** ROADMAP.md §P5 — three more maps, Festival/Monsoon schedules, daily/weekly challenges with 12 modifiers, unlocks, stats, 20 achievements.
+
+### What was built
+- **Maps (P5.1):** istanbul, oaxaca, seoul added to `Resources/Content/maps/` (six total, distinct zone weights/geometry); Festival and Monsoon schedules as JSON content (`ScheduleDefinition`, `spawnsPerHour`, 12 hours each); content-lint validates 6 maps / 8 kinds / 3 schedules / 6 tutorial steps (standard schedule must equal the R-7 ramp).
+- **Challenges (P5.2, ADR-0012):** `Challenge` (FNV-1a seeds over UTC date strings), `ChallengeModifier` (12 kinds applied at init over existing rule surfaces), `NightSetup` (free play / daily / weekly); daily/weekly draws are deterministic functions of the date strings.
+- **Engine surfaces:** `Clock.nightHours` (early close), `queueCapacityMod`, `scorePerServe`, `challengeModifiers` — all hashed in **StateHash encoding version 5**; goldens regenerated and reproducing (86→118 tests green).
+- **Profile (P5.3/P5.4):** `Profile` value type + `UnlockCatalog` (taipei free, seoul 15, bangkok 20, marrakesh 30, istanbul 40, oaxaca 55; one map per qualifying night, no skipping) + `AchievementCatalog` (20 fixed ids).
+- **App:** `ProfileStore` (JSON persistence beside the save), `BundledContent` loader, `NewNightMenu` launcher sheet (challenges + unlocked map ladder; `-uitest-*` launches bypass it), night hook on `.nightEnded` (stats, unlock, achievements → results screen), overflow counting for calm nights.
+
+### Tests added
+- `ChallengesTests` (17): 30-date / 8-week seed identity, draw determinism + catalog bounds, all 12 modifier effects, lantern double-cost through the reducer, double-serve score through a tick, hash participation.
+- `ProfileTests` (15): ladder order/no-skip, threshold boundaries, 20 unique ids, tier triggers, no re-earn, codable round-trip.
+
 ## P4 (AI Opponents) — COMPLETE, tagged `night-market/gate-G4-pass`
 
 - **Status:** complete; G4 self-checked 2026-11-15. Tag: `night-market/gate-G4-pass`.
