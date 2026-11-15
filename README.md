@@ -1,13 +1,13 @@
 # Geist
 
-A program of twenty-five original iOS games, built in one repository on a shared Swift engine.
+Twenty-five original, iPad-first strategy games for iOS, iPadOS, and macOS, each a self-contained Swift app in its own folder.
 
-- `ROADMAP.md` is the program roadmap: how the games are planned, built, checked, and brought to launch-ready, one after another.
+- `games/` holds the games: [`games/README.md`](games/README.md) is the index, and each `games/NN-<slug>/ROADMAP.md` specifies one game.
+- `games/_shared/` holds the conventions and template every game follows.
+- `ROADMAP.md` is how the program runs: build order, repository layout, and moving from one game to the next.
 - `STATUS.md` is where the program stands right now.
-- `games/NN-<slug>/` holds each game, with its own roadmap, status, and checks.
-- `Engine/` holds the shared engine package (from phase P1).
 
-Every game is fully playable offline and collects no data.
+Each game is premium (one universal purchase), plays offline, uses no custom servers, and targets an App Store privacy label of Data Not Collected.
 
 ## License
 

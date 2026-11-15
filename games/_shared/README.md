@@ -13,7 +13,7 @@ Each game roadmap lives in a sibling folder at `../NN-<slug>/ROADMAP.md`, indexe
 
 ## 2. Ground Rules for the GLM Agent
 
-1. **One game per repository.** Create a new repo for the chosen game; copy `_CONVENTIONS.md` and the game's roadmap into `docs/` of that repo so the agent always has them in context.
+1. **One repository for all twenty-five games.** Each game lives in its own folder, `../NN-<slug>/`, which stands in for the per-game repository root in `_CONVENTIONS.md` §3. Read `_CONVENTIONS.md` and the game roadmap in place; do not copy them. The root `ROADMAP.md` ("Repository Adaptations" and "Program Loop") gives the CI, branch, tag, and merge mappings and how a stop applies to one game while work continues on the next.
 2. **Read order:** `_CONVENTIONS.md` in full, then the game roadmap in full, before writing any code.
 3. **Run phases strictly in order** (P0 → P5). Do not begin phase N+1 until gate GN passes and is recorded in `docs/STATUS.md` with a `gate-GN-pass` tag.
 4. **Gates are objective.** Each gate lists checks (tests, coverage, performance, counts). The agent runs every check, pastes the evidence into `docs/STATUS.md`, and marks the gate PASS only when every box is ticked.
@@ -21,13 +21,13 @@ Each game roadmap lives in a sibling folder at `../NN-<slug>/ROADMAP.md`, indexe
    - **🛑 GLM STOP at G2 (Vertical Slice).** Stop and wait for Grok and Mahler to review the slice. Resume only on an explicit PASS.
    - **🛑 GLM FINAL STOP at G5 (Meta and Replayability).** The GLM agent's work ends here. Complete `docs/HANDOFF.md` and stop.
    - Also stop when a gate fails three fix attempts, when any Apple account, signing, payment, or App Store Connect action is needed, when a rule is ambiguous (log it in `docs/OPEN_QUESTIONS.md`), or when a dependency outside the allow-list seems necessary.
-6. **Determinism is non-negotiable.** Core, Content, and AI packages use the seeded RNG and fixed-point math; no `Float`, `Date()`, `UUID()`, or system randomness. `scripts/check-imports.sh` and replay golden hashes enforce it in CI.
+6. **Determinism is non-negotiable.** Core, Content, and AI packages use the seeded RNG and fixed-point math; no `Float`, `Date()`, `UUID()`, or system randomness. `Tools/check-imports.sh` and replay golden hashes enforce it in CI.
 7. **Never hand-edit `.pbxproj`.** Use XcodeGen.
 8. **Mahler alone** approves and performs App Store Connect setup, external TestFlight, submission, pricing, and any spend.
 
 ## 3. Suggested Prompt for the GLM Agent
 
-> You are the initial developer for `<Game Name>`. Read `docs/_CONVENTIONS.md` and `docs/NN-slug.md` completely. Execute phases P0 through P5 in order. For each phase, complete every listed task, run every gate check, record evidence in `docs/STATUS.md`, and tag `gate-Gn-pass` only when all checks pass. Stop at G2 and wait for review. Stop permanently at G5 after completing `docs/HANDOFF.md`. Log any rule ambiguity in `docs/OPEN_QUESTIONS.md` instead of guessing. Never perform Apple account, signing, or payment actions.
+> You are the initial developer for `<Game Name>`. Read `games/_shared/_CONVENTIONS.md` and `games/NN-<slug>/ROADMAP.md` completely. Execute phases P0 through P5 in order. For each phase, complete every listed task, run every gate check, record evidence in the game's `docs/STATUS.md`, and tag `<slug>/gate-Gn-pass` only when all checks pass. Stop at G2 and wait for review. Stop permanently at G5 after completing `docs/HANDOFF.md`. Log any rule ambiguity in `docs/OPEN_QUESTIONS.md` instead of guessing. Never perform Apple account, signing, or payment actions.
 
 ## 4. After GLM: Grok and Claude
 

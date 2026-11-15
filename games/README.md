@@ -1,10 +1,10 @@
 # Games
 
-One folder per game, `NN-<slug>/`, where `NN` is the game's fixed number (01 to 25) and `<slug>` a short, lowercase, hyphenated working name. Each folder starts with the game's `ROADMAP.md`, which meets the contract in `docs/game-roadmap-template.md`. The rest of the folder is created by `scripts/new-game.sh` in stage G1.
+One folder per game, `NN-<slug>/`, where `NN` is the game's fixed number (01 to 25) and `<slug>` a short, lowercase, hyphenated working name. Each folder starts with the game's `ROADMAP.md`, written to [`_shared/_TEMPLATE.md`](_shared/_TEMPLATE.md) (sections 0–13). The build agent creates the rest of the folder in the game's P0, using the layout in [`_shared/_CONVENTIONS.md`](_shared/_CONVENTIONS.md) §3 with the folder as its root (see "Repository Adaptations" in the program [`ROADMAP.md`](../ROADMAP.md)).
 
-The build order and each game's state are in the program `STATUS.md`.
+The build order and each game's state are in the program [`STATUS.md`](../STATUS.md). The numbers below are fixed identifiers, not the build order.
 
-Shared notes for this set live in [`_shared/`](_shared/README.md): [`_CONVENTIONS.md`](_shared/_CONVENTIONS.md) and [`_TEMPLATE.md`](_shared/_TEMPLATE.md). Inside each roadmap, the `_CONVENTIONS.md` references link to `../_shared/_CONVENTIONS.md`. The roadmap text is otherwise unchanged. These files follow `_shared/_TEMPLATE.md` (sections 0–13) and have not been rewritten to the program contract in `docs/game-roadmap-template.md`.
+Shared files for this set live in [`_shared/`](_shared/README.md): [`_CONVENTIONS.md`](_shared/_CONVENTIONS.md) and [`_TEMPLATE.md`](_shared/_TEMPLATE.md). Inside each roadmap, the `_CONVENTIONS.md` references link to `../_shared/_CONVENTIONS.md`.
 
 | No. | Folder | Working name |
 | --- | --- | --- |
