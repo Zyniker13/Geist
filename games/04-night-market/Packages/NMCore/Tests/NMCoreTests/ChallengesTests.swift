@@ -78,6 +78,22 @@ struct ChallengesTests {
         }
     }
 
+    @Test("draw falls back to defaults on empty catalogs")
+    func drawFallbacks() {
+        let draw = Challenge.draw(seed: 1, mapIds: [], scheduleIds: [])
+        #expect(draw.mapId == "taipei")
+        #expect(draw.scheduleId == "schedule_standard")
+        #expect(ChallengeModifier.allCases.contains(draw.modifier))
+    }
+
+    @Test("every modifier has a stable, nonempty title")
+    func titles() {
+        #expect(ChallengeModifier.allCases.count == 12)
+        for modifier in ChallengeModifier.allCases {
+            #expect(!modifier.title.isEmpty)
+        }
+    }
+
     // MARK: - Modifier effects
 
     private func apply(_ modifier: ChallengeModifier, seed: UInt64 = 42) throws -> GameState {
