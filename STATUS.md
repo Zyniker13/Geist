@@ -3,9 +3,9 @@
 This file is the single place to resume the program from. Keep every field below current after every meaningful step (see "Resuming After a Restart" in `ROADMAP.md`). Per-game detail (gate evidence and sign-offs) lives in each game's `docs/STATUS.md`.
 
 - **Current game:** Night Market (`04-night-market`)
-- **Phase:** P2 (Core Loop Vertical Slice) — COMPLETE; G2 checks green (iPad XCUITest 3/3; Mac scripted evidence); tagging `night-market/gate-G2-pass`
-- **Last done:** full-night, save/resume-hash, and 400-customer-fps UI tests green on iPad; Mac scripted runs to results + save/resume hash parity captured via the in-app snapshot; `docs/media/slice.mp4` (72 s) + `docs/SLICE_ASSESSMENT.md` written; maintainer issues #6–#8 filed via gh.
-- **Next step:** P3 (Content and Systems) — Bangkok and Marrakesh maps, all 8 upgrade kinds, buskers/seating/bridges, rain visuals, content JSON + content-lint.
+- **Phase:** P3 (Content and Systems) — COMPLETE; G3 checks green (content-lint 0 errors; tutorial UI test 4/4; every upgrade tested); tagging `night-market/gate-G3-pass`
+- **Last done:** three maps emitted with distinct zone weights (taipei parity bit-exact), 8 upgrade kinds with token economy (ADR-0010), rain visuals verified on-sim at TICK 3,960, tutorial 6 steps + calm first night, content-lint real validator in `make lint`; full `make test` + `make lint` green (NMCore 86 tests, UI tests 4/4).
+- **Next step:** P4 (AI Opponents) — AutoPlanner and DirectorTuner; balance report. Read the game's ROADMAP §P4 in full before starting.
 - **Blocked on:** maintainer — push access for the deploy key (issue #7); Mac UI-test automation grant (issue #6). Work continues locally.
 
 ## Environment Check
@@ -32,7 +32,7 @@ If Xcode 27.2 or an iOS 26-or-later runtime is missing and cannot be installed w
 
 | Order | No. | Folder | Game | State | Last Gate | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | 04 | [`04-night-market`](games/04-night-market/ROADMAP.md) | Night Market | In Progress (P2 → P3) | `night-market/gate-G1-pass` (local) | G2 checks green (iPad XCUITest 3/3, Mac scripted); G2 tag + P3 next |
+| 1 | 04 | [`04-night-market`](games/04-night-market/ROADMAP.md) | Night Market | In Progress (P3 → P4) | `night-market/gate-G2-pass` (local) | G3 checks green (content-lint 0 errors; UI tests 4/4 incl. tutorial; upgrades tested); G3 tag + P4 next |
 | 2 | 12 | [`12-murmuration`](games/12-murmuration/ROADMAP.md) | Murmuration | Not Started | — | — |
 | 3 | 02 | [`02-orrery`](games/02-orrery/ROADMAP.md) | Orrery | Not Started | — | — |
 | 4 | 14 | [`14-beacon-coast`](games/14-beacon-coast/ROADMAP.md) | Beacon Coast | Not Started | — | — |
@@ -81,3 +81,4 @@ One line per meaningful step, newest last: date, phase or game and stage, what w
 - 2026-11-15: Night Market P0 complete — G0 evidence recorded in the game's docs/STATUS.md, tag `night-market/gate-G0-pass` created locally on main (65013b6). Push blocked: profile deploy key authenticates as the old Seedvault repo; needs-maintainer entries added (deploy key, GitHub token, 120fps-vs-60Hz question).
 - 2026-11-15: NMCore 71 tests (94.95% line coverage), 500-night sweep clean, Debug≡Release hashes — P1 merged and tagged `night-market/gate-G1-pass` (9637a24).
 - 2026-11-15: Night Market P2 vertical slice built: MarketScene Taipei render + autotile walkway painting (drag/two-finger erase), fixture tray, upgrade picker, results screen + heatmap, Mac mouse/keyboard input, NightScenario scripted rain, save/resume with exact-hash restore, 72-s slice recording. G2 green: iPad XCUITest 3/3 (full night, save/resume hash, 400-customer fps); Mac scripted runs to results + SAVE==HASH snapshot. Harness limits documented (ADR-0009); issues #6/#7/#8 filed. G2 tag next.
+- 2026-11-15: Night Market P3 content and systems complete: map content layer (MapDefinition + emit-maps, taipei parity bit-exact), Bangkok/Marrakesh with distinct zone weights, all 8 upgrade kinds with the FixtureStock token economy (ADR-0010, StateHash v3, goldens regenerated), rain visuals verified on-sim, tutorial 6 steps + calm first night, content-lint real validator wired into make lint. G3 green: make lint 0 (content-lint OK), make test TEST SUCCEEDED (NMCore 86 tests, iPad UI tests 4/4 incl. tutorial). G3 tag next; push still blocked (issue #7).

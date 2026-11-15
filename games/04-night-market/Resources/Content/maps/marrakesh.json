@@ -82,5 +82,9 @@
         6
       ]
     ]
+  },
+  "zoneWeights" : {
+    "sweets" : 3,
+    "tea" : 2
   }
 }

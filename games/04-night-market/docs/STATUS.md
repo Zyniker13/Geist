@@ -110,12 +110,32 @@ EXIT=0  (** TEST SUCCEEDED **)
 - Headless iPad sim cannot rotate while XCUITest stays portrait: checks are launch-arg-driven; map input goes through `MapInputCatcher`
 - `-uitest-*` affordances live in `GameController`/`GameScreen` (fast, fresh, paused, stress, autochoose, autosave, save-restart, autolane, debug, shot) — never set by gameplay
 
-## P3 (Content and Systems) — planned
+## P3 (Content and Systems) — COMPLETE, tagged `night-market/gate-G3-pass`
 
-- **Started:** 2026-11-15
+- **Status:** complete; G3 self-checked 2026-11-15. Tag: `night-market/gate-G3-pass`.
 - **Spec:** ROADMAP.md §P3 + §5 content counts — 3 maps (Taipei, Bangkok canals-with-bridges, Marrakesh narrow alleys) with distinct zone weights; 8 upgrade kinds (budget +20, lanterns +2, awning +1, busker +1, bridge +1, seating +1 (3 seats), faster cooks −20% serviceTicks, extra queue +2) each with tests; 1 schedule; tutorial of 6 steps + calm first-night mode (slower ramp); rain visuals.
-- **Plan:** (1) map JSON schema (`maps/*.json`, base64-rle tiles, zones, gates, palette) + `ContentLibrary` loader in NMContent with validation; extract the current hardcoded Taipei map to `Resources/Content/maps/taipei.json`; (2) `upgrades.json` + Reducer wiring for all 8 kinds + per-kind tests; (3) rain visuals in MarketScene (streaks + tint; pathing effects already engine-side); (4) Bangkok/Marrakesh maps + zone weights + bridge/alley rendering; (5) tutorial state machine (6 steps) + calm first-night spawn multiplier (documented deviation → RULES.md + DECISIONS.md); (6) content-lint extension: schema + counts.
-- **G3:** content counts correct; content-lint 0 errors; tutorial UI test green; every upgrade tested.
+
+### What was built
+- **Map content layer:** `MapDefinition` (Content.swift) + `GameState.initial(seed:map:)`; `Tools/sim --emit-maps` emits all three maps as base64-RLE JSON into `Resources/Content/maps/`. `MapRoundTripTests` prove the emitted `taipei.json` reproduces the built-in Taipei layout exactly (canal-after-plaza paint order, ADR-0008).
+- **Distinct zone weights:** per-map `zoneWeights` (Bangkok: seafood ×3, skewers ×2; Marrakesh: sweets ×3, tea ×2) multiply each color's open-stall count in the seeded spawn draw (canonical color order). Taipei stays weight-1. Hashed in StateHash v3 (canonical order; dictionary order never reaches outcomes).
+- **All 8 upgrade kinds (ADR-0010):** the six fixture upgrades grant `FixtureStock` tokens that placement consumes (placing without a token throws); faster cooks (−20% service ticks) and extra queue (+2 capacity) target the busiest stall (longest queue, ties by lowest id); queue capacity = 6 + bonus + attributed gate waiting.
+- **Rain visuals (NM-P3.3):** MarketScene `rainLayer` — dim blue wash + 36 tick-cycled streak sprites (no render RNG), hidden when dry. Pathing effects (dark +6 / rain-no-awning +12 edge costs) unchanged from P1. Verified on-sim at TICK 3,960 (HUD "Rain", wash + streaks visible; `/tmp/rain-probe3.png`).
+- **Tutorial (NM-P3.4):** `tutorial.json` (6 steps) + `TutorialState`/`TutorialCard` bottom menu-sheet with a Next button that always works; shown under `-uitest-tutorial`. Calm first night: spawn ramp at two-thirds rate (min 1) via `calmFirstNight` (hashed; `-uitest-calm` enables it until the settings phase owns the toggle).
+- **Content files + lint:** `upgrades.json` (8 kinds, weights), `schedule_standard.json` (R-7 ramp), `tutorial.json` (6 steps); `Tools/content-lint` rewritten from the P0 skeleton into a real validator (map schema/RLE decode/gates/zone rects, exactly the 8 upgrade kinds with positive weights, 12-hour schedule == R-7 ramp, 6-step tutorial) and wired into `make lint`.
+
+### G3 gate evidence (all self-checked, real output)
+- `make lint` → **LINT=0** (`/tmp/g3-lint.log`), ending "content-lint: OK (3 maps, 8 upgrade kinds, 1 schedule, 6 tutorial steps)".
+- `make test` → **TEST=0, `** TEST SUCCEEDED **`** (`/tmp/g3-make-test.log`): NMCore **86 tests / 14 suites green** (83 + 3 SpawnerP3), NMContent green, iPad UI tests **4/4 green** (full night to results; save/resume identical hash; 400-customer stress; **tutorial advances through six steps and dismisses**), Mac leg per the P2 configuration.
+- iPad UI suite standalone: `xcodebuild test-without-building -only-testing:NMUITests` → **UITEST_EXIT=0, 4 tests, 0 failures** (`/tmp/g3-uitest6.log`).
+- Upgrade tests: `UpgradeKindsTests` — all eight kinds, busiest-stall targeting (incl. tie-break), token consume + reject-without-token, catalog completeness (8 green).
+- Spawner tests: zone-weight bias changes the draw vs equal weights (equal explicit weights == empty default); calm night spawns fewer customers in the same window; the calm flag flips the digest.
+- Goldens: regenerated under StateHash v3 (stock + weights + calm hashed); ten golden replays reproduce final and checkpoint hashes.
+- Builds: iOS + macOS Debug green after every change; tutorial card visually verified on-sim (`/tmp/tut-probe2.png`).
+
+### Harness notes (documented substitutions)
+- `Resources/` joined both app targets' resource phase (project.yml) — content JSON reaches `Bundle.main` flattened at root.
+- New launch arguments this phase: `-uitest-tutorial` (shows the tutorial card), `-uitest-calm` (calm first night).
+- Tutorial card keeps its children visible with `.accessibilityElement(children: .contain)` (same lesson as the P2 results screen).
 
 
 

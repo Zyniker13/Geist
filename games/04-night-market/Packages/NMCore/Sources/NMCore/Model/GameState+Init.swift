@@ -232,6 +232,7 @@ public extension GameState {
             speedMultiplier: 1,
             isPaused: false,
             rainSchedule: finalRain,
+            zoneWeights: map.zoneWeights,
             pendingOffers: [],
             fieldVersion: 0,
             pathFields: PathFields()

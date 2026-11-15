@@ -344,6 +344,8 @@ if let mapDir = argumentValue("--emit-maps") {
         let stallStride: Int
         let lanternSpots: [[Int]]
         let palette: String
+        /// Per-color demand weights (P3: distinct per map; keyed by debug name).
+        var zoneWeights: [String: Int] = [:]
     }
 
     func emit(_ spec: MapSpec) throws {
@@ -367,6 +369,7 @@ if let mapDir = argumentValue("--emit-maps") {
             "zones": zones, "stallStride": spec.stallStride,
             "lanternSpots": spec.lanternSpots,
             "schedule": "schedule_standard", "palette": spec.palette,
+            "zoneWeights": spec.zoneWeights,
         ]
         let data = try JSONSerialization.data(
             withJSONObject: json, options: [.prettyPrinted, .sortedKeys])
@@ -402,7 +405,8 @@ if let mapDir = argumentValue("--emit-maps") {
                 },
                 gates: [[0, 9], [31, 10], [15, 0]], gateOpenTicks: [0, 3600, 7200],
                 stallZone: [8, 8, 16, 4], stallStride: 1,
-                lanternSpots: [[10, 9], [21, 9]], palette: "river_gold"))
+                lanternSpots: [[10, 9], [21, 9]], palette: "river_gold",
+                zoneWeights: ["seafood": 3, "skewers": 2]))
         // Marrakesh: building blocks leave one-wide alleys between them.
         try emit(
             MapSpec(
@@ -414,7 +418,8 @@ if let mapDir = argumentValue("--emit-maps") {
                 },
                 gates: [[0, 9], [0, 10]], gateOpenTicks: [0, 4500],
                 stallZone: [12, 7, 8, 6], stallStride: 1,
-                lanternSpots: [[13, 9], [18, 9]], palette: "earth_lantern"))
+                lanternSpots: [[13, 9], [18, 9]], palette: "earth_lantern",
+                zoneWeights: ["sweets": 3, "tea": 2]))
     } catch {
         print("EMIT FAILED: \(error)")
         exitCode = 1

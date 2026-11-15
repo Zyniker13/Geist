@@ -87,5 +87,9 @@
         4
       ]
     ]
+  },
+  "zoneWeights" : {
+    "seafood" : 3,
+    "skewers" : 2
   }
 }

@@ -37,6 +37,8 @@ targets:
     sources:
       - path: App/iOS
       - path: App/Shared
+      - path: Resources
+        buildPhase: resources
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: $(GEIST_BUNDLE_ID)
@@ -65,6 +67,8 @@ targets:
     sources:
       - path: App/macOS
       - path: App/Shared
+      - path: Resources
+        buildPhase: resources
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: $(GEIST_BUNDLE_ID)

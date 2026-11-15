@@ -20,6 +20,11 @@ public struct GameState: Codable, Sendable, Equatable, Hashable {
     public var rainSchedule: [RainShower]
     /// Placeable-fixture tokens granted by upgrades, consumed on placement (ADR-0010).
     public var fixtureStock: FixtureStock = FixtureStock()
+    /// Per-color demand weights for spawning (P3: distinct per map; keyed by
+    /// `StallColor.debugName`, missing colors default to 1).
+    public var zoneWeights: [String: Int] = [:]
+    /// Calm first-night mode (NM-P3.4): slower spawn ramp on night 1 only.
+    public var calmFirstNight: Bool = false
     /// Upgrade offers waiting at an hour boundary (R-5); non-empty implies paused-for-choice.
     public var pendingOffers: [UpgradeOffer]
     /// Bumped whenever geometry changes (walkways, fixtures, stall/gate opens, rain).
@@ -47,6 +52,8 @@ public struct GameState: Codable, Sendable, Equatable, Hashable {
         isPaused: Bool,
         rainSchedule: [RainShower] = [],
         fixtureStock: FixtureStock = FixtureStock(),
+        zoneWeights: [String: Int] = [:],
+        calmFirstNight: Bool = false,
         pendingOffers: [UpgradeOffer] = [],
         fieldVersion: Int = 0,
         pathFields: PathFields = PathFields()
@@ -69,6 +76,8 @@ public struct GameState: Codable, Sendable, Equatable, Hashable {
         self.isPaused = isPaused
         self.rainSchedule = rainSchedule
         self.fixtureStock = fixtureStock
+        self.zoneWeights = zoneWeights
+        self.calmFirstNight = calmFirstNight
         self.pendingOffers = pendingOffers
         self.fieldVersion = fieldVersion
         self.pathFields = pathFields

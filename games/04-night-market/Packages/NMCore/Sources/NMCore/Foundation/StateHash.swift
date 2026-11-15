@@ -24,6 +24,11 @@ public enum StateHash {
         hasher.int(state.fixtureStock.busker)
         hasher.int(state.fixtureStock.bridge)
         hasher.int(state.fixtureStock.seating)
+        // Demand weights (canonical color order, never dictionary order).
+        for color in StallColor.allCases {
+            hasher.int(state.zoneWeights[color.debugName] ?? 1)
+        }
+        hasher.bool(state.calmFirstNight)
         // Walkways: sorted so the digest never depends on Set iteration order.
         hasher.int(state.walkwayTiles.count)
         for tile in state.walkwayTiles.sorted(by: { ($0.col, $0.row) < ($1.col, $1.row) }) {

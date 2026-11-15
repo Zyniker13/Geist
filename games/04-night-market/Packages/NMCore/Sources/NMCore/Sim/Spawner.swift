@@ -13,23 +13,29 @@ public enum Spawner {
         let hour = s.clock.hoursElapsed
 
         guard hour >= 0, hour < hourlyRates.count else { return (s, []) }
-        let rate = hourlyRates[hour]
-        guard rate > 0 else { return (s, []) }
+        guard hourlyRates[hour] > 0 else { return (s, []) }
 
         // Open gates only.
         let openGates = s.openGates
         guard !openGates.isEmpty else { return (s, []) }
 
-        // Color chosen proportionally to OPEN stalls of each color (R-7).
+        // Color chosen proportionally to OPEN stalls of each color times the
+        // map's zone weight for that color (R-7, P3 distinct zone weights).
         // Built in canonical color order — Dictionary iteration order is
         // process-random and must never influence simulation outcomes.
         var weightedColors: [StallColor] = []
         for color in StallColor.allCases {
             let count = s.openStalls.filter { $0.color == color }.count
-            weightedColors.append(contentsOf: Array(repeating: color, count: count))
+            let weight = s.zoneWeights[color.debugName] ?? 1
+            weightedColors.append(contentsOf: Array(repeating: color, count: count * max(1, weight)))
         }
         guard !weightedColors.isEmpty else { return (s, []) }
 
+        // Calm first night (NM-P3.4): two thirds of the normal rate, minimum 1.
+        var rate = hourlyRates[hour]
+        if s.calmFirstNight {
+            rate = max(1, rate * 2 / 3)
+        }
         if rng.next(upperBound: 1800) >= rate { return (s, []) }
 
         let color = weightedColors[Int(rng.next(upperBound: weightedColors.count))]

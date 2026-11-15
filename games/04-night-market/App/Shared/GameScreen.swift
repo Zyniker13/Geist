@@ -120,6 +120,7 @@ public struct MarketView: ViewRepresentable {
 public struct GameScreen: View {
     @StateObject private var game = GameController()
     @StateObject private var debug = DebugState.shared
+    @StateObject private var tutorial = TutorialState()
     @State private var armed: FixtureKind?
 
     public init() {}
@@ -164,9 +165,16 @@ public struct GameScreen: View {
                     game.restart(seed: UInt64.random(in: 1...1_000_000))
                 }
             }
+
+            if tutorial.isVisible, let step = tutorial.current {
+                TutorialCard(step: step, stepNumber: tutorial.index + 1, total: tutorial.steps.count) {
+                    tutorial.advance()
+                }
+            }
         }
         .onAppear {
             game.start()
+            tutorial.activateIfNeeded()
             DispatchQueue.main.async {
                 if ProcessInfo.processInfo.arguments.contains("-uitest-fresh") {
                     self.game.deleteSave()
@@ -294,6 +302,41 @@ public struct GameScreen: View {
             armed = kind
             game.scene.placementTool = kind
         }
+    }
+}
+
+/// The tutorial card: a bottom menu-sheet step with a Next button, styled
+/// like the other sheets (never a modal alert — ui-flow.md).
+private struct TutorialCard: View {
+    let step: TutorialStep
+    let stepNumber: Int
+    let total: Int
+    let onNext: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("Step \(stepNumber)/\(total) — \(step.title)")
+                .font(.system(.headline, design: .monospaced))
+                .foregroundStyle(nmColor(Palette.hudText))
+            Text(step.text)
+                .font(.system(.caption, design: .monospaced))
+                .foregroundStyle(nmColor(Palette.hudText))
+            Button("Next") { onNext() }
+                .font(.system(.caption, design: .monospaced))
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(RoundedRectangle(cornerRadius: 8).fill(nmColor(Palette.hudText).opacity(0.18)))
+                .accessibilityIdentifier("tutorial-next")
+        }
+        .padding(14)
+        .background(RoundedRectangle(cornerRadius: 12).fill(Color.black.opacity(0.72)))
+        .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(nmColor(Palette.hudText).opacity(0.5), lineWidth: 1))
+        .padding(.horizontal, 24)
+        .padding(.bottom, 72)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+        .allowsHitTesting(true)
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("tutorial-card")
     }
 }
 

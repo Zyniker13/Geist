@@ -25,11 +25,15 @@ public struct MapDefinition: Codable, Equatable, Sendable {
     public var lanternSpots: [[Int]]
     public var schedule: String
     public var palette: String
+    /// Per-color demand weights (P3: distinct per map; keyed by debug name;
+    /// missing colors default to 1).
+    public var zoneWeights: [String: Int] = [:]
 
     public init(
         id: String, name: String, size: [Int], tiles: String, gates: [[Int]],
         gateOpenTicks: [Int], zones: [String: [[Int]]], stallStride: Int,
-        lanternSpots: [[Int]], schedule: String, palette: String
+        lanternSpots: [[Int]], schedule: String, palette: String,
+        zoneWeights: [String: Int] = [:]
     ) {
         self.id = id
         self.name = name
@@ -42,6 +46,7 @@ public struct MapDefinition: Codable, Equatable, Sendable {
         self.lanternSpots = lanternSpots
         self.schedule = schedule
         self.palette = palette
+        self.zoneWeights = zoneWeights
     }
 
     /// Decodes the RLE tile stream to `width * height` tile types.
