@@ -51,7 +51,8 @@ struct NewNightMenu: View {
     }
 
     private func challengeRow(_ title: String, setup: NightSetup) -> some View {
-        Button {
+        let mapName = (try? BundledContent.map(setup.mapId))?.name ?? setup.mapId
+        return Button {
             onStart(setup)
         } label: {
             HStack {
@@ -59,7 +60,7 @@ struct NewNightMenu: View {
                     Text(title)
                         .font(.system(.headline, design: .monospaced))
                         .foregroundStyle(nmColor(Palette.hudText))
-                    Text("\(setup.mapId) · \(setup.modifier?.title ?? "")")
+                    Text("\(mapName) · \(setup.modifier?.title ?? "")")
                         .font(.system(.caption, design: .monospaced))
                         .foregroundStyle(nmColor(Palette.hudText).opacity(0.8))
                 }
@@ -72,12 +73,16 @@ struct NewNightMenu: View {
     private func mapRow(_ mapId: String) -> some View {
         let unlocked = store.profile.unlockedMaps.contains(mapId)
         let threshold = UnlockCatalog.thresholds[mapId] ?? 0
-        let name = (try? BundledContent.map(mapId))?.name ?? mapId
+        let definition = try? BundledContent.map(mapId)
+        let name = definition?.name ?? mapId
+        let scheduleLabel = (definition?.schedule ?? "schedule_standard")
+            .replacingOccurrences(of: "schedule_", with: "") + " night"
         return Button {
             guard unlocked else { return }
-            let schedule = (try? BundledContent.map(mapId))?.schedule ?? "schedule_standard"
             let seed = UInt64.random(in: 1...UInt64.max)
-            onStart(NightSetup.freePlay(mapId: mapId, scheduleId: schedule, seed: seed))
+            onStart(NightSetup.freePlay(
+                mapId: mapId, scheduleId: definition?.schedule ?? "schedule_standard", seed: seed
+            ))
         } label: {
             HStack {
                 Text(unlocked ? name : "🔒 \(name)")
@@ -86,6 +91,10 @@ struct NewNightMenu: View {
                 Spacer()
                 if !unlocked {
                     Text("reach score \(threshold)")
+                        .font(.system(.caption2, design: .monospaced))
+                        .foregroundStyle(nmColor(Palette.hudText).opacity(0.55))
+                } else {
+                    Text(scheduleLabel)
                         .font(.system(.caption2, design: .monospaced))
                         .foregroundStyle(nmColor(Palette.hudText).opacity(0.55))
                 }

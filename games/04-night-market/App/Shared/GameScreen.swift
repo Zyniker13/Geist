@@ -193,7 +193,8 @@ public struct GameScreen: View {
         .onAppear {
             game.start()
             let underUITest = ProcessInfo.processInfo.arguments.contains { $0.hasPrefix("-uitest") }
-            showLauncher = !underUITest && !game.hasSave
+            let wantsLauncher = ProcessInfo.processInfo.arguments.contains("-uitest-launcher-daily")
+            showLauncher = wantsLauncher || (!underUITest && !game.hasSave)
             if !showLauncher {
                 tutorial.activateIfNeeded()
             }
@@ -222,6 +223,7 @@ public struct GameScreen: View {
             Text("🌙 \(clockText)")
                 .font(.system(.headline, design: .monospaced))
                 .foregroundStyle(nmColor(Palette.hudText))
+                .accessibilityIdentifier("clock-hud")
             Text("Score \(game.score)")
                 .font(.system(.headline, design: .monospaced))
                 .foregroundStyle(nmColor(Palette.hudText))
