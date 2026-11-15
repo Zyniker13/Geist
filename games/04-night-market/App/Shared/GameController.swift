@@ -6,6 +6,7 @@ import Combine
 import os
 import NMCore
 import NMContent
+import NMAudio
 import NMRender
 
 @MainActor
@@ -198,6 +199,7 @@ public final class GameController: NSObject, ObservableObject, MarketSceneDelega
 
     public func start() {
         guard tickTimer == nil else { return }
+        audioMixer?.start()
         let timer = Timer(timeInterval: 1.0 / 30.0, repeats: true) { [weak self] _ in
             MainActor.assumeIsolated {
                 self?.stepFrame()
@@ -210,7 +212,16 @@ public final class GameController: NSObject, ObservableObject, MarketSceneDelega
     public func stop() {
         tickTimer?.invalidate()
         tickTimer = nil
+        audioMixer?.stop()
     }
+
+    /// The audio engine, created once. UI-test launches keep audio off so
+    /// headless runs never open an audio session.
+    private lazy var audioMixer: AudioMixer? = {
+        let underUITest = ProcessInfo.processInfo.arguments.contains { $0.hasPrefix("-uitest") }
+        guard !underUITest else { return nil }
+        return AudioMixer()
+    }()
 
     /// One 30 Hz frame: run `speedMultiplier` simulation ticks.
     public func stepFrame() {
@@ -260,6 +271,7 @@ public final class GameController: NSObject, ObservableObject, MarketSceneDelega
             switch event {
             case .served:
                 servesTotal += 1
+                audioMixer?.play(AudioEvent(kind: .serve, volume: 0.9, pitch: 1))
             case .hourReached:
                 // UI-test affordance: accept the first offer immediately so
                 // the night runs to the results screen without picker taps.
@@ -270,6 +282,7 @@ public final class GameController: NSObject, ObservableObject, MarketSceneDelega
                 }
             case .overflowWarning:
                 overflowCount += 1
+                audioMixer?.play(AudioEvent(kind: .overflow, volume: 1.0, pitch: 1))
             case .nightEnded(let finalScore, let survived):
                 let outcome = ProfileStore.NightOutcome(
                     served: servesTotal, survived: survived, finalScore: finalScore,
@@ -324,6 +337,12 @@ public final class GameController: NSObject, ObservableObject, MarketSceneDelega
         speed = state.speedMultiplier
         if case .rain = state.weather { raining = true } else { raining = false }
         pendingOffers = state.pendingOffers
+        // Music follows the crowd (NM-P6.2): density + phase → stem mix.
+        if let audio = audioMixer {
+            let density = Double(state.customers.count) / MusicDirector.referenceCrowd
+            let hourProgress = Double(state.clock.tick) / Double(state.clock.ticksPerHour * 12)
+            audio.setMix(MusicDirector.mix(density: density, isRaining: state.weather.isRaining, hourProgress: hourProgress))
+        }
         DebugState.shared.tick = state.clock.tick
         DebugState.shared.seed = seed
         DebugState.shared.stateHash = StateHash.digest(state)
@@ -431,7 +450,7 @@ public final class GameController: NSObject, ObservableObject, MarketSceneDelega
         nightNumber += 1
         results = nil
         selectedStall = nil
-        scene.rebuild(with: state)
+        scene.rebuild(with: state, palette: CityPalette.named(map.palette))
         scene.marketDelegate = self
         publishHud()
         start()

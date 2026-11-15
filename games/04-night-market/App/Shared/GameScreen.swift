@@ -195,6 +195,15 @@ public struct GameScreen: View {
             let underUITest = ProcessInfo.processInfo.arguments.contains { $0.hasPrefix("-uitest") }
             let wantsLauncher = ProcessInfo.processInfo.arguments.contains("-uitest-launcher-daily")
             showLauncher = wantsLauncher || (!underUITest && !game.hasSave)
+            // Visual/CI affordances: start a challenge night directly.
+            let startDaily = ProcessInfo.processInfo.arguments.contains("-uitest-start-daily")
+            let startWeekly = ProcessInfo.processInfo.arguments.contains("-uitest-start-weekly")
+            if startDaily || startWeekly {
+                showLauncher = false
+                DispatchQueue.main.async {
+                    try? self.game.start(setup: BundledContent.todayChallenge(startDaily ? .daily : .weekly))
+                }
+            }
             if !showLauncher {
                 tutorial.activateIfNeeded()
             }
