@@ -7,6 +7,7 @@ let package = Package(
     dependencies: [
         .package(path: "../../Packages/NMCore"),
         .package(path: "../../Packages/NMContent"),
+        .package(path: "../../Packages/NMAI"),
     ],
     targets: [
         .executableTarget(
@@ -14,6 +15,7 @@ let package = Package(
             dependencies: [
                 .product(name: "NMCore", package: "NMCore"),
                 .product(name: "NMContent", package: "NMContent"),
+                .product(name: "NMAI", package: "NMAI"),
             ],
             path: "Sources/sim"
         )

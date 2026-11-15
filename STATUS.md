@@ -3,9 +3,9 @@
 This file is the single place to resume the program from. Keep every field below current after every meaningful step (see "Resuming After a Restart" in `ROADMAP.md`). Per-game detail (gate evidence and sign-offs) lives in each game's `docs/STATUS.md`.
 
 - **Current game:** Night Market (`04-night-market`)
-- **Phase:** P3 (Content and Systems) — COMPLETE; G3 checks green (content-lint 0 errors; tutorial UI test 4/4; every upgrade tested); tagging `night-market/gate-G3-pass`
-- **Last done:** three maps emitted with distinct zone weights (taipei parity bit-exact), 8 upgrade kinds with token economy (ADR-0010), rain visuals verified on-sim at TICK 3,960, tutorial 6 steps + calm first night, content-lint real validator in `make lint`; full `make test` + `make lint` green (NMCore 86 tests, UI tests 4/4).
-- **Next step:** P4 (AI Opponents) — AutoPlanner and DirectorTuner; balance report. Read the game's ROADMAP §P4 in full before starting.
+- **Phase:** P4 (AI Opponents) — COMPLETE; G4 checks green (1,000 nights/map × 3 maps, zero illegal actions; §6 targets met-or-ADR per ADR-0011); tagging `night-market/gate-G4-pass`
+- **Last done:** AutoPlanner + DirectorTuner built (NMAI 5/5; `--autopilot 1000` OK illegal=0; `--tune` sweep → docs/BALANCE.md with served-volume proof 198→470/night); StateHash v4 goldens regenerated (NMCore 86/86); make test + make lint green on the P4 branch.
+- **Next step:** P5 (Meta and Replayability) — Oaxaca/Seoul/Istanbul maps, Festival/Monsoon schedules, daily+weekly challenges with 12 modifiers, unlocks, stats + 20 achievements. Read the game's ROADMAP §P5 in full before starting.
 - **Blocked on:** maintainer — push access for the deploy key (issue #7); Mac UI-test automation grant (issue #6). Work continues locally.
 
 ## Environment Check
@@ -32,7 +32,7 @@ If Xcode 27.2 or an iOS 26-or-later runtime is missing and cannot be installed w
 
 | Order | No. | Folder | Game | State | Last Gate | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | 04 | [`04-night-market`](games/04-night-market/ROADMAP.md) | Night Market | In Progress (P3 → P4) | `night-market/gate-G2-pass` (local) | G3 checks green (content-lint 0 errors; UI tests 4/4 incl. tutorial; upgrades tested); G3 tag + P4 next |
+| 1 | 04 | [`04-night-market`](games/04-night-market/ROADMAP.md) | Night Market | In Progress (P4 → P5) | `night-market/gate-G3-pass` (local) | G4 checks green (1,000 nights/map × 3, zero illegal; targets-or-ADR); G4 tag + P5 next |
 | 2 | 12 | [`12-murmuration`](games/12-murmuration/ROADMAP.md) | Murmuration | Not Started | — | — |
 | 3 | 02 | [`02-orrery`](games/02-orrery/ROADMAP.md) | Orrery | Not Started | — | — |
 | 4 | 14 | [`14-beacon-coast`](games/14-beacon-coast/ROADMAP.md) | Beacon Coast | Not Started | — | — |
@@ -82,3 +82,4 @@ One line per meaningful step, newest last: date, phase or game and stage, what w
 - 2026-11-15: NMCore 71 tests (94.95% line coverage), 500-night sweep clean, Debug≡Release hashes — P1 merged and tagged `night-market/gate-G1-pass` (9637a24).
 - 2026-11-15: Night Market P2 vertical slice built: MarketScene Taipei render + autotile walkway painting (drag/two-finger erase), fixture tray, upgrade picker, results screen + heatmap, Mac mouse/keyboard input, NightScenario scripted rain, save/resume with exact-hash restore, 72-s slice recording. G2 green: iPad XCUITest 3/3 (full night, save/resume hash, 400-customer fps); Mac scripted runs to results + SAVE==HASH snapshot. Harness limits documented (ADR-0009); issues #6/#7/#8 filed. G2 tag next.
 - 2026-11-15: Night Market P3 content and systems complete: map content layer (MapDefinition + emit-maps, taipei parity bit-exact), Bangkok/Marrakesh with distinct zone weights, all 8 upgrade kinds with the FixtureStock token economy (ADR-0010, StateHash v3, goldens regenerated), rain visuals verified on-sim, tutorial 6 steps + calm first night, content-lint real validator wired into make lint. G3 green: make lint 0 (content-lint OK), make test TEST SUCCEEDED (NMCore 86 tests, iPad UI tests 4/4 incl. tutorial). G3 tag next; push still blocked (issue #7).
+- 2026-11-15: Night Market P4 complete: AutoPlanner (NMAI) + DirectorTuner; G4 green — 1,000 seeded nights per map with zero illegal actions (3,000 total), first-overflow target met at 100% (0/3,000 before 20:00), survival targets unreachable by engine construction → ADR-0011 records the metric definition and keeps the default ramp; docs/BALANCE.md sweep table (198→470 serves/night across 0.8×–2.0×). StateHash v4 (tunable spawnRates) with goldens regenerated; NMAI 5/5, NMCore 86/86; make test + make lint green. G4 tag next; push still blocked (issue #7).

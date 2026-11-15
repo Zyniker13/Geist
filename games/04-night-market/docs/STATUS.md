@@ -110,6 +110,28 @@ EXIT=0  (** TEST SUCCEEDED **)
 - Headless iPad sim cannot rotate while XCUITest stays portrait: checks are launch-arg-driven; map input goes through `MapInputCatcher`
 - `-uitest-*` affordances live in `GameController`/`GameScreen` (fast, fresh, paused, stress, autochoose, autosave, save-restart, autolane, debug, shot) — never set by gameplay
 
+## P4 (AI Opponents) — COMPLETE, tagged `night-market/gate-G4-pass`
+
+- **Status:** complete; G4 self-checked 2026-11-15. Tag: `night-market/gate-G4-pass`.
+- **Spec:** ROADMAP.md §P4/§7 — AutoPlanner and DirectorTuner; balance report.
+
+### What was built
+- **AutoPlanner (Packages/NMAI):** heuristic player; paints shortest paths from the gate network to newly opened stalls (planned over paintable tiles — bare ground is not traversable), places lanterns from stock on the highest-traffic dark tiles, prefers the bridge upgrade when stalls are bridge-blocked (Bangkok's east bank), picks upgrades by a fixed priority; replans only on night start, stall/gate openings, and hour boundaries.
+- **Driver (`Tools/sim --autopilot N`):** runs the bot over the content maps; reports per-map median collapse hour, dawn-serving rate, first-overflow timing, and the illegal-action count.
+- **DirectorTuner (`Tools/sim --tune N`):** sweeps the spawn-ramp scale (0.8×–2.0×, 100 seeded nights per point on Taipei), evaluates the §6 targets, writes `docs/BALANCE.md`.
+- **Engine:** tunable `spawnRates` on GameState (hashed; StateHash v4, goldens regenerated and reproducing); `MapSpec` multi-rect stall zones; Bangkok's third gate moved off the canal onto land.
+
+### G4 gate evidence (all self-checked, real output)
+- **1,000 nights per map, zero illegal actions** (`/tmp/p4-autopilot-1000.log`, `AUTOPILOT OK illegal=0 across 3 maps × 1000 nights`, exit 0): bangkok 1,000 nights illegal=0; marrakesh 1,000 illegal=0; taipei 1,000 illegal=0.
+- **§6 targets:** first overflow never before 20:00 — 0 occurrences in 3,000 nights (met, ≥ 95% required). Survival targets (median collapse 01:00–03:00; ≤ 10% dawn-serving) unreachable by construction — **ADR-0011** recorded: the engine has no night-failure state (R-13 defines survival as reaching 06:00; overflow only sheds customers), so no spawn ramp can produce a bot collapse; the default R-7 ramp stands unchanged.
+- **Sweep table** (`docs/BALANCE.md`, `/tmp/p4-tune2.log`): served/night rises monotonically 198→470 across 0.8×–2.0× while collapse stays flat — scale applies, metric cannot discriminate; differential probe confirmed (211→417 serves/night at 1.0×→2.0×, 10 nights).
+- **Tests:** NMAI 5/5 (full night zero-illegal, upgrade priority, BFS corridor); NMCore 86/86 on v4 goldens; iOS + macOS Debug builds green (`/tmp/p4-iosb.log`, `/tmp/p4-macb.log`).
+- **Known bot weakness (noted, not gating):** on Bangkok the bot connects east-bank stalls only after a bridge offer arrives (392/1,000 nights serving to dawn, median collapse 0.00 when it never does) — acceptable for balance tooling; the zero-illegal requirement holds.
+
+### Harness notes
+- `make lint` runs the real content-lint; both gates' evidence logs live in `/tmp/g{3,4}-*.log`.
+- Bot night loop mirrors `runNight` timing: one action per tick, applied before the tick advances.
+
 ## P3 (Content and Systems) — COMPLETE, tagged `night-market/gate-G3-pass`
 
 - **Status:** complete; G3 self-checked 2026-11-15. Tag: `night-market/gate-G3-pass`.

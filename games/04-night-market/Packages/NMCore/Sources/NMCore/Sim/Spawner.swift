@@ -11,9 +11,7 @@ public enum Spawner {
     public static func spawn(state: GameState, rng: inout SeededRNG) -> (GameState, [Event]) {
         var s = state
         let hour = s.clock.hoursElapsed
-
-        guard hour >= 0, hour < hourlyRates.count else { return (s, []) }
-        guard hourlyRates[hour] > 0 else { return (s, []) }
+        guard hour >= 0 else { return (s, []) }
 
         // Open gates only.
         let openGates = s.openGates
@@ -32,7 +30,9 @@ public enum Spawner {
         guard !weightedColors.isEmpty else { return (s, []) }
 
         // Calm first night (NM-P3.4): two thirds of the normal rate, minimum 1.
-        var rate = hourlyRates[hour]
+        let rates = s.spawnRates.isEmpty ? hourlyRates : s.spawnRates
+        guard hour < rates.count, rates[hour] > 0 else { return (s, []) }
+        var rate = rates[hour]
         if s.calmFirstNight {
             rate = max(1, rate * 2 / 3)
         }
