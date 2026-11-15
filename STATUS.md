@@ -6,7 +6,7 @@ This file is the single place to resume the program from. Keep every field below
 - **Phase:** P4 (AI Opponents) — COMPLETE; G4 checks green (1,000 nights/map × 3 maps, zero illegal actions; §6 targets met-or-ADR per ADR-0011); tagging `night-market/gate-G4-pass`
 - **Last done:** AutoPlanner + DirectorTuner built (NMAI 5/5; `--autopilot 1000` OK illegal=0; `--tune` sweep → docs/BALANCE.md with served-volume proof 198→470/night); StateHash v4 goldens regenerated (NMCore 86/86); make test + make lint green on the P4 branch.
 - **Next step:** P5 (Meta and Replayability) — Oaxaca/Seoul/Istanbul maps, Festival/Monsoon schedules, daily+weekly challenges with 12 modifiers, unlocks, stats + 20 achievements. Read the game's ROADMAP §P5 in full before starting.
-- **Blocked on:** maintainer — push access for the deploy key (issue #7); Mac UI-test automation grant (issue #6). Work continues locally.
+- **Blocked on:** maintainer — Mac UI-test automation grant still ineffective after the first attempt (issue #6 reopened with post-grant evidence). Push is unblocked: main and all gate tags are on the remote (issue #7 closed).
 
 ## Environment Check
 
