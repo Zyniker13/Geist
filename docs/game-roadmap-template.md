@@ -28,7 +28,7 @@ What ships at launch, with numbers: levels, worlds, modes, characters, items, di
 
 ## Look and Sound
 
-Art style, palette, and mood; music and sound direction; and how assets will be made (original, procedural, or CC0). Note color-blind-safe choices.
+Art style, palette, and mood; music and sound direction; and how assets will be made (original, procedural, or third-party under CC0 or another permissive license; nothing copyleft). Note color-blind-safe choices.
 
 ## Engine Needs
 
