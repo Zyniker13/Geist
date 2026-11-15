@@ -523,23 +523,28 @@ if let mapDir = argumentValue("--emit-maps") {
         lines.append("")
         lines.append("## Sweep (taipei, \(nights) seeded nights per point)")
         lines.append("")
-        lines.append("| spawn scale | median collapse | dawn-serving | overflow < 20:00 |")
-        lines.append("| --- | --- | --- | --- |")
+        lines.append("| spawn scale | median collapse | dawn-serving | overflow < 20:00 | served/night |")
+        lines.append("| --- | --- | --- | --- | --- |")
         var best: (scale: Double, median: Double, dawn: Int, early: Int)?
         for scale in [0.8, 0.9, 1.0, 1.1, 1.25, 1.4, 1.6, 1.8, 2.0] {
             var collapses: [Double] = []
             var dawn = 0
             var early = 0
+            var servedTotal = 0
             for index in 0..<nights {
                 let result = try runBotNight(seed: UInt64(5000 + index), map: map, spawnScale: scale)
                 collapses.append(result.collapseHour)
                 if result.collapseHour >= 12.0 { dawn += 1 }
                 if let tick = result.firstOverflowTick, tick < 3600 { early += 1 }
+                servedTotal += result.served
             }
             collapses.sort()
             let median = collapses[collapses.count / 2]
             lines.append(
-                String(format: "| %.2f | %.2f | %d/%d | %d/%d |", scale, median, dawn, nights, early, nights)
+                String(
+                    format: "| %.2f | %.2f | %d/%d | %d/%d | %.0f |", scale, median, dawn, nights,
+                    early, nights, Double(servedTotal) / Double(nights)
+                )
             )
             let fits = (1.0...3.0).contains(median) && Double(dawn) <= Double(nights) * 0.10
                 && Double(early) <= Double(nights) * 0.05

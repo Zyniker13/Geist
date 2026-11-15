@@ -3,9 +3,9 @@
 This file is the single place to resume the program from. Keep every field below current after every meaningful step (see "Resuming After a Restart" in `ROADMAP.md`). Per-game detail (gate evidence and sign-offs) lives in each game's `docs/STATUS.md`.
 
 - **Current game:** Night Market (`04-night-market`)
-- **Phase:** P3 (Content and Systems) — COMPLETE; G3 checks green (content-lint 0 errors; tutorial UI test 4/4; every upgrade tested); tagging `night-market/gate-G3-pass`
-- **Last done:** three maps emitted with distinct zone weights (taipei parity bit-exact), 8 upgrade kinds with token economy (ADR-0010), rain visuals verified on-sim at TICK 3,960, tutorial 6 steps + calm first night, content-lint real validator in `make lint`; full `make test` + `make lint` green (NMCore 86 tests, UI tests 4/4).
-- **Next step:** P4 (AI Opponents) — AutoPlanner and DirectorTuner; balance report. Read the game's ROADMAP §P4 in full before starting.
+- **Phase:** P4 (AI Opponents) — IN PROGRESS on branch `night-market/phase/P4-ai-opponents` (commit 3cb4d84); AutoPlanner + DirectorTuner built, NMCore 86 green on StateHash v4 goldens.
+- **Last done:** AutoPlanner plays all 3 maps with zero illegal actions (20-night smoke; Bangkok bridge-blocked stalls fixed, gate moved off water); `--tune` sweep (100 nights × 9 scales, taipei) and the G4 `--autopilot 1000` run are executing in the background (`/tmp/p4-tune.log`, `/tmp/p4-autopilot-1000.log`).
+- **Next step:** when the runs land — adopt the tuned ramp (schedule JSON + Spawner.hourlyRates + goldens) with ADR-0011 citing the sweep, write docs/BALANCE.md (tuner writes it), record G4 evidence in the game's docs/STATUS.md, run make test + make lint, merge, tag `night-market/gate-G4-pass`.
 - **Blocked on:** maintainer — push access for the deploy key (issue #7); Mac UI-test automation grant (issue #6). Work continues locally.
 
 ## Environment Check
