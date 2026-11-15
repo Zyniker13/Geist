@@ -2,11 +2,11 @@
 
 This file is the single place to resume the program from. Keep every field below current after every meaningful step (see "Resuming After a Restart" in `ROADMAP.md`). Per-game detail (gate evidence and sign-offs) lives in each game's `docs/STATUS.md`.
 
-- **Current game:** none yet
-- **Phase:** none
-- **Last done:** program and game roadmaps updated: the build agent owns P0–P10 of every game and never stops
-- **Next step:** environment check (see below), then Night Market (`games/04-night-market/`) P0: read `games/_shared/_CONVENTIONS.md` and `games/04-night-market/ROADMAP.md` in full, then task S0.1 on branch `night-market/phase/P0-setup`
-- **Blocked on:** nothing
+- **Current game:** Night Market (`04-night-market`)
+- **Phase:** P0 (Setup) — G0 checks green, tag pending
+- **Last done:** fixed the real bugs the gates exposed (Fixed division/description, FlowField overflow crash, SeededRNG.randomElement always-nil, Tick pause/speed); all S0 tasks + NM-P0.1/NM-P0.2 complete; all gates green except the final UI-test rerun (running)
+- **Next step:** push blocked — the profile deploy key is bound to the old Seedvault repo and GitHub denies it for Zyniker13/Geist ("Permission to Zyniker13/Geist.git denied to deploy key"). G0 tagged locally on main (65013b6). Once push access exists: push main + tags, watch CI, then start P1 (Rules Engine Prototype). Local P1 work continues meanwhile.
+- **Blocked on:** maintainer — add a deploy key (or equivalent push credential) for `Zyniker13/Geist`.
 
 ## Environment Check
 
@@ -20,7 +20,11 @@ Do this once, before the first game's P0, and record the output here:
 
 If Xcode 27.2 or an iOS 26-or-later runtime is missing and cannot be installed without an administrator, file it as a `program` maintainer item; no game can build until it is fixed.
 
-- not yet run
+- Xcode 27.2 (Build 27B52) ✓
+- iOS 27.2 runtime ✓
+- Required simulators: iPad Pro 13-inch (M5) ✓, iPad Pro 11-inch (M5) ✓, iPad (A16) ✓, iPad mini (A20 Pro) ✓, iPhone 18 Pro Max ✓
+- Swift 6.4.2 ✓, Homebrew 7.0.13 ✓, XcodeGen 2.46.0 ✓, SwiftLint 0.65.1 ✓, swift-format 604.0.0 ✓
+- gh auth: not authenticated — using fallback in STATUS.md for maintainer items
 
 ## Game Queue
 
@@ -28,7 +32,7 @@ If Xcode 27.2 or an iOS 26-or-later runtime is missing and cannot be installed w
 
 | Order | No. | Folder | Game | State | Last Gate | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | 04 | [`04-night-market`](games/04-night-market/ROADMAP.md) | Night Market | Not Started | — | — |
+| 1 | 04 | [`04-night-market`](games/04-night-market/ROADMAP.md) | Night Market | In Progress (P0) | — | all gates green; G0 tag pending |
 | 2 | 12 | [`12-murmuration`](games/12-murmuration/ROADMAP.md) | Murmuration | Not Started | — | — |
 | 3 | 02 | [`02-orrery`](games/02-orrery/ROADMAP.md) | Orrery | Not Started | — | — |
 | 4 | 14 | [`14-beacon-coast`](games/14-beacon-coast/ROADMAP.md) | Beacon Coast | Not Started | — | — |
@@ -54,13 +58,15 @@ If Xcode 27.2 or an iOS 26-or-later runtime is missing and cannot be installed w
 | 24 | 05 | [`05-dispatch`](games/05-dispatch/ROADMAP.md) | Dispatch | Not Started | — | — |
 | 25 | 07 | [`07-meridian`](games/07-meridian/ROADMAP.md) | Meridian | Not Started | — | — |
 
-**Totals:** 0 done, 0 in progress, 25 not started.
+**Totals:** 0 done, 1 in progress, 24 not started.
 
 ## Needs the Maintainer
 
 Fallback only: used when `gh` is not authenticated (see "Issues for the Maintainer" in `ROADMAP.md`). Otherwise every item is a GitHub issue labeled `needs-maintainer`. Format: `[needs-maintainer] [<slug> or program] [blocked or question, if any] Title — what is needed, why, what was done locally, and what happens next.` The maintainer answers by adding an indented line under the item.
 
-- none
+- [needs-maintainer] [night-market] [question] NM-P0.2 gate asks for ≥ 120 fps on Mac; the build machine's display is 60 Hz. — On-screen fps cannot exceed 60 here. Local substitute recorded in `games/04-night-market/docs/PERF.md`: per-frame CPU work p95 838 µs, ~10× inside the 8.33 ms 120 Hz frame budget (M6, macOS 27.2, Release); iPad simulator sustained 60.0 fps. Answer needed: accept the frame-budget substitution or supply a 120 Hz-capable Mac run.
+- [needs-maintainer] [program] [blocked] No GitHub token — maintainer items stay in this list. — Add `gh-token` so issues can be filed and tracked on GitHub.
+- [needs-maintainer] [program] [blocked] Push access to `Zyniker13/Geist` — the profile deploy key (`geist-deploy-key`) is registered to the old Seedvault repository, so GitHub denies pushes ("Permission to Zyniker13/Geist.git denied to deploy key"). Needed: a deploy key for `Zyniker13/Geist` (read/write) or equivalent. Local state: Night Market P0 complete, gates green, tag `night-market/gate-G0-pass` exists locally on main (65013b6); all commits wait to be pushed. Until fixed, work continues locally without CI.
 
 ## Log
 
@@ -71,3 +77,4 @@ One line per meaningful step, newest last: date, phase or game and stage, what w
 - 2026-11-15: placed the twenty-five game roadmaps at `games/NN-<slug>/ROADMAP.md` and listed them in the queue. Build order not set.
 - 2026-11-15: reconciled the program files with the game roadmap set (`games/_shared/`); build order set in `ROADMAP.md`, Night Market first; superseded program docs removed.
 - 2026-11-15: the build agent now owns every phase, P0–P10, of every game, with self-checked gates, local substitutes for owner-only steps, and maintainer items filed as GitHub issues (fallback: Needs the Maintainer). Toolchain set to Xcode 27.2 with 26.0 deployment targets.
+- 2026-11-15: Night Market P0 built on `night-market/phase/P0-setup`: config layer, 7 SwiftPM packages, core sim (SeededRNG/Fixed/FixedPoint2/Grid/Stall/Customer/Reducer/Tick/Spawner/FlowField/Movement/Service/Overflow/Scoring/Replay), app shell + debug overlay, tools, CI workflow, docs. Real bugs fixed: Fixed ÷ and description, FlowField Int overflow crash, SeededRNG.randomElement always-nil, Tick pause/speed. All gates green; G0 tag pending.
