@@ -110,6 +110,14 @@ EXIT=0  (** TEST SUCCEEDED **)
 - Headless iPad sim cannot rotate while XCUITest stays portrait: checks are launch-arg-driven; map input goes through `MapInputCatcher`
 - `-uitest-*` affordances live in `GameController`/`GameScreen` (fast, fresh, paused, stress, autochoose, autosave, save-restart, autolane, debug, shot) — never set by gameplay
 
+## P3 (Content and Systems) — planned
+
+- **Started:** 2026-11-15
+- **Spec:** ROADMAP.md §P3 + §5 content counts — 3 maps (Taipei, Bangkok canals-with-bridges, Marrakesh narrow alleys) with distinct zone weights; 8 upgrade kinds (budget +20, lanterns +2, awning +1, busker +1, bridge +1, seating +1 (3 seats), faster cooks −20% serviceTicks, extra queue +2) each with tests; 1 schedule; tutorial of 6 steps + calm first-night mode (slower ramp); rain visuals.
+- **Plan:** (1) map JSON schema (`maps/*.json`, base64-rle tiles, zones, gates, palette) + `ContentLibrary` loader in NMContent with validation; extract the current hardcoded Taipei map to `Resources/Content/maps/taipei.json`; (2) `upgrades.json` + Reducer wiring for all 8 kinds + per-kind tests; (3) rain visuals in MarketScene (streaks + tint; pathing effects already engine-side); (4) Bangkok/Marrakesh maps + zone weights + bridge/alley rendering; (5) tutorial state machine (6 steps) + calm first-night spawn multiplier (documented deviation → RULES.md + DECISIONS.md); (6) content-lint extension: schema + counts.
+- **G3:** content counts correct; content-lint 0 errors; tutorial UI test green; every upgrade tested.
+
+
 
 ### S0.1 — Repo layout
 - [x] Directory tree created (Config, App, Packages, Resources, Tools, Tests, docs)
