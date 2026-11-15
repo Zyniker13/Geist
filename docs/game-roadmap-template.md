@@ -1,6 +1,8 @@
 # Game Roadmap Template
 
-Every game's roadmap lives at `games/NN-<slug>/ROADMAP.md` and has the sections below, in this order. This is the contract described in "The Game Roadmap Contract" in the program `ROADMAP.md`. A section that is missing or vague is filled in stage G0, marked "(filled in G0)", and never left blank.
+**Superseded.** The template in force is [`games/_shared/_TEMPLATE.md`](../games/_shared/_TEMPLATE.md). This file is the earlier program contract and stays here for reference. Where it differs from `games/_shared/_TEMPLATE.md`, `games/_shared/_CONVENTIONS.md`, or a game's `ROADMAP.md`, those files govern. See [Precedence](../ROADMAP.md#precedence).
+
+Every game's roadmap lives at `games/NN-<slug>/ROADMAP.md`. The sections below are the earlier contract, in the old order. A section that is missing or vague is filled in stage G0, marked "(filled in G0)", and never left blank.
 
 Copy everything below the line into a new game's `ROADMAP.md`.
 
