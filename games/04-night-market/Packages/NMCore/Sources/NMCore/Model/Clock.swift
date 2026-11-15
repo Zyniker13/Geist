@@ -1,0 +1,52 @@
+/// A gate where customers enter.
+public struct Gate: Codable, Sendable, Equatable, Hashable {
+    public let id: Int
+    public var position: Tile
+    public var isOpen: Bool
+
+    public init(id: Int, position: Tile, isOpen: Bool = true) {
+        self.id = id
+        self.position = position
+        self.isOpen = isOpen
+    }
+}
+
+/// Weather state.
+public enum Weather: Codable, Sendable, Equatable, Hashable {
+    case clear
+    case rain(duration: Int)  // remaining ticks
+
+    public var isRaining: Bool {
+        if case .rain = self { return true }
+        return false
+    }
+}
+
+/// The game clock.
+public struct Clock: Codable, Sendable, Equatable, Hashable {
+    public var tick: Int
+    public var ticksPerHour: Int
+    public var startHour: Int
+    public var endHour: Int
+
+    public init(tick: Int = 0, ticksPerHour: Int = 1800, startHour: Int = 18, endHour: Int = 6) {
+        self.tick = tick
+        self.ticksPerHour = ticksPerHour
+        self.startHour = startHour
+        self.endHour = endHour
+    }
+
+    public var currentHour: Int {
+        let totalTicks = tick
+        let hourIndex = totalTicks / ticksPerHour
+        return (startHour + hourIndex) % 24
+    }
+
+    public var hoursElapsed: Int {
+        tick / ticksPerHour
+    }
+
+    public var isNightOver: Bool {
+        tick >= ticksPerHour * 12  // 12 hours = 06:00
+    }
+}
