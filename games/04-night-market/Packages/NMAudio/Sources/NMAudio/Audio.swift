@@ -10,6 +10,12 @@ public struct AudioEvent: Codable, Sendable, Equatable, Hashable {
     public let volume: Float
     public let pitch: Float
 
+    public init(kind: AudioKind, volume: Float, pitch: Float) {
+        self.kind = kind
+        self.volume = volume
+        self.pitch = pitch
+    }
+
     public enum AudioKind: Codable, Sendable, Equatable, Hashable {
         case serve
         case overflow

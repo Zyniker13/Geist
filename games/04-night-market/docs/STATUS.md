@@ -110,6 +110,24 @@ EXIT=0  (** TEST SUCCEEDED **)
 - Headless iPad sim cannot rotate while XCUITest stays portrait: checks are launch-arg-driven; map input goes through `MapInputCatcher`
 - `-uitest-*` affordances live in `GameController`/`GameScreen` (fast, fresh, paused, stress, autochoose, autosave, save-restart, autolane, debug, shot) — never set by gameplay
 
+## P6 (Aesthetics and Audio) — COMPLETE, tagged `night-market/gate-G6-pass`
+
+- **Status:** complete; G6 self-checked 2026-11-15. Tag: `night-market/gate-G6-pass`.
+- **Spec:** ROADMAP.md §P6 — neon and lantern glow, steam, rain, per-city palettes; four-stem music tied to crowd density with ambience layers.
+
+### What was built
+- **Per-city palettes (ADR-0013-adjacent, `CityPalette`):** neon_warm (Taipei), river_gold (Seoul/Bangkok), earth_lantern (Marrakesh/Istanbul/Oaxaca) drive ground checker, canal + edge, walkway, plaza, building, glow, and rain tint. `MarketScene.rebuild(with:palette:)` swaps them; the launcher path threads the map's palette id.
+- **Neon + lantern glow:** additive pulsing halos per stall (phase = tick + id·37), brighter when open and busier.
+- **Steam:** pooled puffs over stalls that are cooking or holding a queue; rise/fade/scale from the tick; verified by pixel-count delta on-sim (the additive blend washed out at first — switched to normal blend at 0.85 fill alpha).
+- **Four-stem music (ADR-0013):** MusicDirector (density/rain/phase → gains), StemRenderer (seeded synthesis, per-stem peak budgets), AudioMixer (AVAudioEngine, 0.02/call crossfade, serve/overflow one-shots throttled 180 ms, engine never started under `-uitest-*`). App: publishHud drives the mix; serve/overflow events play effects.
+
+### G6 gate evidence (all self-checked, real output)
+- **Snapshots (approved per the standing delegation; assets re-reviewed at P10):** `/tmp/p6-launcher2.png` (neon_warm + launcher), `/tmp/p6-daily.png` (river_gold via the seoul daily draw, HUD `0/20` = tight budget live), `/tmp/p6-weekly.png` (earth_lantern via the istanbul weekly draw, HUD `0/50` = generous budget live), `/tmp/p6-steam6.png` (steam visible; white-pixel count 3,169 vs 2,011 without steam).
+- **Audio peak ≤ −1 dBFS:** `MusicTests.worstCasePeak` — max-gain mix × rendered stem peaks ≤ 0.891; 11/11 NMAudio tests green (`/tmp/audio-test.log`).
+- **make lint** (exit 0) and **make test** (exit 0): `** TEST SUCCEEDED **` — iPad UI tests **5/5** (667 s: full night, save/resume hash, 400-customer fps, daily-challenge launcher, tutorial) with the P6 visuals and audio in the app.
+- **Builds:** iOS (`/tmp/iosb18.log`) + macOS (`/tmp/macb10.log`) Debug green with NMAudio linked.
+- **CI:** green on main at f72e6b89 after the toolchain-pin fix.
+
 ## P5 (Meta and Replayability) — COMPLETE, tagged `night-market/gate-G5-pass`
 
 - **Status:** complete; G5 self-checked 2026-11-15. Tag: `night-market/gate-G5-pass`.

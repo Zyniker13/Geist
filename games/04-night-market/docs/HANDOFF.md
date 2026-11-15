@@ -59,3 +59,11 @@ Kept current at every gate. What a new engineer (or agent) needs to resume.
 - **Profile:** `Profile` (Codable value), `UnlockCatalog` (taipei free → seoul 15 → bangkok 20 → marrakesh 30 → istanbul 40 → oaxaca 55; one map per qualifying night, no skipping), `AchievementCatalog` (20 fixed ids; earned ids never revoked). Persistence: `ProfileStore.shared` → Application Support/NightMarket/profile.json.
 - **Launcher:** `NewNightMenu` shows daily/weekly (challenges bypass map locks by design) + free play over unlocked maps; `-uitest-*` launches bypass the launcher entirely; `-uitest-launcher-daily` forces it for the UI test. New accessibility ids: `new-night-menu`, `challenge-daily-challenge`, `challenge-weekly-challenge`, `map-<id>`, `clock-hud`.
 - **Next:** collect G5 evidence (6-map autopilot, coverage ≥ 90%, make test/lint), close G5, then P6 aesthetics/audio.
+
+## P6 Aesthetics and Audio — state at G6 (in progress)
+
+- **Status:** code-complete; G6 close pending (see `docs/STATUS.md`).
+- **Palettes:** `CityPalette` (neon_warm / river_gold / earth_lantern) — set at `MarketScene` init or via `rebuild(with:palette:)`; the launcher path threads `map.palette`. Unknown ids fall back to neon_warm. `Palette` statics remain the global HUD/stall colors; per-city ground/canal/walkway/glow/rain live on the struct.
+- **FX:** neon halos (`fxLayer`, additive, phase = tick + id·37) and steam puffs (`steamLayer`, pooled 18, over stalls with a queue or service in progress). Both tick-driven, RNG-free. Steam learned the hard way: additive white on dark washes out — use normal blending with a 0.85 fill.
+- **Audio (ADR-0013):** `MusicDirector.mix(density:isRaining:hourProgress:)` → `StemMix`; `AudioMixer` crossfades (0.02/call) and owns the AVAudioEngine (never started under `-uitest-*`). All sounds are seeded synthesis in `StemRenderer` with per-stem peak budgets; the worst-case mix is unit-tested ≤ 0.891 (−1 dBFS). Adding a stem = new case + budget + re-check the peak test.
+- **Test affordances added:** `-uitest-start-daily` / `-uitest-start-weekly` (auto-start a challenge night), `-uitest-launcher-daily` (show the launcher). New ids: `new-night-menu`, `challenge-daily-challenge`, `challenge-weekly-challenge`, `map-<id>`, `clock-hud`.

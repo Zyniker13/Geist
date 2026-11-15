@@ -30,9 +30,18 @@ open class MarketScene: SKScene {
     private let stallLayer = SKNode()
     let customerLayer = SKNode()
     private let heatLayer = SKNode()
-    /// Rain visuals (NM-P3.3): dim overlay plus falling streaks.
+
     private let rainLayer = SKNode()
     private var rainStreaks: [SKShapeNode] = []
+    /// Per-city rain tint (NM-P6.1); set by rebuild(with:palette:).
+    private var rainStreakColor: SKColor = Palette.rainTint
+
+    /// Steam + neon FX (NM-P6.1): steam puffs over busy stalls and pulsing
+    /// stall-glow halos; all tick-driven, no RNG in the render path.
+    private let steamLayer = SKNode()
+    private let fxLayer = SKNode()
+    private var steamNodes: [SKShapeNode] = []
+    private var glowNodes: [Int: SKShapeNode] = [:]
 
     // Node pools
     var customerNodes: [Int: SKNode] = [:]
@@ -48,18 +57,21 @@ open class MarketScene: SKScene {
     /// Armed fixture tool: the next tap (a drag shorter than one tile) places it.
     public var placementTool: FixtureKind?
     private var movingFixtureID: Int?
+    /// The city color set (NM-P6.1); set at init or rebuild.
+    public private(set) var palette: CityPalette = .neonWarm
 
     public var showsHeatmap = false {
         didSet { heatLayer.isHidden = !showsHeatmap }
     }
 
-    public init(state: GameState, tileWidth: CGFloat = 32) {
+    public init(state: GameState, tileWidth: CGFloat = 32, palette: CityPalette = .neonWarm) {
         let grid = state.grid
         self.gridWidth = grid.width
         self.gridHeight = grid.height
         self.tileWidth = tileWidth
+        self.palette = palette
         super.init(size: CGSize(width: CGFloat(grid.width) * tileWidth, height: CGFloat(grid.height) * tileWidth))
-        backgroundColor = Palette.nightGround
+        backgroundColor = palette.groundColor
         scaleMode = .aspectFit
         buildMap(state)
         sync(state: state)
@@ -99,6 +111,8 @@ open class MarketScene: SKScene {
         addChild(customerLayer)
         addChild(rainLayer)
         rainLayer.isHidden = true
+        addChild(steamLayer)
+        addChild(fxLayer)
         drawMap(state)
     }
 
@@ -112,7 +126,7 @@ open class MarketScene: SKScene {
         streak.closeSubpath()
         for index in 0..<36 {
             let node = SKShapeNode(path: streak)
-            node.strokeColor = SKColor(red: 0.62, green: 0.78, blue: 0.95, alpha: 0.55)
+            node.strokeColor = rainStreakColor.withAlphaComponent(0.55)
             node.lineWidth = 1.5
             node.position = CGPoint(
                 x: CGFloat(index % 9) * width / 9 + width / 18,
@@ -156,14 +170,14 @@ open class MarketScene: SKScene {
                 let tile = Tile(col: col, row: row)
                 let rect = SKShapeNode(rectOf: CGSize(width: tileWidth + 0.5, height: tileWidth + 0.5))
                 let kind = state.grid.tile(at: tile)
-                rect.fillColor = Palette.tile(kind)
+                rect.fillColor = palette.tile(kind)
                 if kind == .ground {
                     // Subtle checker texture so the board reads as ground.
                     rect.fillColor =
                         (col + row).isMultiple(of: 2)
-                        ? SKColor(hex: 0x12141C) : SKColor(hex: 0x0F1118)
+                        ? SKColor(hex: palette.groundA) : SKColor(hex: palette.groundB)
                 }
-                rect.strokeColor = SKColor(hex: 0x1A1E28)
+                rect.strokeColor = SKColor(hex: palette.groundEdge)
                 rect.lineWidth = 0.5
                 rect.position = scenePoint(for: tile)
                 rect.zPosition = 0
@@ -177,15 +191,15 @@ open class MarketScene: SKScene {
                             return false
                         }, in: state.grid)
                     let band = SKShapeNode(path: TileArt.path(for: mask, tileSize: tileWidth * 0.98))
-                    band.fillColor = Palette.canal
-                    band.strokeColor = SKColor(hex: 0x3E6FA5)
+                    band.fillColor = palette.canalColor
+                    band.strokeColor = SKColor(hex: palette.canalEdge)
                     band.lineWidth = 1
                     band.position = scenePoint(for: tile)
                     band.zPosition = 0.5
                     mapLayer.addChild(band)
                 }
                 if case .plaza = kind {
-                    rect.strokeColor = SKColor(hex: 0x3A4258)
+                    rect.strokeColor = SKColor(hex: palette.plazaEdge)
                     rect.lineWidth = 1
                 }
             }
@@ -195,7 +209,7 @@ open class MarketScene: SKScene {
         for gate in state.gates {
             let arch = SKShapeNode(rectOf: CGSize(width: tileWidth * 0.95, height: tileWidth * 0.95), cornerRadius: 5)
             arch.fillColor = SKColor(hex: 0xE8E4D8)
-            arch.strokeColor = Palette.lanternGlow
+            arch.strokeColor = palette.glowColor
             arch.lineWidth = 2
             arch.position = scenePoint(for: gate.position)
             arch.zPosition = 2
@@ -215,10 +229,22 @@ open class MarketScene: SKScene {
     /// Clears all node pools and rebuilds the scene for a fresh state
     /// (restart / restore).
     public func rebuild(with state: GameState) {
+        rebuild(with: state, palette: palette)
+    }
+
+    /// Rebuild that also swaps the city palette (NM-P6.1).
+    public func rebuild(with state: GameState, palette newPalette: CityPalette) {
+        palette = newPalette
+        backgroundColor = newPalette.groundColor
+        rainStreakColor = newPalette.rainColor
         customerNodes.removeAll()
         walkwayNodes.removeAll()
         fixtureNodes.removeAll()
         stallNodes.removeAll()
+        steamNodes.removeAll()
+        glowNodes.removeAll()
+        steamLayer.removeAllChildren()
+        fxLayer.removeAllChildren()
         heatLayer.removeAllChildren()
         walkwayLayer.removeAllChildren()
         fixtureLayer.removeAllChildren()
@@ -236,7 +262,72 @@ open class MarketScene: SKScene {
         syncFixtures(state)
         syncCustomers(state)
         syncRain(state, raining: state.weather.isRaining)
+        syncFX(state)
     }
+
+    /// Steam over busy stalls and a pulsing neon halo per open stall
+    /// (NM-P6.1). All positions and alphas derive from the tick — the render
+    /// path stays deterministic and RNG-free.
+    private func syncFX(_ state: GameState) {
+        let tick = state.clock.tick
+        // "Busy" for steam = cooking (service in progress) or holding a queue.
+        let busy = state.stalls.filter { !$0.queue.isEmpty || $0.serviceProgress > 0 }
+
+        // Neon halos: one per stall, brighter while the stall is open and
+        // busier; alpha pulses on a (tick + id) phase so stalls desynchronize.
+        for stall in state.stalls {
+            let node: SKShapeNode
+            if let existing = glowNodes[stall.id] {
+                node = existing
+            } else {
+                node = SKShapeNode(rectOf: CGSize(width: tileWidth * 1.7, height: tileWidth * 1.7), cornerRadius: 6)
+                node.strokeColor = Palette.stall(stall.color)
+                node.fillColor = .clear
+                node.lineWidth = 2
+                node.glowWidth = 4
+                node.blendMode = .add
+                node.zPosition = 40
+                node.position = scenePoint(for: stall.position)
+                fxLayer.addChild(node)
+                glowNodes[stall.id] = node
+            }
+            let phase = Double((tick + stall.id * 37) % 240) / 240.0 * 2 * Double.pi
+            let pulse = 0.5 + 0.5 * sin(phase)
+            let open = stall.isOpen ? 1.0 : 0.25
+            let crowd = min(1.0, Double(stall.queue.count) / 6.0)
+            node.alpha = (0.25 + 0.35 * pulse) * open + 0.25 * crowd * open
+        }
+
+        // Steam: pooled puffs cycling upward over busy stalls.
+        // Steam: pooled puffs cycling upward over busy stalls.
+        let puffCount = min(18, busy.count * 3)
+        while steamNodes.count < puffCount {
+            let puff = SKShapeNode(circleOfRadius: tileWidth * 0.42)
+            puff.fillColor = SKColor(white: 0.97, alpha: 0.85)
+            puff.strokeColor = .clear
+            puff.zPosition = 45
+            steamLayer.addChild(puff)
+            steamNodes.append(puff)
+        }
+        for (index, puff) in steamNodes.enumerated() {
+            let active = index < puffCount
+            puff.isHidden = !active
+            guard active else { continue }
+            let stall = busy[index / 3]
+            let phase = CGFloat((tick + index * 29) % 36)
+            let rise = phase / 36.0
+            let base = scenePoint(for: stall.position)
+            puff.position = CGPoint(
+                x: base.x + CGFloat((index % 3) - 1) * tileWidth * 0.5,
+                y: base.y + tileWidth * 0.35 + rise * tileWidth * 2.4
+            )
+            puff.alpha = 0.7 * (1.0 - rise)
+            puff.setScale(0.5 + rise * 1.3)
+        }
+        steamLayer.isHidden = busy.isEmpty
+    }
+
+    private var fxProbeCount = 0
 
     private func syncWalkways(_ state: GameState) {
         var seen = Set<Int>()
@@ -245,7 +336,7 @@ open class MarketScene: SKScene {
             seen.insert(index)
             if walkwayNodes[index] == nil {
                 let node = SKShapeNode(path: TileArt.path(for: 0, tileSize: tileWidth * 0.96))
-                node.fillColor = Palette.walkway
+                node.fillColor = palette.walkwayColor
                 node.strokeColor = .clear
                 node.position = scenePoint(for: tile)
                 node.zPosition = 1

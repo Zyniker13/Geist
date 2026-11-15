@@ -47,6 +47,9 @@ jobs:
       - name: Swift test (AI)
         working-directory: games/04-night-market
         run: swift test --package-path Packages/NMAI
+      - name: Swift test (Audio)
+        working-directory: games/04-night-market
+        run: swift test --package-path Packages/NMAudio
 
   build-ios:
     runs-on: macos-latest

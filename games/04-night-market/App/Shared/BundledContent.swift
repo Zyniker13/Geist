@@ -28,6 +28,15 @@ public enum BundledContent {
         return try JSONDecoder().decode(ScheduleDefinition.self, from: Data(contentsOf: url))
     }
 
+    /// The challenge night for the current UTC date (launcher + test affordances).
+    public static func todayChallenge(_ mode: NightSetup.Mode) -> NightSetup {
+        NightSetup.challenge(
+            mode, yyyymmddUTC: ChallengeClock.yyyymmddUTC(),
+            isoWeekUTC: ChallengeClock.isoWeekUTC(),
+            mapIds: mapIds, scheduleIds: scheduleIds
+        )
+    }
+
     /// UTC calendar strings for the daily and weekly challenges.
     public enum ChallengeClock {
         public static func yyyymmddUTC(_ date: Date = Date()) -> String {
