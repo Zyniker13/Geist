@@ -68,7 +68,7 @@ Items are GitHub issues labeled `needs-maintainer` (the gh token is issues-only;
 - [#6](https://github.com/Zyniker13/Geist/issues/6) [night-market] [blocked] macOS automation grant so `NMUITestsMac` can run (headless TCC timeout). Until then, Mac evidence is the scripted-run path.
 - [#8](https://github.com/Zyniker13/Geist/issues/8) [night-market] [question] Confirm the 120 fps vs 60 Hz frame-budget substitution for NM-P0.2.
 - [#9](https://github.com/Zyniker13/Geist/issues/9) [night-market] [blocked] Game Center/iCloud sandbox + Pencil hardware verification (P7/P10).
-- [NEW] [night-market] [blocked] P10 release assets (screenshots, preview video) blocked on host CoreSimulator stack — SpringBoard rendering frozen after simulator boot. App processes launch but never draw. Requires a Mac host reboot. Once rebooted: one fresh boot → serial install/launch/screenshot cycle → release-screens.sh → release-preview.sh → G10 tag → release maintainer issue (TestFlight).
+- [#10](https://github.com/Zyniker13/Geist/issues/10) [night-market] [blocked] P10 release assets (screenshots, preview video) blocked on host CoreSimulator stack — SpringBoard rendering frozen after simulator boot. App processes launch but never draw. Requires a Mac host reboot. Once rebooted: one fresh boot → serial install/launch/screenshot cycle → release-screens.sh → release-preview.sh → G10 tag → release maintainer issue (TestFlight).
 
 ## Log
 
