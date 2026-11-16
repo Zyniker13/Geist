@@ -140,6 +140,15 @@ AUTOPILOT OK illegal=0 across 6 maps × 500 nights
 - **Crash-free ≥ 99.5%; no S1/S2 (SUBSTITUTED per §8.2 — real beta needs TestFlight):** 3,000 scripted nights (six maps × 500) with zero crashes, zero illegal states, zero invariant breaks (`AUTOPILOT OK illegal=0`); NMCore 123/123; NMContent suites green (both tonight, final tree); UI suite 5 tests / 0 failures on the G8-era tree (667 s, 2026-11-15) — the only app-side change since is the additive, unit-covered `ProfileStore.exportStats()`; the final-tree full suite is exercised by branch CI `make test` on a clean runner (see CI SHA below). Tonight's local UI re-run was blocked by the documented `xcodebuild` wedge (harness notes above). No S1/S2 class defect observed in any run this phase. Issue #9 records the real-device/sandbox verification the substitute cannot cover.
 - **Sign-off:** GLM-SELF, on the evidence above.
 
+## P10 (Release Polish and Wrap-Up) — BLOCKED (simulator stack frozen)
+
+- **Status:** blocked on the host CoreSimulator stack — SpringBoard rendering frozen (blank icons, status bar clock stuck, app processes run but never draw). Requires a Mac host reboot to recover.
+- **Spec:** ROADMAP.md §P10 — screenshots (launcher, gameplay, results), preview video, release kit final check, G10 tag, TestFlight/release maintainer issue.
+- **What's ready:** iOS + macOS release archives (P9), soak (6×500 nights), balance re-sweep, stats export, beta notes + tester guide (docs/BETA.md), preview-video notes (docs/release/preview.md), release kit assembled. All P0–P9 gates green.
+- **What's stuck:** release-screens.sh and release-preview.sh both require the iPad sim to render. The Mac app (NM-macOS) builds and runs fine — screenshots could be captured on Mac, but App Store requires device-specific iPad shots.
+- **Next step (after host reboot):** one fresh boot → serial install + launch + screenshot cycle (one operation at a time, 45s settle gaps) → release-screens.sh → release-preview.sh → G10 tag → release maintainer issue → Murmuration P0.
+- **Maintainer issues:** #9 (Game Center/iCloud sandbox + Pencil hardware), #6 (Mac UI-test automation), #8 (fps-target confirmation), plus a new P10 blocker issue for the simulator stack and release assets.
+
 ## P8 (Polish, Accessibility, and Performance) — COMPLETE, tagged `night-market/gate-G8-pass`
 
 - **Status:** complete; G8 self-checked 2026-11-15. Tag: `night-market/gate-G8-pass`. Real-device frame-rate targets are the maintainer's — issue #8.
