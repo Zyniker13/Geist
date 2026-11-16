@@ -1,0 +1,43 @@
+disabled_rules:
+  - trailing_whitespace
+  - todo
+  - identifier_name
+  - cyclomatic_complexity
+  - function_body_length
+  - large_tuple
+  - trailing_comma
+
+opt_in_rules:
+  - explicit_init
+  - fatal_error_message
+  - overridden_super_call
+  - private_action
+  - prohibited_super_call
+  - vertical_parameter_alignment_on_call
+
+excluded:
+  - Packages/MMCore/.build
+  - Packages/MMContent/.build
+  - Packages/MMLogic/.build
+  - Packages/MMRender/.build
+  - Packages/MMPlatform/.build
+  - Packages/MMMeta/.build
+  - .build
+  - DerivedData
+  - Pods
+
+line_length:
+  warning: 200
+  error: 300
+type_body_length:
+  warning: 400
+  error: 600
+file_length:
+  warning: 1000
+  error: 1500
+
+custom_rules:
+  banned_random:
+    regex: '(SystemRandomNumberGenerator|\bInt\.random\(in:\))'
+    message: "Use SeededRNG only; deterministic simulation requires fixed seeds"
+    severity: error

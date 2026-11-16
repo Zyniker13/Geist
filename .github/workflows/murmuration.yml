@@ -1,0 +1,48 @@
+# Murmuration CI
+name: Murmuration CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'games/12-murmuration/**'
+      - '.github/workflows/murmuration.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'games/12-murmuration/**'
+      - '.github/workflows/murmuration.yml'
+
+jobs:
+  lint:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Install dependencies
+        run: brew install --overwrite xcodegen swiftlint swift-format
+      - name: Lint SwiftLint
+        run: cd games/12-murmuration && swiftlint --strict --config .swiftlint.yml
+      - name: Lint swift-format
+        run: cd games/12-murmuration && swift-format lint --recursive Packages/ App/ Tests/ --configuration .swift-format
+
+  test:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Install dependencies
+        run: brew install --overwrite xcodegen swiftlint swift-format
+      - name: Generate Xcode project
+        run: cd games/12-murmuration && xcodegen generate --spec project.yml
+      - name: Run Swift tests
+        run: |
+          cd games/12-murmuration
+          swift test --package-path Packages/MMCore
+          swift test --package-path Packages/MMContent
+          swift test --package-path Packages/MMLogic
+          swift test --package-path Packages/MMRender
+          swift test --package-path Packages/MMPlatform
+          swift test --package-path Packages/MMMeta
+      - name: Build iOS
+        run: cd games/12-murmuration && xcodebuild build -scheme MM -destination 'platform=iOS Simulator,name=iPad Pro 13-inch (M5)' -configuration Debug
+      - name: Build macOS
+        run: cd games/12-murmuration && xcodebuild build -scheme MM-macOS -configuration Debug
