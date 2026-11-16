@@ -2,11 +2,11 @@
 
 This file is the single place to resume the program from. Keep every field below current after every meaningful step (see "Resuming After a Restart" in `ROADMAP.md`). Per-game detail (gate evidence and sign-offs) lives in each game's `docs/STATUS.md`.
 
-- **Current game:** Night Market (`04-night-market`)
-- **Phase:** P10 (Release Polish and Wrap-Up) — IN PROGRESS on `night-market/phase/P10-release-polish`; screenshots + preview video next. P9 merged (8a676a3, tag `night-market/gate-G9-pass` pushed); main CI make-test run on the final tree is the pending confirmation.
-- **Last done:** G9 closed — release archives (iOS + macOS, CODE_SIGNING_ALLOWED=NO, 0 errors), 6 maps × 500-night soak illegal=0, balance re-sweep on the final build (default ramp stands per ADR-0011), telemetry-free stats export, beta notes + tester guide (docs/BETA.md), preview-video notes (docs/release/preview.md). Local `make test` wedged tonight (xcodebuild test-session deadlock, both simulators, documented in the game's harness notes); final-tree full suite runs on main CI.
-- **Next step:** Watch the 8a676a3 CI run; P10: screenshots via Tools/release-screens.sh, preview video via Tools/release-preview.sh, release kit final check, G10 tag, TestFlight/release maintainer issue, then Murmuration (12) P0.
-- **Blocked on:** maintainer — Game Center/iCloud sandbox + Pencil hardware (issue #9), Mac UI-test automation (issue #6), fps-target confirmation (issue #8). Local tooling: xcodebuild test sessions wedge on this machine tonight (builds and swift tests unaffected); CI is the make-test path.
+- **Current game:** Murmuration (`12-murmuration`)
+- **Phase:** P0 (Setup) — IN PROGRESS on `murmur/phase/P0-setup`; repo layout, project scaffolding, CI, and SwiftPM packages next. Night Market P10 is BLOCKED on the host CoreSimulator stack (SpringBoard rendering frozen, requires Mac reboot); will resume once the host reboots.
+- **Last done:** Night Market P9 merged (fd232c7, tag G9 pushed, CI green). Night Market P10 screenshots/preview video blocked on simulator stack.
+- **Next step:** Murmuration P0 — create the repo layout, project.yml, Makefile, SwiftPM packages, CI workflow, .swiftlint.yml, .swift-format, and initial test scaffolding.
+- **Blocked on:** Night Market P10 (simulator stack, host reboot needed); Murmuration P0 proceeds independently.
 
 ## Environment Check
 
@@ -32,7 +32,7 @@ If Xcode 27.2 or an iOS 26-or-later runtime is missing and cannot be installed w
 
 | Order | No. | Folder | Game | State | Last Gate | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | 04 | [`04-night-market`](games/04-night-market/ROADMAP.md) | Night Market | In Progress (P9 → P10) | `night-market/gate-G9-pass` | G9 green (TestFlight SUBSTITUTED → G10 issue); P10 screenshots/preview next |
+| 1 | 04 | [`04-night-market`](games/04-night-market/ROADMAP.md) | Night Market | Blocked (P10) | `night-market/gate-G9-pass` | P10 screenshots/preview blocked on simulator stack (host reboot needed); Murmuration P0 starts |
 | 2 | 12 | [`12-murmuration`](games/12-murmuration/ROADMAP.md) | Murmuration | Not Started | — | — |
 | 3 | 02 | [`02-orrery`](games/02-orrery/ROADMAP.md) | Orrery | Not Started | — | — |
 | 4 | 14 | [`14-beacon-coast`](games/14-beacon-coast/ROADMAP.md) | Beacon Coast | Not Started | — | — |
@@ -67,6 +67,8 @@ Items are GitHub issues labeled `needs-maintainer` (the gh token is issues-only;
 - [#7](https://github.com/Zyniker13/Geist/issues/7) [night-market/program] [blocked] Push access for the build agent's deploy key — commits and gate tags for P0/P1/P2 wait locally (clean fast-forward).
 - [#6](https://github.com/Zyniker13/Geist/issues/6) [night-market] [blocked] macOS automation grant so `NMUITestsMac` can run (headless TCC timeout). Until then, Mac evidence is the scripted-run path.
 - [#8](https://github.com/Zyniker13/Geist/issues/8) [night-market] [question] Confirm the 120 fps vs 60 Hz frame-budget substitution for NM-P0.2.
+- [#9](https://github.com/Zyniker13/Geist/issues/9) [night-market] [blocked] Game Center/iCloud sandbox + Pencil hardware verification (P7/P10).
+- [NEW] [night-market] [blocked] P10 release assets (screenshots, preview video) blocked on host CoreSimulator stack — SpringBoard rendering frozen after simulator boot. App processes launch but never draw. Requires a Mac host reboot. Once rebooted: one fresh boot → serial install/launch/screenshot cycle → release-screens.sh → release-preview.sh → G10 tag → release maintainer issue (TestFlight).
 
 ## Log
 
@@ -90,4 +92,5 @@ One line per meaningful step, newest last: date, phase or game and stage, what w
 - 2026-11-15: Night Market P7 complete (platform features): Game Center posting through LeaderboardPlan/ScoresPosting (GameKit compiled, mock verified, posts-firing asserted by the full-night UI test via the debug POSTS row), iCloud KVS profile write-through + restore, Apple Pencil input model + bridge (squeeze toggles erase), Mac Game menu. G7 SUBSTITUTED per §8.2 — Game Center/iCloud sandbox verification and the Pencil hardware check filed as issue #9. Note: one P7 commit (dc2a5ce) landed directly on main before the phase branch was created — recorded here, no history rewritten.
 - 2026-11-15: Night Market P8 complete (polish, accessibility, performance): six per-cuisine stall canopy silhouettes + high-contrast mode; VoiceOver queue summaries as an accessibility element; assist setting lengthens the R-12 overflow grace 600→900 ticks (StateHash v6, ten goldens regenerated); 600-customer stress holds 60 fps (sim cap) with cold start 0.474 s via -uitest-metrics; color-blind simulation review (Machado 2009 + ΔE ≥ 12) caught the dumplings/sweets blue-purple collapse (ΔE 1.2 under deuteranopia) → repalette to blue/magenta, both palettes pass. Device fps targets SUBSTITUTED (issue #8).
 - 2026-11-15: Night Market G8 gate closed: make test TEST SUCCEEDED on the final tree (first attempt failed only in the save/resume UI test after suites shared a booted sim — environment, erased and re-run clean), lint 0, color-blind review PASS, 600-customer 60 fps + 0.474 s cold start recorded. Tag night-market/gate-G8-pass; P9 release prep starts.
+- 2026-11-16: Night Market P10 blocked on host CoreSimulator stack (SpringBoard rendering frozen, app processes run but never draw). P9 merged (fd232c7), G9 tag pushed, CI green. Needs Mac host reboot to resume screenshots/preview video. Program moves to Murmuration P0.
 - 2026-11-16: Night Market P9 complete (beta prep): Release archives iOS + macOS (CODE_SIGNING_ALLOWED=NO, 0 errors), soak 6 maps × 500 nights illegal=0 (AUTOPILOT OK), balance re-sweep on the final build keeps the default ramp (ADR-0011), telemetry-free stats export in ProfileStore, beta notes + tester guide (docs/BETA.md), preview-video notes (docs/release/preview.md). Local make test wedged tonight (xcodebuild test-session deadlock on both simulators after a factory erase; builds + swift tests unaffected; concurrent foreign xcodebuild from another profile present during several wedges — documented in the game's harness notes); final-tree full suite runs on main CI (8a676a3). Tag night-market/gate-G9-pass pushed; P10 release polish next.
