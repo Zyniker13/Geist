@@ -12,6 +12,8 @@ struct NewNightMenu: View {
     let onStart: (NightSetup) -> Void
     @State private var assistOn = false
     @State private var highContrastOn = false
+    @State private var statsOptIn = false
+    @State private var exportNote: String?
 
     private func setup(_ base: NightSetup) -> NightSetup {
         var s = base
@@ -63,6 +65,28 @@ struct NewNightMenu: View {
                 .font(.system(.caption, design: .monospaced))
                 .foregroundStyle(nmColor(Palette.hudText))
                 .accessibilityIdentifier("high-contrast-toggle")
+
+            Divider().overlay(nmColor(Palette.hudText).opacity(0.3))
+
+            // Telemetry-free stats export (P9): nothing leaves the device;
+            // the player opts in and shares the file themselves.
+            Toggle("Include my stats in exports", isOn: $statsOptIn)
+                .font(.system(.caption, design: .monospaced))
+                .foregroundStyle(nmColor(Palette.hudText))
+                .accessibilityIdentifier("stats-optin-toggle")
+            if statsOptIn {
+                Button("Export Stats to Documents") {
+                    exportNote = store.exportStatsToFile()
+                }
+                .font(.system(.caption, design: .monospaced))
+                .foregroundStyle(nmColor(Palette.hudText))
+                .accessibilityIdentifier("stats-export-button")
+                if let exportNote {
+                    Text(exportNote)
+                        .font(.system(.caption2, design: .monospaced))
+                        .foregroundStyle(nmColor(Palette.hudText).opacity(0.7))
+                }
+            }
         }
         .padding(18)
         .background(RoundedRectangle(cornerRadius: 16).fill(Color.black.opacity(0.82)))
