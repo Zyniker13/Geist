@@ -4,14 +4,17 @@
 # 13-inch simulator into docs/release/screenshots/.
 set -e
 export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer
-UDID=EE7C4629-CD3E-4312-ADE1-920B9B615417
+# Look up the UDID by name: device-set maintenance can recreate a
+# simulator with a new UDID.
+UDID=$(xcrun simctl list devices | grep 'iPad Pro 13-inch (M5) (' | grep -Eo '[0-9A-F-]{36}')
+test -n "$UDID" || { echo "no iPad Pro 13-inch (M5) found"; exit 1; }
+echo "using $UDID"
 APP=/Users/agent/Library/Developer/Xcode/DerivedData/NightMarket-eormriyvtokrsfdujmzvnqtbvkld/Build/Products/Debug-iphonesimulator/NM.app
 OUT="$(dirname "$0")/../docs/release/screenshots"
 mkdir -p "$OUT"
 BUNDLE=com.example.night-market
 
 xcrun simctl boot "$UDID" 2>/dev/null || true
-xcrun simctl bootstatus "$UDID" -b > /dev/null
 xcrun simctl terminate "$UDID" "$BUNDLE" 2>/dev/null || true
 xcrun simctl uninstall "$UDID" "$BUNDLE" 2>/dev/null || true
 xcrun simctl install "$UDID" "$APP"
