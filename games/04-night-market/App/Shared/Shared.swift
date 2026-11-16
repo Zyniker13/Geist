@@ -17,9 +17,28 @@ public final class DebugState: ObservableObject {
     /// Leaderboard/achievement posts fired for the last finished night
     /// (NM-P7.1 evidence under UI tests).
     @Published public var postsCount: Int = 0
+    /// VoiceOver queue summary for the market scene (NM-P8.2).
+    @Published public var queueSummary: String = ""
+
+    /// Process-start reference for the cold-start metric (G8): first frame
+    /// minus this is the launch→first-frame time.
+    public var bornUptime: TimeInterval = ProcessInfo.processInfo.systemUptime
 
     public init() {}
 }
+
+#if os(iOS)
+extension DebugGestures {
+    /// Writes the one-time cold-start line on the first frame.
+    static func recordFirstFrameIfNeeded() {
+        guard let path = metricsPath else { return }
+        guard !FileManager.default.fileExists(atPath: path) else { return }
+        let elapsed = ProcessInfo.processInfo.systemUptime - DebugState.shared.bornUptime
+        try? String(format: "firstFrame %.3f\n", elapsed)
+            .write(toFile: path, atomically: true, encoding: .utf8)
+    }
+}
+#endif
 
 /// Main content view.
 public struct ContentView: View {
@@ -107,10 +126,37 @@ struct DebugOverlay: View {
                 let now = CACurrentMediaTime()
                 accumulated += now - last
                 last = now
+                Self.recordFirstFrameIfNeeded()
                 if accumulated >= 1 {
                     DebugState.shared.fps = Int((Double(frames) / accumulated).rounded())
                     frames = 0
                     accumulated = 0
+                    Self.appendMetrics("fps \(DebugState.shared.fps)")
+                }
+            }
+        }
+
+        /// -uitest-metrics <path>: appends one line per second ("fps N") plus
+        /// a one-time "firstFrame T" (launch → first rendered frame, seconds)
+        /// so scripted runs can measure G8's perf budgets.
+        static var metricsPath: String? = {
+            let args = ProcessInfo.processInfo.arguments
+            guard let index = args.firstIndex(of: "-uitest-metrics"), args.indices.contains(index + 1) else {
+                return nil
+            }
+            return args[index + 1]
+        }()
+
+        private static func appendMetrics(_ line: String) {
+            guard let path = metricsPath else { return }
+            let url = URL(fileURLWithPath: path)
+            if !FileManager.default.fileExists(atPath: path) {
+                try? "\(line)\n".write(to: url, atomically: true, encoding: .utf8)
+            } else {
+                if let handle = try? FileHandle(forWritingTo: url) {
+                    defer { try? handle.close() }
+                    _ = try? handle.seekToEnd()
+                    try? handle.write(contentsOf: Data("\(line)\n".utf8))
                 }
             }
         }

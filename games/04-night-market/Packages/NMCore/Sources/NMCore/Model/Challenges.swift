@@ -51,13 +51,29 @@ public struct NightSetup: Codable, Equatable, Sendable {
     public var scheduleId: String
     public var modifier: ChallengeModifier?
     public var seed: UInt64
+    /// Accessibility assist (NM-P8.2): lengthen the overflow grace window 50%.
+    public var assist: Bool
 
-    public init(mode: Mode, mapId: String, scheduleId: String, modifier: ChallengeModifier?, seed: UInt64) {
+    public init(
+        mode: Mode, mapId: String, scheduleId: String, modifier: ChallengeModifier?,
+        seed: UInt64, assist: Bool = false
+    ) {
         self.mode = mode
         self.mapId = mapId
         self.scheduleId = scheduleId
         self.modifier = modifier
         self.seed = seed
+        self.assist = assist
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        mode = try container.decode(Mode.self, forKey: .mode)
+        mapId = try container.decode(String.self, forKey: .mapId)
+        scheduleId = try container.decode(String.self, forKey: .scheduleId)
+        modifier = try container.decodeIfPresent(ChallengeModifier.self, forKey: .modifier)
+        seed = try container.decode(UInt64.self, forKey: .seed)
+        assist = try container.decodeIfPresent(Bool.self, forKey: .assist) ?? false
     }
 
     /// Resolves a challenge night from the UTC date (daily) or ISO week

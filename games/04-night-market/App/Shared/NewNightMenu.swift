@@ -7,22 +7,35 @@ import NMRender
 
 struct NewNightMenu: View {
     @ObservedObject var store: ProfileStore
+    /// Assist setting (NM-P8.2), applied to every setup this menu builds.
+    var assist: Bool = false
     let onStart: (NightSetup) -> Void
+    @State private var assistOn = false
+    @State private var highContrastOn = false
+
+    private func setup(_ base: NightSetup) -> NightSetup {
+        var s = base
+        s.assist = assist || assistOn
+        Palette.highContrast = highContrastOn
+        return s
+    }
 
     private var daily: NightSetup {
-        NightSetup.challenge(
-            .daily, yyyymmddUTC: BundledContent.ChallengeClock.yyyymmddUTC(),
-            isoWeekUTC: BundledContent.ChallengeClock.isoWeekUTC(),
-            mapIds: BundledContent.mapIds, scheduleIds: BundledContent.scheduleIds
-        )
+        setup(
+            NightSetup.challenge(
+                .daily, yyyymmddUTC: BundledContent.ChallengeClock.yyyymmddUTC(),
+                isoWeekUTC: BundledContent.ChallengeClock.isoWeekUTC(),
+                mapIds: BundledContent.mapIds, scheduleIds: BundledContent.scheduleIds
+            ))
     }
 
     private var weekly: NightSetup {
-        NightSetup.challenge(
-            .weekly, yyyymmddUTC: BundledContent.ChallengeClock.yyyymmddUTC(),
-            isoWeekUTC: BundledContent.ChallengeClock.isoWeekUTC(),
-            mapIds: BundledContent.mapIds, scheduleIds: BundledContent.scheduleIds
-        )
+        setup(
+            NightSetup.challenge(
+                .weekly, yyyymmddUTC: BundledContent.ChallengeClock.yyyymmddUTC(),
+                isoWeekUTC: BundledContent.ChallengeClock.isoWeekUTC(),
+                mapIds: BundledContent.mapIds, scheduleIds: BundledContent.scheduleIds
+            ))
     }
 
     var body: some View {
@@ -39,6 +52,17 @@ struct NewNightMenu: View {
             ForEach(BundledContent.mapIds, id: \.self) { mapId in
                 mapRow(mapId)
             }
+
+            Divider().overlay(nmColor(Palette.hudText).opacity(0.3))
+
+            Toggle("Assist mode (longer overflow grace)", isOn: $assistOn)
+                .font(.system(.caption, design: .monospaced))
+                .foregroundStyle(nmColor(Palette.hudText))
+                .accessibilityIdentifier("assist-toggle")
+            Toggle("High contrast", isOn: $highContrastOn)
+                .font(.system(.caption, design: .monospaced))
+                .foregroundStyle(nmColor(Palette.hudText))
+                .accessibilityIdentifier("high-contrast-toggle")
         }
         .padding(18)
         .background(RoundedRectangle(cornerRadius: 16).fill(Color.black.opacity(0.82)))
@@ -80,9 +104,9 @@ struct NewNightMenu: View {
         return Button {
             guard unlocked else { return }
             let seed = UInt64.random(in: 1...UInt64.max)
-            onStart(NightSetup.freePlay(
+            onStart(setup(NightSetup.freePlay(
                 mapId: mapId, scheduleId: definition?.schedule ?? "schedule_standard", seed: seed
-            ))
+            )))
         } label: {
             HStack {
                 Text(unlocked ? name : "🔒 \(name)")

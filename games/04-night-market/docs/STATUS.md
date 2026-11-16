@@ -110,6 +110,23 @@ EXIT=0  (** TEST SUCCEEDED **)
 - Headless iPad sim cannot rotate while XCUITest stays portrait: checks are launch-arg-driven; map input goes through `MapInputCatcher`
 - `-uitest-*` affordances live in `GameController`/`GameScreen` (fast, fresh, paused, stress, autochoose, autosave, save-restart, autolane, debug, shot) — never set by gameplay
 
+## P8 (Polish, Accessibility, and Performance) — COMPLETE, tagged `night-market/gate-G8-pass`
+
+- **Status:** complete; G8 self-checked 2026-11-15. Tag: `night-market/gate-G8-pass`. Real-device frame-rate targets are the maintainer's — issue #8.
+- **Spec:** ROADMAP.md §P8 — stall shapes + high-contrast; VoiceOver queue summaries + assist; perf with 600 customers.
+
+### What was built
+- **NM-P8.1:** per-cuisine canopy silhouettes (noodles scalloped, tea round, skewers peaked, dumplings dome, sweets hexagon, seafood trapezoid) so stalls are identifiable by shape as well as color/glyph; a high-contrast mode (`Palette.highContrast`, thicker outlines + max-saturation accents, menu toggle, `-uitest-highcontrast`).
+- **NM-P8.2:** VoiceOver queue summary ("Noodles: 2 waiting, cooking, 40 percent done. …") published every HUD tick and exposed as an accessibility element (`queue-summary`); the **assist** setting lengthens the R-12 overflow grace window by 50% (600 → 900 ticks), lives on `NightSetup.assist`/`GameState.assistMode`, and is hashed — **StateHash v6**, all ten goldens regenerated and verified.
+- **NM-P8.3:** `-uitest-metrics <path>` writes one `fps N` line per second plus a one-time `firstFrame T` (launch → first frame); the stress crowd injection is now 600 synthetic customers.
+
+### G8 gate evidence (self-checked)
+- **Color-blind simulation review:** `Tools/colorblind-check.py` (Machado et al. 2009 severity-1.0 simulation + CIE76 ΔE, threshold 12): standard worst pair 14.9, high-contrast worst pair 13.0 → **PASS** for all six colors in both palettes. The review caught the original dumplings/sweets blue–purple pair collapsing under deuteranopia (ΔE 1.2); the palette was changed to blue `0x2E7FFF` / magenta `0xF062C8` and re-verified.
+- **600 customers at speed:** simulator run `/tmp/p8-metrics.log` — 54 fps samples, median 60, min 37 (injection second), average 59.6 on the simulator's 60 Hz display cap; no artifacts (screenshot checked).
+- **Cold start:** `firstFrame 0.474` s < 2.0 s budget.
+- **120 fps on iPad Pro M4 / 60 fps on A16 (real devices):** SUBSTITUTED per §8.2 — the simulator display caps at 60 Hz, so this needs hardware; tracked with the P0.2 ProMotion question in issue #8.
+- **make lint** exit 0; NMCore 123/123 (incl. 3 new assist tests + v6 goldens); full UI suite re-run below.
+
 ## P7 (Platform Features) — COMPLETE, tagged `night-market/gate-G7-pass`
 
 - **Status:** complete; G7 self-checked 2026-11-15. Tag: `night-market/gate-G7-pass`. Sandbox verification of Game Center/iCloud and the Pencil hardware check are the maintainer's — issue **#9**; the gate is `SUBSTITUTED` per §8.2.

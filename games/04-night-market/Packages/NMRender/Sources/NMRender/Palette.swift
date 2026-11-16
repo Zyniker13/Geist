@@ -15,14 +15,31 @@ public enum Palette {
     public static let stallBody = SKColor(hex: 0x33384A)
     public static let hudText = SKColor(hex: 0xE8E4D8)
 
+    /// NM-P8.1: high-contrast mode (set before a scene is built; presentation
+    /// only, never part of the state hash). Boosts outlines and text contrast.
+    nonisolated(unsafe) public static var highContrast = false
+
     /// Stall accent colors with their color-blind-safe glyphs.
     public static func stall(_ color: StallColor) -> SKColor {
+        if highContrast {
+            // Max-saturation, max-lightness variants for the review in G8.
+            switch color {
+            case .noodles: return SKColor(hex: 0xFF3B44)
+            case .tea: return SKColor(hex: 0x2BFFB0)
+            case .skewers: return SKColor(hex: 0xFFE14D)
+            case .dumplings: return SKColor(hex: 0x1FA7FF)
+            case .sweets: return SKColor(hex: 0xFF5FD0)
+            case .seafood: return SKColor(hex: 0xFF9E33)
+            }
+        }
         switch color {
         case .noodles: return SKColor(hex: 0xFF5A5F)
         case .tea: return SKColor(hex: 0x3DDC97)
         case .skewers: return SKColor(hex: 0xFFD23F)
-        case .dumplings: return SKColor(hex: 0x5AA9FF)
-        case .sweets: return SKColor(hex: 0xC77DFF)
+        // Dumplings/sweets are blue/magenta (was blue/purple: the two
+        // collapsed under deuteranopia in the G8 color-blind review).
+        case .dumplings: return SKColor(hex: 0x2E7FFF)
+        case .sweets: return SKColor(hex: 0xF062C8)
         case .seafood: return SKColor(hex: 0xFF8C42)
         }
     }

@@ -168,9 +168,9 @@ public final class GameController: NSObject, ObservableObject, MarketSceneDelega
         apply(.paintWalkway(lane))
     }
 
-    /// -uitest-stress: injects 400 synthetic customers onto the plaza so the
+    /// -uitest-stress: injects 600 synthetic customers onto the plaza so the
     /// debug overlay's FPS readout can be measured under a real crowd load.
-    public func injectStressCrowd(count: Int = 400) {
+    public func injectStressCrowd(count: Int = 600) {
         var customers = state.customers
         var nextID = state.nextCustomerID
         let colors = StallColor.allCases
@@ -349,6 +349,9 @@ public final class GameController: NSObject, ObservableObject, MarketSceneDelega
         DebugState.shared.seed = seed
         DebugState.shared.stateHash = StateHash.digest(state)
         DebugState.shared.stateHashHex = StateHash.hex(state)
+        // VoiceOver queue summary (NM-P8.2): a spoken snapshot of every open
+        // stall's queue and service progress.
+        DebugState.shared.queueSummary = Self.queueSummary(for: state)
         writeDebugShotIfNeeded()
     }
 
@@ -444,6 +447,7 @@ public final class GameController: NSObject, ObservableObject, MarketSceneDelega
             spawnRates: schedule.spawnsPerHour,
             modifiers: setup.modifier.map { [$0] } ?? []
         )
+        state.assistMode = setup.assist
         currentSetup = setup
         rng = SeededRNG(seed: setup.seed)
         heatmap = Array(repeating: 0, count: state.grid.width * state.grid.height)
@@ -494,9 +498,29 @@ public final class GameController: NSObject, ObservableObject, MarketSceneDelega
     }
 }
 
-// MARK: - Leaderboard posting (NM-P7.1)
+// MARK: - HUD summaries and leaderboard posting (NM-P7.1, NM-P8.2)
 
 extension GameController {
+    /// "Noodles: 2 waiting, cooking, halfway. Tea: empty. …" for VoiceOver.
+    static func queueSummary(for state: GameState) -> String {
+        let open = state.stalls.filter(\.isOpen)
+        guard !open.isEmpty else { return "Market closed" }
+        let parts = open.map { stall -> String in
+            let name = stall.color.debugName.capitalized
+            let waiting = stall.queue.count
+            let cooking: String
+            if stall.serviceProgress > 0 {
+                let pct = Int((Double(stall.serviceProgress) / Double(stall.serviceTicks) * 10).rounded())
+                cooking = "cooking, \(pct * 10) percent done"
+            } else {
+                cooking = "idle"
+            }
+            let wait = waiting == 1 ? "1 waiting" : "\(waiting) waiting"
+            return "\(name): \(wait), \(cooking)"
+        }
+        return parts.joined(separator: ". ")
+    }
+
     /// The scores/achievements poster: real GameKit off UI tests, the
     /// recording fake under them so runs stay deterministic.
     var poster: ScoresPosting {

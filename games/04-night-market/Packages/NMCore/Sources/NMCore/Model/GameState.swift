@@ -30,6 +30,9 @@ public struct GameState: Codable, Sendable, Equatable, Hashable {
     public var spawnRates: [Int] = Spawner.hourlyRates
     /// Active challenge modifiers (NM-P5.2); behavior-affecting, hashed.
     public var challengeModifiers: [ChallengeModifier] = []
+    /// Accessibility assist (NM-P8.2): lengthens the overflow grace window by
+    /// 50% (R-12 threshold 600 ticks → 900). Behavior-affecting, hashed.
+    public var assistMode: Bool = false
     /// Queue-capacity offset from the small-queues modifier (can be negative).
     public var queueCapacityMod: Int = 0
     /// Score per served customer (2 under double-serves; R-13 default 1).

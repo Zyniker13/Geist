@@ -130,8 +130,10 @@ public enum Overflow {
             s.stalls[idx] = stall
         }
 
-        // Timer ≥ 600 ticks (20 s) ends the night (R-12).
-        if let overflowing = s.stalls.first(where: { $0.isOpen && $0.overflowTimer >= 600 }) {
+        // Timer ≥ 600 ticks (20 s) ends the night (R-12); the assist setting
+        // (NM-P8.2) lengthens the grace window by 50% to 900 ticks.
+        let graceLimit = s.assistMode ? 900 : 600
+        if let overflowing = s.stalls.first(where: { $0.isOpen && $0.overflowTimer >= graceLimit }) {
             _ = overflowing
             events.append(.nightEnded(score: s.score, survived: false))
         }

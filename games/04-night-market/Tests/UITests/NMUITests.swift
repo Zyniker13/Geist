@@ -155,7 +155,8 @@ final class NMUITests: XCTestCase {
     }
 
     func testStressCrowdHoldsFrameRate() throws {
-        // Real-time speed: the gate check is 400 customers at ~60 fps.
+        // Real-time speed: the gate check is 600 customers at ~60 fps (G8;
+        // 120 fps on a real ProMotion panel is the maintainer's device check).
         let app = launch("-uitest-fresh", "-uitest-debug", "-uitest-stress")
         paintLane(app: app, row: 9)
         let fpsText = app.staticTexts["debug-fps"]

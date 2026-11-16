@@ -9,13 +9,13 @@ extension MarketScene {
         node.zPosition = 3
         node.name = "stall:\(stall.id)"
 
-        let body = SKShapeNode(
-            rect: CGRect(x: -tileWidth * 0.42, y: -tileWidth * 0.34, width: tileWidth * 0.84, height: tileWidth * 0.68),
-            cornerRadius: 5)
-        body.fillColor = Palette.stallBody
-        body.strokeColor = Palette.stall(stall.color).withAlphaComponent(0.9)
-        body.lineWidth = 1.5
-        node.addChild(body)
+        // NM-P8.1: each cuisine gets its own canopy silhouette so stalls are
+        // recognizable by shape as well as color and glyph.
+        let canopy = SKShapeNode(path: makeCanopyPath(for: stall.color))
+        canopy.fillColor = Palette.stallBody
+        canopy.strokeColor = Palette.stall(stall.color).withAlphaComponent(0.9)
+        canopy.lineWidth = Palette.highContrast ? 3 : 1.5
+        node.addChild(canopy)
 
         let stripe = SKShapeNode(
             rect: CGRect(x: -tileWidth * 0.42, y: tileWidth * 0.18, width: tileWidth * 0.84, height: tileWidth * 0.16))
@@ -37,6 +37,69 @@ extension MarketScene {
         badge.name = "queue"
         node.addChild(badge)
         return node
+    }
+
+    /// NM-P8.1: per-cuisine canopy silhouettes (shape is a second, color-free
+    /// cue): noodles scalloped, tea round, skewers peaked, dumplings dome,
+    /// sweets hexagon, seafood trapezoid.
+    func makeCanopyPath(for color: StallColor) -> CGPath {
+        let w = tileWidth * 0.84
+        let h = tileWidth * 0.68
+        let x = -w / 2
+        let y = -h / 2
+        let path = CGMutablePath()
+        switch color {
+        case .noodles:
+            // Rectangular awning with a scalloped front edge.
+            path.move(to: CGPoint(x: x, y: y + h))
+            path.addLine(to: CGPoint(x: x + w, y: y + h))
+            path.addLine(to: CGPoint(x: x + w, y: y + h * 0.45))
+            let lobes = 4
+            let lobe = w / CGFloat(lobes)
+            for i in 0..<lobes {
+                let cx = x + lobe * (CGFloat(i) + 0.5)
+                path.addQuadCurve(
+                    to: CGPoint(x: x + lobe * CGFloat(i + 1), y: y + h * 0.45),
+                    control: CGPoint(x: cx, y: y + h * 0.2))
+            }
+            path.addLine(to: CGPoint(x: x, y: y + h))
+            path.closeSubpath()
+        case .tea:
+            // Round parasol canopy.
+            path.addEllipse(in: CGRect(x: x, y: y + h * 0.1, width: w, height: h * 0.9))
+        case .skewers:
+            // Peaked canopy.
+            path.move(to: CGPoint(x: x, y: y))
+            path.addLine(to: CGPoint(x: x + w * 0.5, y: y + h))
+            path.addLine(to: CGPoint(x: x + w, y: y))
+            path.closeSubpath()
+        case .dumplings:
+            // Dome.
+            path.move(to: CGPoint(x: x, y: y + h * 0.3))
+            path.addQuadCurve(
+                to: CGPoint(x: x + w, y: y + h * 0.3),
+                control: CGPoint(x: 0, y: y + h * 1.3))
+            path.addLine(to: CGPoint(x: x, y: y + h * 0.3))
+            path.closeSubpath()
+        case .sweets:
+            // Hexagonal canopy.
+            for (i, corner) in [
+                CGPoint(x: x, y: y + h * 0.5), CGPoint(x: x + w * 0.25, y: y + h),
+                CGPoint(x: x + w * 0.75, y: y + h), CGPoint(x: x + w, y: y + h * 0.5),
+                CGPoint(x: x + w * 0.75, y: y), CGPoint(x: x + w * 0.25, y: y),
+            ].enumerated() {
+                if i == 0 { path.move(to: corner) } else { path.addLine(to: corner) }
+            }
+            path.closeSubpath()
+        case .seafood:
+            // Trapezoid canopy.
+            path.move(to: CGPoint(x: x + w * 0.15, y: y + h))
+            path.addLine(to: CGPoint(x: x + w * 0.85, y: y + h))
+            path.addLine(to: CGPoint(x: x + w, y: y))
+            path.addLine(to: CGPoint(x: x, y: y))
+            path.closeSubpath()
+        }
+        return path
     }
 
     /// Color-blind-safe glyph per stall color (circle, triangle, square,

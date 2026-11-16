@@ -5,7 +5,9 @@
 /// encoding is versioned: `ENCODING_VERSION` bumps whenever the field set
 /// changes, invalidating old golden hashes on purpose.
 public enum StateHash {
-    public static let encodingVersion: UInt8 = 5
+    /// Bumped when the encoded state changes shape (v5: challenge modifiers,
+    /// queue-capacity mod, score-per-serve, night hours; v6: assist mode).
+    public static let encodingVersion: UInt8 = 6
 
     /// FNV-1a 64-bit digest of the game state.
     public static func digest(_ state: GameState) -> UInt64 {
@@ -15,6 +17,7 @@ public enum StateHash {
         hasher.int(state.clock.ticksPerHour)
         hasher.int(state.speedMultiplier)
         hasher.bool(state.isPaused)
+        hasher.bool(state.assistMode)
         hasher.int(state.score)
         hasher.int(state.walkwayBudget)
         hasher.int(state.usedBudget)

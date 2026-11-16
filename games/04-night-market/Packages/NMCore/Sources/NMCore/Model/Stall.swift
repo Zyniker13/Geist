@@ -34,8 +34,8 @@ public enum StallColor: Codable, Sendable, Equatable, Hashable, CaseIterable {
     case noodles  // circle, #FF5A5F
     case tea  // triangle, #3DDC97
     case skewers  // square, #FFD23F
-    case dumplings  // diamond, #5AA9FF
-    case sweets  // star, #C77DFF
+    case dumplings  // diamond, #2E7FFF
+    case sweets  // star, #F062C8
     case seafood  // hexagon, #FF8C42
 
     public var shape: Shape {

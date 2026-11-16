@@ -132,6 +132,18 @@ public struct GameScreen: View {
             MarketView(scene: game.scene, controller: game)
                 .ignoresSafeArea()
 
+            // VoiceOver (NM-P8.2): a single accessibility element that speaks
+            // the queue summary whenever it changes.
+            #if os(iOS)
+            Text(debug.queueSummary)
+                .font(.system(size: 0.1))
+                .foregroundStyle(.clear)
+                .frame(width: 1, height: 1)
+                .accessibilityLabel(debug.queueSummary)
+                .accessibilityAddTraits(.updatesFrequently)
+                .accessibilityIdentifier("queue-summary")
+            #endif
+
             // Map input lives in its own touch surface so HUD buttons and
             // modal sheets never fight the SpriteKit view for taps.
             #if os(iOS)
@@ -173,7 +185,10 @@ public struct GameScreen: View {
             }
 
             if showLauncher {
-                NewNightMenu(store: launcherStore) { setup in
+                NewNightMenu(
+                    store: launcherStore,
+                    assist: ProcessInfo.processInfo.arguments.contains("-uitest-assist")
+                ) { setup in
                     showLauncher = false
                     do {
                         try game.start(setup: setup)
@@ -215,6 +230,9 @@ public struct GameScreen: View {
                 }
                 if ProcessInfo.processInfo.arguments.contains("-uitest-debug") {
                     self.debug.isVisible = true
+                }
+                if ProcessInfo.processInfo.arguments.contains("-uitest-highcontrast") {
+                    Palette.highContrast = true
                 }
                 if ProcessInfo.processInfo.arguments.contains("-uitest-stress") {
                     self.game.injectStressCrowd()
