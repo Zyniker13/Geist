@@ -67,3 +67,20 @@ Kept current at every gate. What a new engineer (or agent) needs to resume.
 - **FX:** neon halos (`fxLayer`, additive, phase = tick + id·37) and steam puffs (`steamLayer`, pooled 18, over stalls with a queue or service in progress). Both tick-driven, RNG-free. Steam learned the hard way: additive white on dark washes out — use normal blending with a 0.85 fill.
 - **Audio (ADR-0013):** `MusicDirector.mix(density:isRaining:hourProgress:)` → `StemMix`; `AudioMixer` crossfades (0.02/call) and owns the AVAudioEngine (never started under `-uitest-*`). All sounds are seeded synthesis in `StemRenderer` with per-stem peak budgets; the worst-case mix is unit-tested ≤ 0.891 (−1 dBFS). Adding a stem = new case + budget + re-check the peak test.
 - **Test affordances added:** `-uitest-start-daily` / `-uitest-start-weekly` (auto-start a challenge night), `-uitest-launcher-daily` (show the launcher). New ids: `new-night-menu`, `challenge-daily-challenge`, `challenge-weekly-challenge`, `map-<id>`, `clock-hud`.
+
+## P7 Platform Features — state at G7
+
+- **Status:** complete; tagged `night-market/gate-G7-pass`. Sandbox verification is the maintainer's (issue #9): Game Center sandbox posting, an iCloud account round-trip, and the Pencil hardware check.
+- **Game Center:** `ScoresPosting` protocol; `GameCenterPoster` (GameKit, compiled) vs `MockPoster` (deterministic, under any `-uitest` arg). `LeaderboardPlan.posts(for:)` maps a finished night to `nm.map.<id>`, `nm.challenge.daily`/`weekly` (context = modifier id) and the 20 achievement ids. Posts fire in `GameController.postNightLeaderboards`; the count shows in the debug overlay (`debug-posts`, asserted non-zero by `testFullNightToResults`).
+- **iCloud:** `ProfileSyncing` (`ICloudSync` on NSUbiquitousKeyValueStore, `MockSync` in tests). `ProfileStore` writes through on every persist and restores on first launch when the local file is missing. Placeholder entitlements in `App/NM.entitlements` (iOS target only — macOS needs a real profile, see issue #9).
+- **Pencil:** `PencilInputModel` (squeeze toggles erase; unit-tested without hardware) + `PencilBridge` (UIPencilInteraction + UIHoverGestureRecognizer → tile highlight).
+- **Mac:** `Game` menu via NotificationCenter (pause ⌘P, save ⌘S, new night ⇧⌘N, debug ⇧⌘D); window is resize-safe (aspect-fit letterboxing).
+
+## P8 Polish, Accessibility, Performance — state at G8
+
+- **Status:** complete; tagged `night-market/gate-G8-pass`. Device frame-rate targets (120 fps M4, 60 fps A16) are the maintainer's — issue #8.
+- **Stall shapes:** each cuisine has its own canopy silhouette (`makeCanopyPath`): noodles scalloped, tea round, skewers peaked, dumplings dome, sweets hexagon, seafood trapezoid. High contrast: `Palette.highContrast` (static, set before scene build; menu toggle or `-uitest-highcontrast`) — thicker outlines, max-saturation accents. Presentation-only, never hashed.
+- **Assist:** `NightSetup.assist` → `GameState.assistMode` → R-12 grace 600 → 900 ticks. **StateHash encoding version 6** — hashed; the ten golden `.expected.json` files were regenerated (temporary regen test pattern: env `NM_REGEN=1`, then delete). Bump again for any new hashed field.
+- **VoiceOver:** `GameController.queueSummary(for:)` ("Noodles: 2 waiting, cooking, 40 percent done. …") published every tick; spoken via the `queue-summary` accessibility element in GameScreen.
+- **Perf:** `-uitest-metrics <path>` appends `fps N` per second + one `firstFrame T` line; stress injection is 600 customers (`injectStressCrowd`). Evidence in `docs/STATUS.md` P8.
+- **Color-blind review:** `Tools/colorblind-check.py` — Machado 2009 simulation + ΔE ≥ 12 gate. It is a hard gate: rerun it after any accent change. The dumplings/sweets pair was corrected to blue `0x2E7FFF` / magenta `0xF062C8`.

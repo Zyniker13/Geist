@@ -126,6 +126,7 @@ EXIT=0  (** TEST SUCCEEDED **)
 - **Cold start:** `firstFrame 0.474` s < 2.0 s budget.
 - **120 fps on iPad Pro M4 / 60 fps on A16 (real devices):** SUBSTITUTED per §8.2 — the simulator display caps at 60 Hz, so this needs hardware; tracked with the P0.2 ProMotion question in issue #8.
 - **make lint** exit 0; NMCore 123/123 (incl. 3 new assist tests + v6 goldens); full UI suite re-run below.
+- **make test** exit 0 on the final tree — **TEST SUCCEEDED**, 5 UI tests 0 failures in 670 s (`/tmp/g8-test2.log`). A first attempt failed only in `testSaveResumeRestoresIdenticalHash` with "Test crashed with signal term" after three consecutive suites shared the booted simulator; after `simctl shutdown + erase` the identical tree passed clean — environment, not code (same carried sim-reboot poisoning as earlier phases). CI on the P8 commit (run 43779352119) is green.
 
 ## P7 (Platform Features) — COMPLETE, tagged `night-market/gate-G7-pass`
 

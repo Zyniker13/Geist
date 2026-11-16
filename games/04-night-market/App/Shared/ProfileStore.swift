@@ -52,6 +52,26 @@ public final class ProfileStore: ObservableObject {
     /// The iCloud write-through backend, wired by the app entry points.
     public var cloudSync: ProfileSyncing?
 
+    /// Telemetry-free stats export (P9): encodes the profile plus a header
+    /// and writes it to Documents, returning a user-facing note. Nothing is
+    /// uploaded; the player shares the file themselves.
+    public func exportStatsToFile() -> String {
+        struct Export: Codable {
+            var format = "night-market-stats"
+            var version = 1
+            var profile: Profile
+        }
+        let documents = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        let url = documents.appendingPathComponent("night-market-stats.json")
+        do {
+            let data = try JSONEncoder().encode(Export(profile: profile))
+            try data.write(to: url, options: .atomic)
+            return "saved \(url.lastPathComponent)"
+        } catch {
+            return "export failed"
+        }
+    }
+
     /// The outcome of one finished night, applied to the profile.
     public struct NightOutcome: Sendable {
         public var served: Int
