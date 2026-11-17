@@ -30,7 +30,7 @@ if arguments.first == "golden" {
     let encoder = JSONEncoder()
     encoder.outputFormatting = [.sortedKeys, .withoutEscapingSlashes]
     let data = try encoder.encode(golden)
-    print(String(decoding: data, as: UTF8.self))
+    print(String(bytes: data, encoding: .utf8) ?? "<invalid utf8>")
     exit(0)
 }
 
@@ -85,9 +85,13 @@ func runSimulation() -> UInt64 {
         let start = DispatchTime.now().uptimeNanoseconds
         hash.rebuild(posX: birds.posX, posY: birds.posY, count: birds.count)
         stepBirds(
-            birds: &birds, hash: &hash, leaderX: leaderX, leaderY: leaderY,
-            windXQ: windXQ, windYQ: windYQ, params: params,
-            worldWidth: worldWidth, worldHeight: worldHeight
+            birds: &birds, hash: &hash,
+            frame: BoidsFrame(
+                leaderX: leaderX, leaderY: leaderY,
+                windXQ: windXQ, windYQ: windYQ,
+                worldWidth: worldWidth, worldHeight: worldHeight
+            ),
+            params: params
         )
         let end = DispatchTime.now().uptimeNanoseconds
         samples.append(Double(end - start) / 1_000_000.0)

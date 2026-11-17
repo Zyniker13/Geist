@@ -3,10 +3,24 @@
 This file is the single place to resume the program from. Keep every field below current after every meaningful step (see "Resuming After a Restart" in `ROADMAP.md`). Per-game detail (gate evidence and sign-offs) lives in each game's `docs/STATUS.md`.
 
 - **Current game:** Murmuration (`12-murmuration`)
-- **Phase:** P0 (Setup) — PASSED; repo layout, project.yml, Makefile, CI, SwiftPM packages, lint configs, stubs all built and tested. Fixed two Swift 6.4.2 crashes in Fixed.swift (raw.magnitude, division quotient bit overflow). Next: P1 (Core Architecture) — define game state, flocking simulation, SpriteKit scene.
-- **Last done:** Murmuration P0 scaffold committed on `murmur/phase/P0-setup` (5e4165f); Fixed.swift crash fix (8f215e8). iOS + macOS builds pass, all 6 SwiftPM packages test pass, SwiftLint + swift-format clean.
-- **Next step:** Murmuration P1 — define `GameState`, flocking simulation loop (cohesion/alignment/separation), SpriteKit scene setup.
-- **Blocked on:** Night Market P10 (simulator stack, host reboot needed); Murmuration P0 proceeds independently.
+- **Phase:** P0 (Setup) — GATE G0 re-verification in progress. The earlier "PASSED"
+  was premature: the committed scaffold could not build its tests (golden-replay
+  resource folder missing) and the boid kernel carried three defects (Swift
+  shift-precedence bug zeroing the cohesion/wind weights; hard min-speed floor
+  deadlocking birds against walls; rescale truncation breaking the clamp invariant
+  and causing the spike SIGTRAP at ticks ≥ 223). All fixed with regression tests;
+  ADR-0003..0005 record the decisions.
+- **Last done:** SwiftPM suite 27/27 green incl. golden replay; make lint 0
+  violations; spike 4000 birds avg 3.63–3.84 ms/tick (gate ≤ 4 ms) with resolved
+  crash; metalprobe 61 fps at the display's 60 Hz max (120 fps verification filed as
+  issue #11); spike tool `&^=` Swift fix. Xcode test leg chained behind a foreign
+  profile's xcodebuild on the shared build service.
+- **Next step:** finish G0 (Xcode leg green → merge → tag `murmur/gate-G0-pass`),
+  then Murmuration P1 (rules engine: R-6/R-7 boids tasks, leader paths, energy,
+  falcons, roosts).
+- **Blocked on:** Night Market P10 (simulator stack, host reboot needed);
+  Murmuration P0 Xcode leg waits on the foreign xcodebuild (chained, non-blocking
+  otherwise).
 
 ## Environment Check
 
@@ -33,7 +47,7 @@ If Xcode 27.2 or an iOS 26-or-later runtime is missing and cannot be installed w
 | Order | No. | Folder | Game | State | Last Gate | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | 04 | [`04-night-market`](games/04-night-market/ROADMAP.md) | Night Market | Blocked (P10) | `night-market/gate-G9-pass` | P10 screenshots/preview blocked on simulator stack (host reboot needed); Murmuration P0 starts |
-| 2 | 12 | [`12-murmuration`](games/12-murmuration/ROADMAP.md) | Murmuration | In Progress (P1) | — | P0 scaffold complete (build/test/lint clean); P1: GameState, flocking simulation, SpriteKit scene |
+| 2 | 12 | [`12-murmuration`](games/12-murmuration/ROADMAP.md) | Murmuration | In Progress (P0) | — | G0 re-verification: kernel defects fixed (shift-precedence, wall deadlock, rescale exactness), 27/27 SwiftPM, lint 0, spike 3.63–3.84 ms ≤ 4 ms; Xcode leg chained behind foreign xcodebuild |
 | 3 | 02 | [`02-orrery`](games/02-orrery/ROADMAP.md) | Orrery | Not Started | — | — |
 | 4 | 14 | [`14-beacon-coast`](games/14-beacon-coast/ROADMAP.md) | Beacon Coast | Not Started | — | — |
 | 5 | 13 | [`13-terrace`](games/13-terrace/ROADMAP.md) | Terrace | Not Started | — | — |
@@ -95,3 +109,4 @@ One line per meaningful step, newest last: date, phase or game and stage, what w
 - 2026-11-16: Night Market P10 blocked on host CoreSimulator stack (SpringBoard rendering frozen, app processes run but never draw). P9 merged (fd232c7), G9 tag pushed, CI green. Needs Mac host reboot to resume screenshots/preview video. Program moves to Murmuration P0.
 - 2026-11-16: Night Market P9 complete (beta prep): Release archives iOS + macOS (CODE_SIGNING_ALLOWED=NO, 0 errors), soak 6 maps × 500 nights illegal=0 (AUTOPILOT OK), balance re-sweep on the final build (default ramp stands per ADR-0011), telemetry-free stats export, beta notes + tester guide (docs/BETA.md), preview-video notes (docs/release/preview.md). Local make test wedged tonight (xcodebuild test-session deadlock on both simulators after a factory erase; builds + swift tests unaffected; concurrent foreign xcodebuild from another profile present during several wedges — documented in the game's harness notes); final-tree full suite runs on main CI (8a676a3). Tag night-market/gate-G9-pass pushed; P10 release polish next.
 - 2026-11-16: Murmuration P0 complete (setup): repo layout, project.yml (iOS + macOS targets), Makefile, CI workflow (murmuration.yml), six SwiftPM packages (MMCore/MMContent/MMLogic/MMRender/MMPlatform/MMMeta), lint configs (.swiftlint.yml, .swift-format), stub sources/tests. iOS + macOS builds green, all 6 packages test pass, SwiftLint 0 violations, swift-format clean. Scaffold on murmur/phase/P0-setup (5e4165f).
+- 2026-11-17: Murmuration G0 re-verification — the scaffold pass was premature. Found and fixed: (1) golden-replay test resource folder declared but never committed (committed tree could not build tests; verified in a clean worktree at 9ec2408); (2) Swift shift-precedence bug in the boid force scaler that truncated every weight to whole units — cohesion 0.8 and wind 0.6 were literally zero (regression test testLeaderForceMatchesWeight); (3) hard min-speed floor permanently deadlocked birds whose velocity pointed into a wall along the force line — floor is now a cruise floor skipped while the net force decelerates the bird (ADR-0004); (4) rescale truncation broke the clamp invariant and caused the spike SIGTRAP at ticks ≥ 223 — exact-direction integer rescale with proven bounds (ADR-0005); (5) added the R-6 world-edge avoidance force (ADR-0003) — without it birds pin to walls and the flock is uncontrollable. SwiftPM 27/27, lint 0, spike 4000 birds avg 3.63–3.84 ms ≤ 4 ms gate with deterministic hash, spike crash resolved. metalprobe fixed and running at the display's 60 Hz max (61 fps); 120 fps verification filed as issue #11. Xcode test leg chained behind a foreign profile's xcodebuild on the shared build service.

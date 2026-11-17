@@ -47,6 +47,8 @@ targets:
       - path: App/Shared
       - path: Resources
         buildPhase: resources
+        excludes:
+          - "**/.gitkeep"
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: $(GEIST_BUNDLE_ID)
@@ -76,6 +78,8 @@ targets:
       - path: App/Shared
       - path: Resources
         buildPhase: resources
+        excludes:
+          - "**/.gitkeep"
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: $(GEIST_BUNDLE_ID)

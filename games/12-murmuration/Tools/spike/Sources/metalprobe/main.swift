@@ -14,6 +14,7 @@ using namespace metal;
 
 struct VOut {
     float4 position [[position]];
+    uint iid [[user(locn0)]];
 };
 
 vertex VOut quadVertex(uint vid [[vertex_id]],
@@ -25,11 +26,12 @@ vertex VOut quadVertex(uint vid [[vertex_id]],
     float2 p = centers[iid] + corner * scale;
     VOut out;
     out.position = float4(p, 0.0, 1.0);
+    out.iid = iid;
     return out;
 }
 
-fragment float4 quadFragment(VOut in [[stage_in]], uint iid [[instance_id]]) {
-    float tint = float(iid % 64) / 64.0;
+fragment float4 quadFragment(VOut in [[stage_in]]) {
+    float tint = float(in.iid % 64u) / 64.0;
     return float4(0.11 + tint * 0.08, 0.10, 0.13, 1.0);
 }
 """
@@ -42,11 +44,24 @@ final class Renderer: NSObject, MTKViewDelegate {
     var frameCount = 0
 
     init?(mtkView: MTKView) {
-        guard let device = mtkView.device,
-              let queue = device.makeCommandQueue(),
-              let library = try? device.makeLibrary(source: shaderSource, options: nil),
-              let vertex = library.makeFunction(name: "quadVertex"),
+        guard let device = mtkView.device else {
+            print("metalprobe: view has no device")
+            return nil
+        }
+        guard let queue = device.makeCommandQueue() else {
+            print("metalprobe: no command queue")
+            return nil
+        }
+        let library: MTLLibrary
+        do {
+            library = try device.makeLibrary(source: shaderSource, options: nil)
+        } catch {
+            print("metalprobe: shader compile failed: \(error)")
+            return nil
+        }
+        guard let vertex = library.makeFunction(name: "quadVertex"),
               let fragment = library.makeFunction(name: "quadFragment") else {
+            print("metalprobe: entry points missing")
             return nil
         }
         self.device = device
@@ -56,6 +71,7 @@ final class Renderer: NSObject, MTKViewDelegate {
         descriptor.fragmentFunction = fragment
         descriptor.colorAttachments[0].pixelFormat = mtkView.colorPixelFormat
         guard let pipeline = try? device.makeRenderPipelineState(descriptor: descriptor) else {
+            print("metalprobe: pipeline creation failed")
             return nil
         }
         self.pipeline = pipeline
@@ -122,7 +138,9 @@ view.delegate = renderer
 let runSeconds = 2.0
 let deadline = Date().addingTimeInterval(runSeconds)
 while Date() < deadline {
-    app.run(limitDate: .distantFuture)
+    // NSApplication has no run-until API on this SDK; pump the run loop in
+    // 50 ms slices so MTKView's display link drives the draw calls.
+    RunLoop.main.run(mode: .default, before: Date().addingTimeInterval(0.05))
 }
 let elapsed = runSeconds
 let fps = Double(renderer.frameCount) / elapsed
