@@ -3,9 +3,9 @@
 This file is the single place to resume the program from. Keep every field below current after every meaningful step (see "Resuming After a Restart" in `ROADMAP.md`). Per-game detail (gate evidence and sign-offs) lives in each game's `docs/STATUS.md`.
 
 - **Current game:** Murmuration (`12-murmuration`)
-- **Phase:** P1 (Rules Engine) — complete on `murmur/phase/P1-rules-engine`: rules engine (R-1…R-13), rule-ID tests 67/67, 20 golden replays, coverage, G1 evidence recorded; ready to merge + tag.
-- **Last done:** G1 evidence complete — tagged tests + INV-1..INV-4 (1,000-config INV-4), `make sim` double-day determinism (`5cbccf1ff18d0a2a`), checkpoint hashes identical across Release×2, Debug vs Release, and arm64 iOS-sim vs Mac, day CPU 2.0 s ≤ 10 s, coverage 95.4% sources (`make coverage` → docs/COVERAGE.md), `make lint` 0. Two INV-3 regressions fixed with tests (falcon kill-loop index order; feeding Set iteration order → ADR-0007).
-- **Next step:** commit P1.2–P1.5 work on the branch, verify the committed tree in a worktree, merge to `main`, tag `murmur/gate-G1-pass`, check CI, then start P2 (vertical slice).
+- **Phase:** P1 (Rules Engine) — **complete, merged, tagged** `murmur/gate-G1-pass` (merge 5d877f2 on main).
+- **Last done:** G1 gate closed: 67/67 tagged tests + INV-1..INV-4, 20 goldens, coverage 95.4% sources, checkpoint hashes identical (Release×2, Debug, arm64-sim vs Mac; finalHash `5cbccf1ff18d0a2a`), day CPU 2.0 s ≤ 10 s, lint 0. Committed tree verified in a worktree before merging.
+- **Next step:** confirm CI green on main for 5d877f2, then start Murmuration P2 (core-loop vertical slice: FlockRenderer, gestures, three regions).
 - **Blocked on:** nothing.
 
 ## Environment Check
@@ -33,7 +33,7 @@ If Xcode 27.2 or an iOS 26-or-later runtime is missing and cannot be installed w
 | Order | No. | Folder | Game | State | Last Gate | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | 04 | [`04-night-market`](games/04-night-market/ROADMAP.md) | Night Market | Done | `night-market/gate-G10-pass` | All gates G0–G10 tagged; TestFlight/App Store steps owner-only in #12 |
-| 2 | 12 | [`12-murmuration`](games/12-murmuration/ROADMAP.md) | Murmuration | In Progress (P1 → merge) | `murmur/gate-G0-pass` | P1 rules engine done: 67/67 tests, 20 goldens, coverage 95.4%, G1 evidence recorded |
+| 2 | 12 | [`12-murmuration`](games/12-murmuration/ROADMAP.md) | Murmuration | In Progress (P2 next) | `murmur/gate-G1-pass` | P1 rules engine merged (5d877f2): 67/67 tests, 20 goldens, coverage 95.4%, checkpoint hashes cross-device |
 | 3 | 02 | [`02-orrery`](games/02-orrery/ROADMAP.md) | Orrery | Not Started | — | — |
 | 4 | 14 | [`14-beacon-coast`](games/14-beacon-coast/ROADMAP.md) | Beacon Coast | Not Started | — | — |
 | 5 | 13 | [`13-terrace`](games/13-terrace/ROADMAP.md) | Terrace | Not Started | — | — |
