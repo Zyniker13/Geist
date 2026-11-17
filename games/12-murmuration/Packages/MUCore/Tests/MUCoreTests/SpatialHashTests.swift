@@ -2,10 +2,11 @@ import XCTest
 @testable import MUCore
 
 final class SpatialHashTests: XCTestCase {
-    /// INV-4 (small sweep): hash queries return exactly the neighbors brute force returns.
-    func testHashMatchesBruteForce() {
+    /// INV-4 (1,000 configurations): hash queries return exactly the
+    /// neighbors brute force returns.
+    func testINV4HashMatchesBruteForce() {
         var rng = SeededRNG(seed: 2024)
-        for configuration in 0..<200 {
+        for configuration in 0..<1000 {
             let count = Int(rng.next(upperBound: 120)) + 1
             var posX = [Int32](repeating: 0, count: count)
             var posY = [Int32](repeating: 0, count: count)
@@ -44,7 +45,8 @@ final class SpatialHashTests: XCTestCase {
         }
     }
 
-    func testCellMembershipAndOrdering() {
+    /// INV-4: cell membership is exact and bird IDs ascend within a cell.
+    func testINV4CellMembershipAndOrdering() {
         let posX: [Int32] = [10, 500, 95, 96, 1000]
         let posY: [Int32] = [10, 500, 95, 96, 1000]
         var hash = SpatialHash(width: 1024, height: 1024, cellSize: 96)

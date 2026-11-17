@@ -35,9 +35,13 @@ spike:
 	swift build -c release --package-path Tools/spike
 	swift run -c release --package-path Tools/spike spike --birds 4000 --ticks 300
 
-# S1.3 (P1): headless rules-engine runs. Placeholder until the reducer lands.
+# S1.3 (P1): headless rules-engine day — 4,000 birds, seed 1. The tool runs
+# the full day twice and exits 1 unless both checkpoint hashes and the final
+# hash match, so a green exit is the G1 determinism evidence. Budget: the
+# reported dayCPU must stay <= 10 s (G1).
 sim:
-	@echo "sim arrives with P1 (Tools/sim, S1.3)"
+	swift build -c release --package-path Tools/sim
+	Tools/sim/.build/out/Products/Release/sim --birds 4000 --seed 1
 
 snapshot: gen
 	xcodebuild test -scheme MU -destination 'platform=iOS Simulator,name=iPad Pro 13-inch (M5)' -configuration Debug -only-testing:Snapshots
@@ -46,11 +50,18 @@ perf: gen
 	xcodebuild test -scheme MU -destination 'platform=iOS Simulator,name=iPad Pro 13-inch (M5)' -configuration Debug -only-testing:PerfTests
 
 coverage:
+	export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer; \
 	swift test --enable-code-coverage --package-path Packages/MUCore
-	@xcrun llvm-cov report Packages/MUCore/.build/debug/MUCorePackageTests.xctest/Contents/MacOS/MUCorePackageTests \
-		-instr-profile Packages/MUCore/.build/debug/codecov/default.profdata \
+	@xcrun llvm-cov report Packages/MUCore/.build/out/Products/Debug/MUCoreTests.xctest/Contents/MacOS/MUCoreTests \
+		-instr-profile Packages/MUCore/.build/out/Products/Debug/codecov/default.profdata \
 		> /tmp/mu-cov.txt || true
-	@grep -E 'TOTAL|Sources' /tmp/mu-cov.txt | sed 's|/Users.*/Sources/|Sources/|' > docs/COVERAGE.md || true
+	@{ printf '# MUCore coverage (llvm-cov over the Debug test run)\n\n'; \
+	   printf 'Gate G1 requires MUCore coverage >= 90%%. The gate metric is the\n'; \
+	   printf 'line-coverage TOTAL below (Lines / Missed Lines / Cover columns:\n'; \
+	   printf 'total, missed, percent). Columns per row: regions, functions, lines.\n\n'; \
+	   printf '```\n'; \
+	   grep -E 'TOTAL|^Sources/' /tmp/mu-cov.txt | sed 's|/Users.*/Sources/MUCore/|Sources/|'; \
+	   printf '```\n'; } > docs/COVERAGE.md
 
 todo:
 	grep -rn 'TODO(' Packages/ App/ 2>/dev/null | sort || true

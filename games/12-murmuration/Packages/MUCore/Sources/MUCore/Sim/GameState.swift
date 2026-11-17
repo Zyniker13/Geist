@@ -1,0 +1,347 @@
+/// Murmuration game state: the pure, deterministic simulation state.
+///
+/// All state changes go through the reducer `apply(_:to:)`. No external
+/// mutation is allowed. State is a value type (struct, Codable, Equatable,
+/// Hashable, Sendable) so it can be checkpointed and replayed deterministically
+/// (INV-3).
+import Foundation
+
+// MARK: - Game State
+
+/// The complete simulation state for one day.
+public struct GameState: Codable, Sendable, Equatable {
+    /// Bird positions and velocities (struct-of-arrays).
+    public var birds: BirdSoA
+
+    /// Spatial hash for neighbor queries (R-7).
+    public var spatialHash: SpatialHash
+
+    /// Current tick (0–4799). 0–3899 = day; 3900–4799 = dusk.
+    public var tick: Int
+
+    /// Total ticks in a day (R-2).
+    public static let dayTicks = 4800
+    /// Dusk starts at the last 900 ticks (R-2).
+    public static let duskStart = 3900
+
+    /// Whether we are in the dusk phase.
+    public var isDusk: Bool { tick >= GameState.duskStart }
+
+    /// Active leader paths per sub-flock (R-3).
+    public var leaderPaths: [LeaderPath]
+
+    /// Sub-flock assignments for each bird (index-aligned with BirdSoA).
+    public var subFlockAssignments: [UInt8]
+
+    /// Energy per sub-flock (R-8).
+    public var energy: [Int]
+
+    /// Maximum energy per sub-flock (R-8).
+    public static let maxEnergy = 1000
+
+    /// Field states: depletion and regrowth (R-8).
+    public var fields: [FieldState]
+
+    /// Roost claim points per sub-flock (R-12).
+    public var roostClaims: [[Int]]
+
+    /// Roost points owned by the state (R-1, R-12): position, radius, and
+    /// day-end claimant.
+    public var roosts: [RoostState]
+
+    /// Consecutive ticks the sub-flock centroids have been within
+    /// `mergeProximity` (R-5): the merge fires after `mergeThresholdTicks`.
+    public var mergeProximityStreak: Int
+
+    /// Wind vectors per 256-unit cell, row-major (R-1). Regenerated
+    /// deterministically every 600 ticks (20 s at 30 Hz) from the region seed.
+    public var windCellsX: [Int32]
+    public var windCellsY: [Int32]
+
+    /// Wind cell edge in world units (R-1).
+    public static let windCellSize = 256
+
+    /// Ticks between wind-field regenerations (R-1: every 20 seconds = 600
+    /// ticks at 30 Hz).
+    public static let windRegenTicks = 600
+
+    /// Falcon states (R-10).
+    public var falcons: [FalconState]
+
+    /// Condense cooldown timer (R-4).
+    public var condenseCooldown: Int
+
+    /// Condense active timer (R-4).
+    public var condenseActive: Int
+
+    /// Cohesion multiplier when condensing (R-4).
+    public static let condenseCohesionMultiplier = 2
+
+    /// Number of ticks the centroid must stay within range to merge (R-5).
+    public static let mergeThresholdTicks = 30
+
+    /// Merge proximity threshold in world units (R-5).
+    public static let mergeProximity = 200
+
+    /// Maximum birds per flock (R-5 / ADR-0005).
+    public static let maxBirdsPerFlock = 3000
+
+    /// Number of sub-flocks (capped at 2 for two-finger split).
+    public var subFlockCount: Int {
+        guard let maxSF = subFlockAssignments.max() else { return 1 }
+        return Int(maxSF) + 1
+    }
+
+    /// Seed for deterministic simulation.
+    public let seed: UInt64
+
+    /// Content version for golden replays. Bump whenever an engine change
+    /// alters replay outcomes, then regenerate the committed goldens.
+    public static let replayContentVersion = 2
+
+    /// Content version for golden replays.
+    public let contentVersion: Int
+
+    /// Initial bird count for this state (for growth/starvation tracking).
+    public let initialBirdCount: Int
+
+    /// Wind seed offset for this region.
+    public let windSeedOffset: Int
+
+    /// World dimensions (R-1).
+    public let worldWidth: Int32
+    public let worldHeight: Int32
+
+    /// Boids parameters (weights from balance.json, R-6).
+    public let boidsParams: BoidsParams
+
+    /// Number of falcons for this region.
+    public let falconCount: Int
+
+    /// Rival flock flag.
+    public let hasRival: Bool
+
+    /// Energy drain per 100 birds per tick (R-8).
+    public static let energyDrainPer100 = 1
+
+    /// Growth threshold: every 200 energy above 600 triggers growth (R-9).
+    public static let growthThreshold = 600
+    public static let growthEnergyStep = 200
+    public static let growthBirdPercent = 5 // percent
+
+    /// Starvation rate: 1% per 10 ticks at 0 energy (R-9).
+    public static let starvationRate = 10 // ticks per 1%
+
+    /// Falcon dive radius (R-10).
+    public static let diveRadius = 30
+
+    /// Density shield threshold (R-11): average neighbor count at or above
+    /// this halves dive success.
+    public static let densityShield = 10
+
+    /// Neighbor radius for the R-11 density metric (the alignment radius).
+    public static let defaultAlignRadius = 64
+
+    /// Leader path sampling interval in ticks (R-3).
+    public static let leaderPathSampleInterval = 1
+
+    /// Falcon cooldown between dives in ticks (R-10).
+    public static let falconDiveCooldown = 120
+
+    /// Condense duration in ticks (R-4).
+    public static let condenseDuration = 60
+
+    /// Condense cooldown duration in ticks (R-4).
+    public static let condenseCooldownDuration = 120
+
+    public init(
+        birdCount: Int,
+        worldWidth: Int32,
+        worldHeight: Int32,
+        boidsParams: BoidsParams,
+        fieldRichness: [Int],
+        fieldRadius: [Int],
+        fieldCenterX: [Int32],
+        fieldCenterY: [Int32],
+        roostCount: Int,
+        roostCenterX: [Int32],
+        roostCenterY: [Int32],
+        roostRadius: [Int],
+        falconCount: Int,
+        hasRival: Bool,
+        windSeedOffset: Int,
+        seed: UInt64,
+        contentVersion: Int = GameState.replayContentVersion
+    ) {
+        self.seed = seed
+        self.contentVersion = contentVersion
+        self.worldWidth = worldWidth
+        self.worldHeight = worldHeight
+        self.boidsParams = boidsParams
+        self.falconCount = falconCount
+        self.hasRival = hasRival
+        self.windSeedOffset = windSeedOffset
+
+        // Initialize birds: spread in a cluster near center.
+        var rng = SeededRNG(seed: seed)
+        let centerX = worldWidth / 2
+        let centerY = worldHeight / 2
+        var birds = BirdSoA(capacity: birdCount)
+        var subFlockAssignments: [UInt8] = []
+        subFlockAssignments.reserveCapacity(birdCount)
+
+        for _ in 0..<birdCount {
+            let dx = Int32(rng.next(upperBound: 200)) - 100
+            let dy = Int32(rng.next(upperBound: 200)) - 100
+            let x = centerX + dx
+            let y = centerY + dy
+
+            // Random initial velocity (Q16.16) from the integer trig table.
+            let speed = Int32(rng.next(upperBound: Int(boidsParams.maxSpeed - boidsParams.minSpeed) + 1)) + boidsParams.minSpeed
+            let angle = Int32(rng.next(upperBound: IntTrig.turns))
+            let unit = unitVectorQ16(angle)
+            let cosA = (Int64(unit.x) * Int64(speed)) >> 16
+            let sinA = (Int64(unit.y) * Int64(speed)) >> 16
+
+            let sf: UInt8 = 0
+            birds.append(x: x, y: y, velXQ: Int32(cosA), velYQ: Int32(sinA), subFlock: sf)
+            subFlockAssignments.append(sf)
+        }
+
+        self.birds = birds
+        self.spatialHash = SpatialHash(
+            width: worldWidth,
+            height: worldHeight,
+            cellSize: 96 // R-6: cohesion radius
+        )
+        self.tick = 0
+        self.leaderPaths = [LeaderPath(points: [])]
+        // With no path drawn yet, the leader point rests at the world center
+        // (an attractor of (0,0) would drag the flock into the corner).
+        self.leaderPaths[0].currentX = centerX
+        self.leaderPaths[0].currentY = centerY
+        self.subFlockAssignments = subFlockAssignments
+        self.energy = Array(repeating: 800, count: 1) // start at 800 energy
+        self.initialBirdCount = birdCount
+
+        // Initialize fields (R-8).
+        var fields: [FieldState] = []
+        for i in 0..<fieldRichness.count {
+            fields.append(FieldState(
+                centerX: fieldCenterX[i],
+                centerY: fieldCenterY[i],
+                radius: Int32(fieldRadius[i]),
+                richness: fieldRichness[i],
+                currentDepletion: 0,
+                maxDepletion: fieldRichness[i] * 10,
+                ticksSinceFeed: 0
+            ))
+        }
+        self.fields = fields
+
+        // Initialize roosts (R-12).
+        var roosts: [RoostState] = []
+        var roostClaims: [[Int]] = []
+        for i in 0..<roostCount {
+            roosts.append(RoostState(
+                centerX: roostCenterX[i],
+                centerY: roostCenterY[i],
+                radius: Int32(roostRadius[i]),
+                claims: [0, 0],
+                claimant: -1
+            ))
+            roostClaims.append([0, 0]) // [player flock, rival flock]
+        }
+        self.roosts = roosts
+        self.roostClaims = roostClaims
+        self.mergeProximityStreak = 0
+
+        // Seed the wind field (R-1): one vector per 256-unit cell.
+        let (wx, wy) = GameState.windField(
+            generation: 0, seed: seed, windSeedOffset: windSeedOffset,
+            worldWidth: worldWidth, worldHeight: worldHeight
+        )
+        self.windCellsX = wx
+        self.windCellsY = wy
+
+        // Initialize falcons (R-10).
+        var falcons: [FalconState] = []
+        for i in 0..<falconCount {
+            falcons.append(FalconState(
+                patrolAngle: Int32(i * 1024 / max(falconCount, 1)),
+                cooldown: 0,
+                diveTargetX: 0,
+                diveTargetY: 0,
+                currentX: centerX,
+                currentY: centerY
+            ))
+        }
+        self.falcons = falcons
+
+        self.condenseCooldown = 0
+        self.condenseActive = 0
+    }
+
+    public static func == (lhs: GameState, rhs: GameState) -> Bool {
+        lhs.tick == rhs.tick
+        && lhs.seed == rhs.seed
+        && lhs.contentVersion == rhs.contentVersion
+        && lhs.birds.count == rhs.birds.count
+        && lhs.birds.posX == rhs.birds.posX
+        && lhs.birds.posY == rhs.birds.posY
+        && lhs.birds.velX == rhs.birds.velX
+        && lhs.birds.velY == rhs.birds.velY
+        && lhs.birds.subFlock == rhs.birds.subFlock
+        && lhs.subFlockAssignments == rhs.subFlockAssignments
+        && lhs.energy == rhs.energy
+        && lhs.leaderPaths == rhs.leaderPaths
+        && lhs.fields == rhs.fields
+        && lhs.roosts == rhs.roosts
+        && lhs.roostClaims == rhs.roostClaims
+        && lhs.mergeProximityStreak == rhs.mergeProximityStreak
+        && lhs.windCellsX == rhs.windCellsX
+        && lhs.windCellsY == rhs.windCellsY
+        && lhs.falcons == rhs.falcons
+        && lhs.condenseCooldown == rhs.condenseCooldown
+        && lhs.condenseActive == rhs.condenseActive
+    }
+}
+
+// MARK: - Helpers
+
+extension GameState {
+    /// Deterministic per-cell wind angle hash: mixes the cell index, the wind
+    /// generation, the region seed, and the region's wind offset. Pure integer
+    /// (INV-3); golden-ratio multiplier avalanche gives well-spread angles.
+    static func windCellAngle(cellIndex: Int, generation: Int, seed: UInt64, windSeedOffset: Int) -> Int32 {
+        var h: UInt64 = 0x9E3779B97F4A7C15
+        h &+= UInt64(truncatingIfNeeded: cellIndex) &* 0xBF58476D1CE4E5B9
+        h &+= UInt64(truncatingIfNeeded: generation) &* 0x94D049BB133111EB
+        h &+= seed &+ UInt64(truncatingIfNeeded: windSeedOffset)
+        h ^= h >> 30; h = h &* 0xBF58476D1CE4E5B9
+        h ^= h >> 27; h = h &* 0x94D049BB133111EB
+        h ^= h >> 31
+        return Int32(truncatingIfNeeded: h % UInt64(IntTrig.turns))
+    }
+
+    /// Regenerate the per-256-cell wind field (R-1) for `generation` = tick / 600.
+    /// Magnitude is 0.3 in Q16.16 (19661).
+    static func windField(
+        generation: Int, seed: UInt64, windSeedOffset: Int,
+        worldWidth: Int32, worldHeight: Int32
+    ) -> (x: [Int32], y: [Int32]) {
+        let cols = max(1, Int(worldWidth) / GameState.windCellSize)
+        let rows = max(1, Int(worldHeight) / GameState.windCellSize)
+        let count = cols * rows
+        var xs = [Int32](repeating: 0, count: count)
+        var ys = [Int32](repeating: 0, count: count)
+        let magnitudeQ16: Int32 = 19_661 // 0.3 units/tick
+        for cell in 0..<count {
+            let angle = windCellAngle(cellIndex: cell, generation: generation, seed: seed, windSeedOffset: windSeedOffset)
+            let unit = unitVectorQ16(angle)
+            xs[cell] = (Int32(unit.x) * magnitudeQ16) >> 16
+            ys[cell] = (Int32(unit.y) * magnitudeQ16) >> 16
+        }
+        return (xs, ys)
+    }
+}

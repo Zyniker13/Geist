@@ -5,7 +5,7 @@
 /// cell's slice is ID-ascending and queries iterate in a deterministic order
 /// (cells row-major from the top-left of the 3x3 neighborhood, IDs ascending within
 /// a cell) — required for cross-device determinism (INV-3).
-public struct SpatialHash: Sendable {
+public struct SpatialHash: Sendable, Codable {
     public let cellSize: Int32
     public let cols: Int32
     public let rows: Int32

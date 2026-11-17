@@ -88,3 +88,101 @@ public func replay(_ replay: Replay) -> TrivialState {
     }
     return state
 }
+
+// MARK: - Golden replays for the real rules engine (S1.4)
+
+/// One game action applied at a tick boundary inside a golden replay.
+public struct TimedGameAction: Codable, Sendable, Equatable {
+    public let tick: Int
+    public let action: GameAction
+
+    public init(tick: Int, action: GameAction) {
+        self.tick = tick
+        self.action = action
+    }
+}
+
+/// A golden replay record (S1.4): the world configuration, the seeded RNG,
+/// the timed actions, and the final state hash the replay must reproduce.
+/// The content version must match the engine's, so a behavior-affecting
+/// change cannot silently pass against stale goldens.
+public struct GameReplay: Codable, Sendable, Equatable {
+    public let seed: UInt64
+    public let contentVersion: Int
+    public let birdCount: Int
+    public let worldWidth: Int32
+    public let worldHeight: Int32
+    public let actions: [TimedGameAction]
+    public let finalHash: UInt64
+
+    public init(
+        seed: UInt64, contentVersion: Int, birdCount: Int,
+        worldWidth: Int32, worldHeight: Int32,
+        actions: [TimedGameAction], finalHash: UInt64
+    ) {
+        self.seed = seed
+        self.contentVersion = contentVersion
+        self.birdCount = birdCount
+        self.worldWidth = worldWidth
+        self.worldHeight = worldHeight
+        self.actions = actions
+        self.finalHash = finalHash
+    }
+}
+
+/// The canonical world configuration golden replays run against: one field,
+/// one roost, one falcon, no rival, all centered (matches Tools/sim).
+public func makeGoldenWorld(birdCount: Int, seed: UInt64) -> GameState {
+    let worldWidth: Int32 = 2048
+    let worldHeight: Int32 = 1536
+    return GameState(
+        birdCount: birdCount,
+        worldWidth: worldWidth,
+        worldHeight: worldHeight,
+        boidsParams: BoidsParams(),
+        fieldRichness: [10],
+        fieldRadius: [128],
+        fieldCenterX: [Int32(worldWidth / 2)],
+        fieldCenterY: [Int32(worldHeight / 2)],
+        roostCount: 1,
+        roostCenterX: [Int32(worldWidth / 2)],
+        roostCenterY: [Int32(worldHeight / 2)],
+        roostRadius: [128],
+        falconCount: 1,
+        hasRival: false,
+        windSeedOffset: 0,
+        seed: seed
+    )
+}
+
+/// Run a golden replay to completion: applies each stored action at its tick
+/// boundary (before that tick's advance), then advances the full day.
+/// Throws when the record's content version is stale — a replay recorded
+/// against older engine behavior must fail loudly, never replay "green"
+/// against rules it was not recorded with.
+public func runReplay(_ record: GameReplay, days: Int = 1) throws -> GameState {
+    guard record.contentVersion == GameState.replayContentVersion else {
+        throw ReplayError.staleContentVersion(record.contentVersion)
+    }
+    var state = makeGoldenWorld(birdCount: record.birdCount, seed: record.seed)
+    var rng = SeededRNG(seed: record.seed)
+    var actions = record.actions
+        .sorted { $0.tick < $1.tick }
+        .makeIterator()
+    var pending = actions.next()
+    for tick in 0..<(GameState.dayTicks * days) {
+        while let timed = pending, timed.tick == tick {
+            let (next, _) = applyAction(timed.action, to: state)
+            state = next
+            pending = actions.next()
+        }
+        let (next, _) = applyTick(to: state, rng: &rng)
+        state = next
+    }
+    return state
+}
+
+public enum ReplayError: Error, Equatable {
+    /// The record's content version does not match the current engine.
+    case staleContentVersion(Int)
+}

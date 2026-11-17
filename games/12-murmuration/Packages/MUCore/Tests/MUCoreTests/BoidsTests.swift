@@ -37,7 +37,8 @@ final class BoidsTests: XCTestCase {
         )
     }
 
-    func testStepIsDeterministic() {
+    // INV-3: identical seeds and inputs produce identical trajectories.
+    func testINV3StepIsDeterministic() {
         let a = makeFlock(count: 400, seed: 11)
         let b = makeFlock(count: 400, seed: 11)
         var birdsA = a.birds
@@ -65,7 +66,9 @@ final class BoidsTests: XCTestCase {
         XCTAssertEqual(birdsA.velY, birdsB.velY)
     }
 
-    func testSpeedsStayClamped() {
+    // R-7: every bird stays inside [minSpeed, maxSpeed]; below-minimum is
+    // allowed only under a decelerating force (ADR-0004).
+    func testR7SpeedsStayClamped() {
         let flock = makeFlock(count: 300, seed: 5)
         var birds = flock.birds
         var hash = flock.hash
@@ -103,7 +106,7 @@ final class BoidsTests: XCTestCase {
     /// unparenthesized `unit << 16 * weight >> 16` applies `weight >> 16`
     /// (whole units only: 1.2 became 1.0, 0.8 and 0.6 became 0). The leader
     /// force on a bird cruising at 30 units must add exactly 1.2 units/tick.
-    func testLeaderForceMatchesWeight() {
+    func testR6LeaderForceMatchesWeight() {
         let width: Int32 = 2048, height: Int32 = 1536
         var birds = BirdSoA(capacity: 1)
         birds.append(x: 1000, y: 768, velXQ: 1_966_080, velYQ: 0, subFlock: 0) // 30 units/tick, +x
@@ -118,7 +121,8 @@ final class BoidsTests: XCTestCase {
         XCTAssertEqual(birds.velX[0], 1_966_080 + 78_643)
     }
 
-    func testBirdsStayInWorld() {
+    // INV-2: no bird may leave the world bounds.
+    func testINV2BirdsStayInWorld() {
         let flock = makeFlock(count: 200, seed: 77)
         var birds = flock.birds
         var hash = flock.hash
@@ -161,7 +165,7 @@ final class BoidsTests: XCTestCase {
     /// docs/OPEN_QUESTIONS.md). Gameplay steers with moving leader paths
     /// (R-3/R-4), so the invariant we assert is the causal pull, not parking.
     /// Exact distances shift with balance tuning; the ordering is the point.
-    func testLeaderAttractsFlock() {
+    func testR6LeaderAttractsFlock() {
         let flock = makeFlock(count: 250, seed: 19)
         var withLeader = flock.birds
         var withHash = flock.hash
@@ -192,7 +196,7 @@ final class BoidsTests: XCTestCase {
     /// Wind must have a causal steering effect: with identical seed, spawn, and
     /// ticks, the run with wind active drifts farther downwind (along (1,1))
     /// than the windless control run.
-    func testWindDriftsFlockDownwind() {
+    func testR1WindDriftsFlockDownwind() {
         let flock = makeFlock(count: 250, seed: 19)
         var withWind = flock.birds
         var withHash = flock.hash
@@ -228,5 +232,33 @@ final class BoidsTests: XCTestCase {
         let driftOn = downwind(withWind)
         let driftOff = downwind(withoutWind)
         XCTAssertGreaterThan(driftOn - driftOff, 100, "wind did not drift the flock downwind: \(driftOn) vs \(driftOff)")
+    }
+
+    // Regression: an ultra-dense flock (thousands of neighbors inside the
+    // alignment radius) pushes the alignment sum past 2^31. Squaring that
+    // sum inside normalizedScaled used to overflow Int64 and trap the
+    // process mid-tick (SIGTRAP in Release, "Fatal error" in Debug) once a
+    // real day's worth of ticks let the flock collapse into a dense cluster.
+    // R-6: forces must compute for any flock shape; INV-3: deterministically.
+    func testR6UltraDenseFlockAlignmentSumDoesNotOverflow() {
+        let n = 2700
+        var birds = BirdSoA(capacity: n)
+        for _ in 0..<n {
+            birds.append(x: 1024, y: 768, velXQ: 2_621_440, velYQ: 0, subFlock: 0)
+        }
+        var hash = SpatialHash(width: 2048, height: 1536, cellSize: 96)
+        hash.rebuild(posX: birds.posX, posY: birds.posY, count: n)
+        stepBirds(
+            birds: &birds, hash: &hash,
+            frame: frame(width: 2048, height: 1536),
+            params: BoidsParams()
+        )
+        // All birds are co-located and aligned +x: separation and cohesion
+        // contribute zero (zero displacement), alignment is +x at full
+        // weight, so every bird stays at max speed heading +x.
+        for i in 0..<n {
+            XCTAssertEqual(birds.velX[i], 2_621_440)
+            XCTAssertEqual(birds.velY[i], 0)
+        }
     }
 }

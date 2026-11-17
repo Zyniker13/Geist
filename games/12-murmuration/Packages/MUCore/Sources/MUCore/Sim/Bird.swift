@@ -3,7 +3,7 @@
 ///
 /// Positions are raw world units; velocities are Q16.16 fixed-point Int32
 /// (18–40 units/tick → raw 1_179_648–2_621_440).
-public struct BirdSoA: Sendable {
+public struct BirdSoA: Sendable, Codable {
     public var posX: [Int32]
     public var posY: [Int32]
     public var velX: [Int32]
@@ -45,6 +45,15 @@ public struct BirdSoA: Sendable {
         velX.removeLast(n)
         velY.removeLast(n)
         subFlock.removeLast(n)
+    }
+
+    /// Remove the bird at `index`, preserving order (O(n) shift).
+    public mutating func remove(at index: Int) {
+        posX.remove(at: index)
+        posY.remove(at: index)
+        velX.remove(at: index)
+        velY.remove(at: index)
+        subFlock.remove(at: index)
     }
 
     /// Read one bird's position.

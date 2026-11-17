@@ -3,10 +3,10 @@
 This file is the single place to resume the program from. Keep every field below current after every meaningful step (see "Resuming After a Restart" in `ROADMAP.md`). Per-game detail (gate evidence and sign-offs) lives in each game's `docs/STATUS.md`.
 
 - **Current game:** Murmuration (`12-murmuration`)
-- **Phase:** P1 (Rules Engine) — in progress on `murmur/phase/P1-rules-engine`: rules engine + rule-ID tests committed (2c6e2cb, c521ece); headless sim tool (`Tools/sim`) built, uncommitted.
-- **Last done:** Night Market P10 complete — G10 closed. Simulator stack recovered (host rebooted overnight 2026-11-17; issue #10 ladder applied on top), release screenshots + preview video captured and frame-verified, `make test` TEST SUCCEEDED (UI 5/5 in 64.5 s) + `make lint` 0 on the final tree. Merged to main (2a5b968), tag `night-market/gate-G10-pass` pushed, issue #10 closed, release steps filed as #12.
-- **Next step:** verify the Murmuration headless sim tool (build Release, run, determinism), commit it, then continue P1 (MU-P1.1–P1.5 rule tests, coverage ≥ 90%, G1 checks).
-- **Blocked on:** nothing — Night Market's remaining steps are owner-only in #12.
+- **Phase:** P1 (Rules Engine) — complete on `murmur/phase/P1-rules-engine`: rules engine (R-1…R-13), rule-ID tests 67/67, 20 golden replays, coverage, G1 evidence recorded; ready to merge + tag.
+- **Last done:** G1 evidence complete — tagged tests + INV-1..INV-4 (1,000-config INV-4), `make sim` double-day determinism (`5cbccf1ff18d0a2a`), checkpoint hashes identical across Release×2, Debug vs Release, and arm64 iOS-sim vs Mac, day CPU 2.0 s ≤ 10 s, coverage 95.4% sources (`make coverage` → docs/COVERAGE.md), `make lint` 0. Two INV-3 regressions fixed with tests (falcon kill-loop index order; feeding Set iteration order → ADR-0007).
+- **Next step:** commit P1.2–P1.5 work on the branch, verify the committed tree in a worktree, merge to `main`, tag `murmur/gate-G1-pass`, check CI, then start P2 (vertical slice).
+- **Blocked on:** nothing.
 
 ## Environment Check
 
@@ -33,7 +33,7 @@ If Xcode 27.2 or an iOS 26-or-later runtime is missing and cannot be installed w
 | Order | No. | Folder | Game | State | Last Gate | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | 04 | [`04-night-market`](games/04-night-market/ROADMAP.md) | Night Market | Done | `night-market/gate-G10-pass` | All gates G0–G10 tagged; TestFlight/App Store steps owner-only in #12 |
-| 2 | 12 | [`12-murmuration`](games/12-murmuration/ROADMAP.md) | Murmuration | In Progress (P1) | `murmur/gate-G0-pass` | P1: rules engine + rule-ID tests committed; headless sim tool next |
+| 2 | 12 | [`12-murmuration`](games/12-murmuration/ROADMAP.md) | Murmuration | In Progress (P1 → merge) | `murmur/gate-G0-pass` | P1 rules engine done: 67/67 tests, 20 goldens, coverage 95.4%, G1 evidence recorded |
 | 3 | 02 | [`02-orrery`](games/02-orrery/ROADMAP.md) | Orrery | Not Started | — | — |
 | 4 | 14 | [`14-beacon-coast`](games/14-beacon-coast/ROADMAP.md) | Beacon Coast | Not Started | — | — |
 | 5 | 13 | [`13-terrace`](games/13-terrace/ROADMAP.md) | Terrace | Not Started | — | — |
@@ -97,3 +97,4 @@ One line per meaningful step, newest last: date, phase or game and stage, what w
 - 2026-11-17: Murmuration P0 complete (setup): repo layout, project.yml (iOS + macOS targets), Makefile, CI workflow (murmuration.yml), 7 SwiftPM packages (MUCore/MUContent/MUAI/MURender/MUAudio/MUPlatform/MUMeta), lint configs. All 43 SwiftPM tests green, lint 0, spike 3.63–3.84 ms ≤ 4 ms. Kernel defects fixed (shift-precedence, world-edge avoidance, cruise floor, exact rescale). G0 passed; merged to main (ecd14ae), tag `murmur/gate-G0-pass` pushed, CI green.
 - 2026-11-17: Murmuration P1 started on `murmur/phase/P1-rules-engine`: rules engine (GameState, Reducer, LeaderPath, Energy, Falcon, Roost — 2c6e2cb) and rule-ID tests (c521ece) committed; headless sim tool drafted in Tools/sim (uncommitted).
 - 2026-11-17: Night Market P10 complete — simulator stack recovered (host rebooted overnight + issue #10 ladder), four release screenshots + 65.29 s preview video captured and frame-verified (launcher shot needed a script fix: -uitest-* args suppress the NewNightMenu), make test TEST SUCCEEDED (UI 5/5 in 64.5 s) + make lint 0 on the final tree. Merged to main (2a5b968), tag `night-market/gate-G10-pass` pushed, issue #10 closed, release steps filed as #12. Night Market is Done.
+- 2026-11-17: Murmuration P1 rules pass: headless sim day rewritten to full `applyTick` (crash bisected to an Int64 overflow in `normalizedScaled` at ultra density — down-shift guard + regression test; neighbor-visit cap 48 fixed the 33 s day → 3.8 s, ADR-0006). R-1…R-13 implemented (IntTrig 1024-step sine table per ADR-0002, LeaderPath/Falcon/Roost/Energy rewrites, wind grid, `effectiveParams`); two INV-3 regressions found and fixed with tests (falcon kill-loop index order; feeding `Set` iteration order → ADR-0007). S1.2 rule-ID suite 67/67 with INV-1…INV-4 (INV-4 at 1,000 configs); S1.4 twenty golden replays committed (contentVersion 2) replaying to stored hashes.

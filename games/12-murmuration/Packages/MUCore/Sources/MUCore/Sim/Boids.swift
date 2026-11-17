@@ -4,7 +4,7 @@
 /// All math is integer (Q16.16 velocities, Int64 accumulators, integer sqrt) so the
 /// simulation is bit-identical across devices (INV-3). Neighbor iteration order is
 /// deterministic: 3x3 cells row-major, bird IDs ascending within a cell.
-public struct BoidsParams: Sendable {
+public struct BoidsParams: Sendable, Codable {
     public var sepRadius: Int32 = 24
     public var alignRadius: Int32 = 64
     public var cohRadius: Int32 = 96
@@ -22,26 +22,71 @@ public struct BoidsParams: Sendable {
 }
 
 /// Per-tick world inputs for `stepBirds`: the active sub-flock's leader point,
-/// the wind vector (Q16.16), and the world bounds.
-public struct BoidsFrame: Sendable {
+/// the wind field (R-1: one Q16.16 vector per 256-unit cell, with a uniform
+/// fallback for grid-less callers), and the world bounds.
+public struct BoidsFrame: Sendable, Codable {
     public var leaderX: Int32
     public var leaderY: Int32
+    /// Leader point per sub-flock (R-3/R-4); falls back to leaderX/Y when empty.
+    public var leadersX: [Int32]
+    public var leadersY: [Int32]
     public var windXQ: Int32
     public var windYQ: Int32
     public var worldWidth: Int32
     public var worldHeight: Int32
+    /// Per-cell wind vectors (R-1), row-major over 256-unit cells; empty = uniform.
+    public var windCellsX: [Int32]
+    public var windCellsY: [Int32]
+    public var windGridCols: Int32
+    public var windGridRows: Int32
+    public var windCellSize: Int32
 
     public init(
         leaderX: Int32, leaderY: Int32,
         windXQ: Int32, windYQ: Int32,
-        worldWidth: Int32, worldHeight: Int32
+        worldWidth: Int32, worldHeight: Int32,
+        leadersX: [Int32] = [],
+        leadersY: [Int32] = [],
+        windCellsX: [Int32] = [],
+        windCellsY: [Int32] = [],
+        windGridCols: Int32 = 0,
+        windGridRows: Int32 = 0,
+        windCellSize: Int32 = 256
     ) {
         self.leaderX = leaderX
         self.leaderY = leaderY
+        self.leadersX = leadersX
+        self.leadersY = leadersY
         self.windXQ = windXQ
         self.windYQ = windYQ
         self.worldWidth = worldWidth
         self.worldHeight = worldHeight
+        self.windCellsX = windCellsX
+        self.windCellsY = windCellsY
+        self.windGridCols = windGridCols
+        self.windGridRows = windGridRows
+        self.windCellSize = windCellSize
+    }
+
+    /// The leader point acting on a bird of sub-flock `sf`.
+    @inline(__always)
+    public func leader(for sf: Int32) -> (x: Int32, y: Int32) {
+        let s = Int(sf)
+        if s < leadersX.count, s < leadersY.count { return (leadersX[s], leadersY[s]) }
+        return (leaderX, leaderY)
+    }
+
+    /// The wind vector (Q16.16) acting on a bird at `(px, py)`.
+    @inline(__always)
+    public func wind(at px: Int32, _ py: Int32) -> (x: Int32, y: Int32) {
+        if windCellsX.isEmpty || windGridCols <= 0 || windGridRows <= 0 || windCellSize <= 0 {
+            return (windXQ, windYQ)
+        }
+        let col = max(0, min(Int(windGridCols) - 1, Int(px) / Int(windCellSize)))
+        let row = max(0, min(Int(windGridRows) - 1, Int(py) / Int(windCellSize)))
+        let cell = row * Int(windGridCols) + col
+        guard cell < windCellsX.count, cell < windCellsY.count else { return (windXQ, windYQ) }
+        return (windCellsX[cell], windCellsY[cell])
     }
 }
 
@@ -63,6 +108,18 @@ public func stepBirds(
     let minSpeed2 = Int64(params.minSpeed) * Int64(params.minSpeed)
     let maxSpeed2 = Int64(params.maxSpeed) * Int64(params.maxSpeed)
 
+    // Neighbor-scan cap: in an ultra-dense flock a bird can have thousands of
+    // neighbors inside the cohesion radius, making the per-tick cost O(n · k)
+    // explode exactly when the flock is tightest (a 4,000-bird day ran ~7 ms
+    // per tick, far over the G1 budget). Boids steering needs a local sample,
+    // not the complete set, so each bird examines at most `maxNeighborVisits`
+    // neighbors per tick, taken in the deterministic iteration order (3x3
+    // cells row-major, bird IDs ascending within a cell). This bounds the
+    // worst case, keeps results reproducible (INV-3), and leaves the spatial
+    // hash itself exact (INV-4 covers the hash, not the steering subset).
+    // See docs/DECISIONS.md, "Neighbor-visit cap in stepBirds".
+    let maxNeighborVisits = 48
+
     for i in 0..<count {
         let px = birds.posX[i]
         let py = birds.posY[i]
@@ -77,18 +134,21 @@ public func stepBirds(
         var sepCount = 0
         var alignCount = 0
         var cohCount = 0
+        var visits = 0
 
         // 3x3 neighborhood, row-major from the top-left: fixed iteration order.
         var cy = home.cy - 1
-        while cy <= home.cy + 1 {
+        outer: while cy <= home.cy + 1 {
             if cy >= 0 && cy < hash.rows {
                 var cx = home.cx - 1
                 while cx <= home.cx + 1 {
                     if cx >= 0 && cx < hash.cols {
                         let cellRange = hash.range(cx: cx, cy: cy)
                         for slot in cellRange {
+                            if visits >= maxNeighborVisits { break outer }
                             let j = Int(hash.birdID(at: slot))
                             if j == i { continue }
+                            visits += 1
                             let dx = Int64(birds.posX[j]) - Int64(px)
                             let dy = Int64(birds.posY[j]) - Int64(py)
                             let d2 = dx * dx + dy * dy
@@ -133,13 +193,15 @@ public func stepBirds(
             forceX += f.x
             forceY += f.y
         }
-        let leaderDX = Int64(frame.leaderX) - Int64(px)
-        let leaderDY = Int64(frame.leaderY) - Int64(py)
+        let leader = frame.leader(for: Int32(birds.subFlock[i]))
+        let leaderDX = Int64(leader.x) - Int64(px)
+        let leaderDY = Int64(leader.y) - Int64(py)
         let leaderF = normalizedScaled(leaderDX, leaderDY, params.leaderWeight)
         forceX += leaderF.x
         forceY += leaderF.y
-        if frame.windXQ != 0 || frame.windYQ != 0 {
-            let windF = normalizedScaled(Int64(frame.windXQ), Int64(frame.windYQ), params.windWeight)
+        let (windX, windY) = frame.wind(at: px, py)
+        if windX != 0 || windY != 0 {
+            let windF = normalizedScaled(Int64(windX), Int64(windY), params.windWeight)
             forceX += windF.x
             forceY += windF.y
         }
@@ -202,13 +264,29 @@ public func stepBirds(
 /// unparenthesized `x << 16 / m * w >> 16` would parse as `(x << 16 / m) *
 /// (w >> 16)` and truncate the weight to whole units (0.8 and 0.6 would
 /// become zero). Verified by BoidsTests.testLeaderForceMatchesWeight.
+///
+/// `x`/`y` are raw sums over the neighbor set, so their magnitude is not
+/// bounded a priori (an ultra-dense flock puts thousands of neighbors inside
+/// the alignment radius, each contributing a full Q16.16 velocity). Squaring
+/// such a sum overflows Int64, so the inputs are first down-shifted
+/// deterministically until each fits the squaring budget. The shift only
+/// engages for sums that would otherwise trap, costs at most a few low-order
+/// bits of direction precision, and is pure integer math (INV-3).
 @inline(__always)
 private func normalizedScaled(_ x: Int64, _ y: Int64, _ weight: Int32) -> (x: Int64, y: Int64) {
-    let magnitude = isqrt64(UInt64(x * x + y * y))
+    // (2^31 - 1)^2 * 2 < Int64.max, so sums within this bound square safely.
+    let safe: Int64 = 2_147_483_647
+    var sx = x
+    var sy = y
+    while sx > safe || sx < -safe || sy > safe || sy < -safe {
+        sx >>= 1
+        sy >>= 1
+    }
+    let magnitude = isqrt64(UInt64(sx * sx + sy * sy))
     guard magnitude > 0 else { return (0, 0) }
     let scale = Int64(weight)
-    return ((((x << 16) / magnitude) * scale) >> 16,
-            (((y << 16) / magnitude) * scale) >> 16)
+    return ((((sx << 16) / magnitude) * scale) >> 16,
+            (((sy << 16) / magnitude) * scale) >> 16)
 }
 
 /// Rescale a Q16.16 velocity to magnitude >= `target` (min-speed branch).
