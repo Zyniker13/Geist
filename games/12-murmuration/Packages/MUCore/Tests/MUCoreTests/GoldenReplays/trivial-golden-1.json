@@ -1,0 +1,39 @@
+{
+  "actions" : [
+    {
+      "action" : {
+        "increment" : {
+          "_0" : 5
+        }
+      },
+      "tick" : 0
+    },
+    {
+      "action" : {
+        "mix" : {
+          "_0" : 11936128518282651045
+        }
+      },
+      "tick" : 1
+    },
+    {
+      "action" : {
+        "increment" : {
+          "_0" : 2
+        }
+      },
+      "tick" : 2
+    },
+    {
+      "action" : {
+        "mix" : {
+          "_0" : 1
+        }
+      },
+      "tick" : 3
+    }
+  ],
+  "contentVersion" : 1,
+  "expectedHash" : 5522797076080035029,
+  "seed" : 42
+}

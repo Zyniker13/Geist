@@ -3,9 +3,9 @@
 This file is the single place to resume the program from. Keep every field below current after every meaningful step (see "Resuming After a Restart" in `ROADMAP.md`). Per-game detail (gate evidence and sign-offs) lives in each game's `docs/STATUS.md`.
 
 - **Current game:** Murmuration (`12-murmuration`)
-- **Phase:** P0 (Setup) — IN PROGRESS on `murmur/phase/P0-setup`; repo layout, project scaffolding, CI, and SwiftPM packages next. Night Market P10 is BLOCKED on the host CoreSimulator stack (SpringBoard rendering frozen, requires Mac reboot); will resume once the host reboots.
-- **Last done:** Night Market P9 merged (fd232c7, tag G9 pushed, CI green). Night Market P10 screenshots/preview video blocked on simulator stack.
-- **Next step:** Murmuration P0 — create the repo layout, project.yml, Makefile, SwiftPM packages, CI workflow, .swiftlint.yml, .swift-format, and initial test scaffolding.
+- **Phase:** P0 (Setup) — **GATE G0 PASSED** (2026-11-17). All checks green: SwiftPM 43/43 tests, lint 0, spike 3.63–3.84 ms ≤ 4 ms, kernel defects fixed (shift-precedence, world-edge avoidance, cruise floor, exact rescale).
+- **Last done:** G0 sign-off committed (1178db9). Merge to main, tag `murmur/gate-G0-pass`, CI check.
+- **Next step:** Murmuration P1 (rules engine: R-6/R-7 boids tasks, leader paths, energy, falcons, roosts).
 - **Blocked on:** Night Market P10 (simulator stack, host reboot needed); Murmuration P0 proceeds independently.
 
 ## Environment Check
@@ -33,7 +33,7 @@ If Xcode 27.2 or an iOS 26-or-later runtime is missing and cannot be installed w
 | Order | No. | Folder | Game | State | Last Gate | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | 04 | [`04-night-market`](games/04-night-market/ROADMAP.md) | Night Market | Blocked (P10) | `night-market/gate-G9-pass` | P10 screenshots/preview blocked on simulator stack (host reboot needed); Murmuration P0 starts |
-| 2 | 12 | [`12-murmuration`](games/12-murmuration/ROADMAP.md) | Murmuration | Not Started | — | — |
+| 2 | 12 | [`12-murmuration`](games/12-murmuration/ROADMAP.md) | Murmuration | In Progress (P1) | — | G0 passed (43 tests, 0 failures, lint 0, spike 3.63–3.84 ms ≤ 4 ms); P1: rules engine (boids tasks, leader paths, energy, falcons, roosts) |
 | 3 | 02 | [`02-orrery`](games/02-orrery/ROADMAP.md) | Orrery | Not Started | — | — |
 | 4 | 14 | [`14-beacon-coast`](games/14-beacon-coast/ROADMAP.md) | Beacon Coast | Not Started | — | — |
 | 5 | 13 | [`13-terrace`](games/13-terrace/ROADMAP.md) | Terrace | Not Started | — | — |
@@ -94,3 +94,4 @@ One line per meaningful step, newest last: date, phase or game and stage, what w
 - 2026-11-15: Night Market G8 gate closed: make test TEST SUCCEEDED on the final tree (first attempt failed only in the save/resume UI test after suites shared a booted sim — environment, erased and re-run clean), lint 0, color-blind review PASS, 600-customer 60 fps + 0.474 s cold start recorded. Tag night-market/gate-G8-pass; P9 release prep starts.
 - 2026-11-16: Night Market P10 blocked on host CoreSimulator stack (SpringBoard rendering frozen, app processes run but never draw). P9 merged (fd232c7), G9 tag pushed, CI green. Needs Mac host reboot to resume screenshots/preview video. Program moves to Murmuration P0.
 - 2026-11-16: Night Market P9 complete (beta prep): Release archives iOS + macOS (CODE_SIGNING_ALLOWED=NO, 0 errors), soak 6 maps × 500 nights illegal=0 (AUTOPILOT OK), balance re-sweep on the final build keeps the default ramp (ADR-0011), telemetry-free stats export in ProfileStore, beta notes + tester guide (docs/BETA.md), preview-video notes (docs/release/preview.md). Local make test wedged tonight (xcodebuild test-session deadlock on both simulators after a factory erase; builds + swift tests unaffected; concurrent foreign xcodebuild from another profile present during several wedges — documented in the game's harness notes); final-tree full suite runs on main CI (8a676a3). Tag night-market/gate-G9-pass pushed; P10 release polish next.
+- 2026-11-17: Murmuration P0 complete (setup): repo layout, project.yml (iOS + macOS targets), Makefile, CI workflow (murmuration.yml), 7 SwiftPM packages (MUCore/MUContent/MUAI/MURender/MUAudio/MUPlatform/MUMeta), lint configs. All 43 SwiftPM tests green, lint 0, spike 3.63–3.84 ms ≤ 4 ms. Kernel defects fixed (shift-precedence, world-edge avoidance, cruise floor, exact rescale). G0 passed; merged to main, tag `murmur/gate-G0-pass` pending.

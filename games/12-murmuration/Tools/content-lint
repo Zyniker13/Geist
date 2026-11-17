@@ -1,0 +1,18 @@
+#!/bin/bash
+# S0.3 skeleton: every JSON under Resources/Content must parse; content schemas arrive
+# with the region catalog (P3), at which point this becomes a real validator.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+errors=0
+count=0
+while IFS= read -r -d '' file; do
+  count=$((count + 1))
+  if ! python3 -c "import json,sys; json.load(open(sys.argv[1]))" "$file" > /dev/null 2>&1; then
+    echo "content-lint: invalid JSON: $file"
+    errors=$((errors + 1))
+  fi
+done < <(find Resources/Content -name '*.json' -type f -print0 2>/dev/null)
+
+echo "content-lint: ${count} files, ${errors} errors"
+[ "$errors" -eq 0 ]
