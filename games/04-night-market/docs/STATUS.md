@@ -170,7 +170,7 @@ AUTOPILOT OK illegal=0 across 6 maps × 500 nights
 - `make test`: **exit 0, `** TEST SUCCEEDED **`** (2026-11-17 14:06) — standalone SwiftPM suites green, in-app host suites green (`NMCoreTests.xctest` passed 14:04:01, `NMContentTests.xctest` passed 14:04:44), iPad UI suite **5 tests, 0 failures in 64.5 s** (fastest recorded on this stack; the rebooted host also cleared the P9-era `xcodebuild` test-session wedge). Log `/tmp/nm-p10-make-test.log`.
 - Release archives (iOS + macOS, `CODE_SIGNING_ALLOWED=NO`), soak, balance re-sweep, stats export, beta notes: completed at P9 and unchanged since (P10 changed docs, release scripts, and captured assets only).
 - **Sign-off:** GLM-SELF, on the evidence above.
-- **Remaining (owner-only):** TestFlight upload and App Store Connect asset placement — filed as the release maintainer issue (see link below).
+- **Remaining (owner-only):** TestFlight upload and App Store Connect asset placement — filed as [issue #12](https://github.com/Zyniker13/Geist/issues/12).
 
 ## P8 (Polish, Accessibility, and Performance) — COMPLETE, tagged `night-market/gate-G8-pass`
 
