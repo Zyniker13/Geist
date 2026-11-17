@@ -1,27 +1,35 @@
-# Night Market — App Preview Video (P10 draft)
+# Night Market — App Preview Video (P10 capture)
 
 Captured by the build agent with `simctl io recordVideo` on the
 13-inch iPad Pro simulator (see `Tools/release-preview.sh`). Upload,
 trimming, and App Store Connect asset placement are maintainer items.
 
-## What the capture shows
+## What the capture shows (frame-probed)
 
-- A fresh launch straight into a night: the auto-built walkway lane
-  fills from the gates toward the stalls.
-- Customer flow through the lane with steam and lantern glow at full
-  night lighting; rain passes mid-capture on the default scenario.
-- The HUD (clock, budget, queue badges) updating live.
+- `0:00–0:10` — iPad home screen: recording starts before the app
+  launches. **Trim this lead-in for any App Store cut.**
+- `0:10` — fresh launch straight into a Taipei night (UI-test
+  autochoose): stalls lit, lantern glow, first customers arriving.
+- `0:30` — early night (18:18, 3 visitors): stall cluster lit, glow
+  over the plot.
+- `0:45` — the auto-built walkway lane filling from the gates toward
+  the stalls (12/30 placed), visitor dots walking the path.
+- `0:55` — mid night (18:43, Score 4, Walkway 12/30, 5 visitors):
+  walkway, stalls, seating, lantern glow all live.
 
-## Specs
+Rain is scenario-scripted and verified on-sim in the P2/P6 evidence,
+but no rain appears inside this 55 s gameplay window — do not promise
+rain in the trimmed preview.
+
+## Specs (measured from the committed file)
 
 - Device: iPad Pro 13-inch (M5) simulator, portrait.
-- Codec: H.264 (`--codec h264`), as recorded by `simctl io`.
-- Length: ~65 s of a single night, captured 10 s after recording start
-  so the app is already on the market scene.
-- App Store preview target: 15–30 s. Trimming to the first ~25 s of
-  gameplay (the lane build plus the first crowd wave) is the recommended
-  maintainer edit; no audio track is required (the procedural
-  soundtrack is in-app only and not captured by `simctl io`).
+- Codec: H.264 High, yuv420p, 2064×2752, ~1187 kb/s, 65.29 s total
+  (`ffprobe`/`ffmpeg -i` output).
+- App Store preview target: 15–30 s. Recommended maintainer edit: cut
+  `0:10–0:35` (launch + first crowd wave + lane build); no audio track
+  is required (the procedural soundtrack is in-app only and not
+  captured by `simctl io`).
 
 ## How it was produced
 

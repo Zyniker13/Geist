@@ -140,14 +140,37 @@ AUTOPILOT OK illegal=0 across 6 maps × 500 nights
 - **Crash-free ≥ 99.5%; no S1/S2 (SUBSTITUTED per §8.2 — real beta needs TestFlight):** 3,000 scripted nights (six maps × 500) with zero crashes, zero illegal states, zero invariant breaks (`AUTOPILOT OK illegal=0`); NMCore 123/123; NMContent suites green (both tonight, final tree); UI suite 5 tests / 0 failures on the G8-era tree (667 s, 2026-11-15) — the only app-side change since is the additive, unit-covered `ProfileStore.exportStats()`; the final-tree full suite is exercised by branch CI `make test` on a clean runner (see CI SHA below). Tonight's local UI re-run was blocked by the documented `xcodebuild` wedge (harness notes above). No S1/S2 class defect observed in any run this phase. Issue #9 records the real-device/sandbox verification the substitute cannot cover.
 - **Sign-off:** GLM-SELF, on the evidence above.
 
-## P10 (Release Polish and Wrap-Up) — BLOCKED (simulator stack frozen)
+## P10 (Release Polish and Wrap-Up) — COMPLETE, tag `night-market/gate-G10-pass`
 
-- **Status:** blocked on the host CoreSimulator stack — SpringBoard rendering frozen (blank icons, status bar clock stuck, app processes run but never draw). Requires a Mac host reboot to recover.
+- **Status:** complete 2026-11-17. Simulator stack recovered (host rebooted overnight; recovery ladder from issue #10 applied on top: `simctl shutdown all` → CoreSimulatorService restart → one fresh boot of iPad Pro 13-inch (M5) `EE7C4629-CD3E-4312-ADE1-920B9B615417` → `bootstatus -b`).
 - **Spec:** ROADMAP.md §P10 — screenshots (launcher, gameplay, results), preview video, release kit final check, G10 tag, TestFlight/release maintainer issue.
-- **What's ready:** iOS + macOS release archives (P9), soak (6×500 nights), balance re-sweep, stats export, beta notes + tester guide (docs/BETA.md), preview-video notes (docs/release/preview.md), release kit assembled. All P0–P9 gates green.
-- **What's stuck:** release-screens.sh and release-preview.sh both require the iPad sim to render. The Mac app (NM-macOS) builds and runs fine — screenshots could be captured on Mac, but App Store requires device-specific iPad shots.
-- **Next step (after host reboot):** one fresh boot → serial install + launch + screenshot cycle (one operation at a time, 45s settle gaps) → release-screens.sh → release-preview.sh → G10 tag → release maintainer issue → Murmuration P0.
-- **Maintainer issues:** #9 (Game Center/iCloud sandbox + Pencil hardware), #6 (Mac UI-test automation), #8 (fps-target confirmation), plus a new P10 blocker issue for the simulator stack and release assets.
+
+### Simulator-stack recovery evidence (2026-11-17)
+
+- Rendering probe on the fresh boot: screenshot at 13:49:01 and a second at 13:49:24 are byte-identical (status-bar clock has minute resolution — inconclusive); a third shot at 13:50:06, taken after the minute rolled over, differs (`md5 ab22aab1…` → `981c654d…`) → **the status bar clock advances; SpringBoard renders**.
+- Visual check of the probe: app icons with real artwork, wallpaper, News/Calendar/Reminders widgets populated, status bar "1:49 PM Tue Nov 17", battery 100 — not the frozen blank SpringBoard from 2026-11-16.
+
+### Screenshots (docs/release/screenshots/, verified by frame inspection)
+
+- `01-launcher.png` — the NewNightMenu launcher ("Tonight's Market": Daily Challenge *Oaxaca · Generous budget*, Weekly Challenge *Taipei · Small queues*, six-city ladder Taipei→Oaxaca with locks and score gates, assist/high-contrast/stats toggles) over a fresh 18:03 board, Score 0, Walkway 0/30.
+- `02-market.png` — mid-night gameplay at 18:43: stall cluster (green/amber/red lit, purple/orange dim), lantern glow, visitor dots on the walkway, HUD Score 3, Walkway 12/30, 5 visitors.
+- `03-high-contrast.png` — high-contrast night at 18:18: thick saturated stall outlines, bordered toolbar buttons, max-contrast text — styling visibly active.
+- `04-results.png` — end-of-night modal at 06:00: "Night survived! / Served 0 customers / Final score 0 / 🥉 Opening Night, In It For The Long Haul, Cool Under Pressure / Next night", 287 visitors.
+- **Script fix found and made during capture:** the first pass captured gameplay in `01-launcher` — any `-uitest-*` launch argument suppresses the launcher (`GameScreen.onAppear`: `showLauncher = wantsLauncher || (!underUITest && !game.hasSave)`), and the script launched shot 1 with `-uitest-fresh`. Fixed `Tools/release-screens.sh` to launch the launcher shot bare on the fresh install; re-ran clean.
+
+### Preview video (docs/release/preview.mp4, frame-probed)
+
+- `Tools/release-preview.sh` run: 9,692,999 bytes, **65.29 s**, 2064×2752, H.264 High yuv420p ~1187 kb/s.
+- Frames probed at 5/30/45/55 s: 0–10 s is the home screen (recording starts before launch), then a live Taipei night — stalls lit with glow at 18:18, walkway lane filling 12/30 at 18:33 with visitor dots on the path, 18:43 Score 4 / 5 visitors. No rain in this window (scripted rain verified on-sim in P2/P6; the trimmed cut must not promise it).
+- `docs/release/preview.md` updated with the measured specs and the recommended maintainer trim (cut `0:10–0:35`; App Store target 15–30 s).
+
+### G10 checks
+
+- `make lint`: **exit 0** — SwiftLint strict 0 violations in 86 files; content-lint OK (6 maps, 8 upgrade kinds, 3 schedules, 6 tutorial steps); swift-format emits pre-existing style warnings (exit 0, unchanged since P7 — warnings do not fail the gate).
+- `make test`: **exit 0, `** TEST SUCCEEDED **`** (2026-11-17 14:06) — standalone SwiftPM suites green, in-app host suites green (`NMCoreTests.xctest` passed 14:04:01, `NMContentTests.xctest` passed 14:04:44), iPad UI suite **5 tests, 0 failures in 64.5 s** (fastest recorded on this stack; the rebooted host also cleared the P9-era `xcodebuild` test-session wedge). Log `/tmp/nm-p10-make-test.log`.
+- Release archives (iOS + macOS, `CODE_SIGNING_ALLOWED=NO`), soak, balance re-sweep, stats export, beta notes: completed at P9 and unchanged since (P10 changed docs, release scripts, and captured assets only).
+- **Sign-off:** GLM-SELF, on the evidence above.
+- **Remaining (owner-only):** TestFlight upload and App Store Connect asset placement — filed as the release maintainer issue (see link below).
 
 ## P8 (Polish, Accessibility, and Performance) — COMPLETE, tagged `night-market/gate-G8-pass`
 
