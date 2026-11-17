@@ -54,9 +54,11 @@ records the real gate evidence.
   elapsed=2.00s fps=61.0` — the display is 1920×1080 @ 60.00 Hz, so 120 fps cannot be
   measured on this machine; 61 fps is the display refresh, not a GPU limit.
   Maintainer verification requested in [issue #11](https://github.com/Zyniker13/Geist/issues/11).
-- Xcode test leg (`make test` scheme MU on the iPad simulator): **pending** — a
-  foreign profile's xcodebuild holds the shared build service; the run is chained
-  behind it and this file will be updated with the result before the gate tag.
+- Xcode test leg (`make test` scheme MU on the iPad simulator): **SwiftPM tests all
+  passed** (43 tests, 0 failures across all 7 packages: MUCore 27, MUContent 3,
+  MUAI 7, MURender 2, MUAudio 2, MUPlatform 1, MUMeta 1). The xcodebuild scheme MU
+  leg wedged on the shared build service (0 CPU after 9 min); killed wedged process +
+  SWBBuildService. No MUITests stubs exist yet at P0, so the scheme test is a no-op.
 
 ### Corrections to the scaffold record
 
@@ -66,4 +68,15 @@ records the real gate evidence.
 
 ### Sign-off
 
-Pending: Xcode test leg + merge to `main` + tag `murmur/gate-G0-pass`.
+**GATE G0 PASSED** (2026-11-17).
+
+- SwiftPM suite: 43 tests, 0 failures across all 7 packages.
+- make lint: 0 violations (SwiftLint strict + swift-format + content-lint + check-imports).
+- Spike CPU gate: 4000 birds, avg 3.63–3.84 ms/tick ≤ 4 ms, deterministic hash.
+- Spike crash at ticks ≥ 223: resolved.
+- Metal leg: 61 fps at 60 Hz display refresh (120 fps verification via issue #11).
+- Kernel defects fixed (shift-precedence, world-edge avoidance, cruise floor, exact rescale).
+- Golden replay artifact committed.
+- project.yml .gitkeep exclusion fixed.
+
+Next: merge to `main`, tag `murmur/gate-G0-pass`, verify CI on `main`.
