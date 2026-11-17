@@ -78,17 +78,23 @@ public func computeFeeding(state: inout GameState, rng: inout SeededRNG) -> [Ene
     for fieldIdx in 0..<state.fields.count {
         var field = state.fields[fieldIdx]
 
-        // Find sub-flocks with birds in this field.
-        var subFlocksInField: Set<UInt8> = []
+        // Find sub-flocks with birds in this field, in ascending flock order.
+        // INV-3: a Set's iteration order is not guaranteed, and the shared
+        // depletion cap makes feed outcomes order-dependent (the last units
+        // in a nearly-full field go to whichever flock is visited first), so
+        // the candidate list must be a deterministically ordered array.
+        var subFlocksInField: [UInt8] = []
         for (birdIdx, assignment) in state.subFlockAssignments.enumerated() {
             let bx = state.birds.posX[birdIdx]
             let by = state.birds.posY[birdIdx]
             let dx = bx - field.centerX
             let dy = by - field.centerY
-            if dx * dx + dy * dy <= field.radius * field.radius {
-                subFlocksInField.insert(assignment)
+            if dx * dx + dy * dy <= field.radius * field.radius,
+               !subFlocksInField.contains(assignment) {
+                subFlocksInField.append(assignment)
             }
         }
+        subFlocksInField.sort()
 
         for sf in subFlocksInField where field.currentDepletion < field.maxDepletion {
             // Feed: gain energy proportional to bird count and field richness.
@@ -138,9 +144,10 @@ public func computeGrowth(state: inout GameState, rng: inout SeededRNG) -> [Ener
                     let dx = Int32(rng.next(upperBound: 50)) - 25
                     let dy = Int32(rng.next(upperBound: 50)) - 25
                     let speed = state.boidsParams.minSpeed
-                    let angle = Int32(rng.next(upperBound: 360))
-                    let cosA = (Int64(cosLookup(angle)) * Int64(speed)) >> 16
-                    let sinA = (Int64(sinLookup(angle)) * Int64(speed)) >> 16
+                    let angle = Int32(rng.next(upperBound: IntTrig.turns))
+                    let unit = unitVectorQ16(angle)
+                    let cosA = (Int64(unit.x) * Int64(speed)) >> 16
+                    let sinA = (Int64(unit.y) * Int64(speed)) >> 16
                     state.birds.append(x: cx + dx, y: cy + dy, velXQ: Int32(cosA), velYQ: Int32(sinA), subFlock: UInt8(sf))
                     state.subFlockAssignments.append(UInt8(sf))
                 }
@@ -155,33 +162,49 @@ public func computeGrowth(state: inout GameState, rng: inout SeededRNG) -> [Ener
 }
 
 /// Compute starvation: zero energy kills birds.
-/// R-9: 1% per 10 ticks at 0 energy.
+/// R-9: at 0 energy, 1% of the flock drops out per 10 ticks (applyTick calls
+/// this every `GameState.starvationRate` ticks). Exactly `birdCount / 100`
+/// birds die (floor), chosen by the seeded RNG; every other sub-flock is
+/// untouched, so the bird and assignment arrays stay aligned.
 public func computeStarvation(state: inout GameState, rng: inout SeededRNG) -> [EnergyEvent] {
     var events: [EnergyEvent] = []
 
     for sf in 0..<Int(state.subFlockCount) where state.energy[sf] <= 0 {
         let birdCount = countBirdsInFlock(assignments: state.subFlockAssignments, subFlock: UInt8(sf))
-        let deathRate = birdCount / GameState.starvationRate // 1% per 10 ticks
-        if deathRate > 0 {
-            // Remove random birds from this flock: survivors are collected and
-            // the flock arrays are rebuilt without them.
-            var remaining: [(Int32, Int32, Int32, Int32)] = []
-            for (i, assignment) in state.subFlockAssignments.enumerated() where UInt8(sf) == assignment {
-                if rng.next(upperBound: birdCount) < deathRate {
-                    continue
-                }
-                remaining.append((state.birds.posX[i], state.birds.posY[i], state.birds.velX[i], state.birds.velY[i]))
-            }
+        let deathRate = birdCount / 100
+        guard deathRate > 0 else { continue }
 
-            // Rebuild the bird arrays.
-            state.birds = BirdSoA(capacity: remaining.count)
-            state.subFlockAssignments = state.subFlockAssignments.filter { $0 != UInt8(sf) }
-            for (posX, posY, velX, velY) in remaining {
-                state.birds.append(x: posX, y: posY, velXQ: velX, velYQ: velY, subFlock: UInt8(sf))
-            }
-
-            events.append(.starve(subFlock: UInt8(sf), deadBirds: deathRate))
+        // Choose exactly `deathRate` members of this flock to die.
+        var members: [Int] = []
+        members.reserveCapacity(birdCount)
+        for i in 0..<state.subFlockAssignments.count where state.subFlockAssignments[i] == UInt8(sf) {
+            members.append(i)
         }
+        var kill = Set<Int>()
+        let target = min(deathRate, members.count)
+        while kill.count < target {
+            let victim = members[Int(rng.next(upperBound: UInt64(members.count)))]
+            kill.insert(victim)
+        }
+
+        // Rebuild the arrays with every non-killed bird, in index order.
+        var birds = BirdSoA(capacity: state.birds.count - kill.count)
+        var assignments: [UInt8] = []
+        assignments.reserveCapacity(state.birds.count - kill.count)
+        for i in 0..<state.birds.count where !kill.contains(i) {
+            birds.append(
+                x: state.birds.posX[i],
+                y: state.birds.posY[i],
+                velXQ: state.birds.velX[i],
+                velYQ: state.birds.velY[i],
+                subFlock: state.subFlockAssignments[i]
+            )
+            assignments.append(state.subFlockAssignments[i])
+        }
+        state.birds = birds
+        state.subFlockAssignments = assignments
+
+        events.append(.starve(subFlock: UInt8(sf), deadBirds: deathRate))
     }
 
     return events

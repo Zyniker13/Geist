@@ -83,32 +83,32 @@ public func applyTick(to state: GameState, rng: inout SeededRNG) -> (GameState, 
     var state = state
     var events: [GameEvent] = []
 
+    // 0. Regenerate the wind field every 600 ticks (R-1: per-256-cell seeded
+    // vectors, changing every 20 seconds at 30 Hz).
+    if state.tick % GameState.windRegenTicks == 0 {
+        let generation = state.tick / GameState.windRegenTicks
+        let (wx, wy) = GameState.windField(
+            generation: generation, seed: state.seed, windSeedOffset: state.windSeedOffset,
+            worldWidth: state.worldWidth, worldHeight: state.worldHeight
+        )
+        state.windCellsX = wx
+        state.windCellsY = wy
+    }
+
     // 1. Run boid simulation (R-6, R-7).
-    var boidsFrame = BoidsFrame(
+    let boidsFrame = BoidsFrame(
         leaderX: 0, leaderY: 0,
         windXQ: 0, windYQ: 0,
         worldWidth: state.worldWidth,
-        worldHeight: state.worldHeight
+        worldHeight: state.worldHeight,
+        leadersX: state.leaderPaths.map { $0.attractor().x },
+        leadersY: state.leaderPaths.map { $0.attractor().y },
+        windCellsX: state.windCellsX,
+        windCellsY: state.windCellsY,
+        windGridCols: Int32(max(1, Int(state.worldWidth) / GameState.windCellSize)),
+        windGridRows: Int32(max(1, Int(state.worldHeight) / GameState.windCellSize)),
+        windCellSize: Int32(GameState.windCellSize)
     )
-
-    // Update leader attractors.
-    for sfIdx in state.leaderPaths.indices {
-        let path = state.leaderPaths[sfIdx]
-        let attractor = path.attractor(for: UInt8(sfIdx), at: state.tick)
-        if sfIdx == 0 {
-            boidsFrame.leaderX = attractor.x
-            boidsFrame.leaderY = attractor.y
-        }
-    }
-
-    // Update wind (changes every 600 ticks = 20 seconds at 30 Hz).
-    let windCycle = state.tick % 600
-    let windAngle = Double(windCycle) * 0.1 + Double(state.windSeedOffset)
-    let windMag: Double = 0.3
-    boidsFrame.windXQ = Int32(cos(windAngle) * windMag * 65536)
-    boidsFrame.windYQ = Int32(sin(windAngle) * windMag * 65536)
-    boidsFrame.worldWidth = state.worldWidth
-    boidsFrame.worldHeight = state.worldHeight
 
     // Rebuild spatial hash.
     let tRebuild = TickProfiler.start()
@@ -116,27 +116,26 @@ public func applyTick(to state: GameState, rng: inout SeededRNG) -> (GameState, 
     sh.rebuild(posX: state.birds.posX, posY: state.birds.posY, count: state.birds.count)
     TickProfiler.accumulate(&TickProfiler.rebuildNs, tRebuild)
 
-    // Step boids.
+    // Step boids. R-4: an active condense doubles cohesion for its duration.
     let tBoids = TickProfiler.start()
     stepBirds(
         birds: &state.birds,
         hash: &sh,
         frame: boidsFrame,
-        params: state.boidsParams
+        params: effectiveParams(state)
     )
     TickProfiler.accumulate(&TickProfiler.boidsNs, tBoids)
     if TickProfiler.enabled { TickProfiler.ticks &+= 1 }
     events.append(.boidStep(tick: state.tick, birdCount: state.birds.count))
+    state.spatialHash = sh
 
-    // 2. Advance leader paths (R-3).
+    // 2. Advance leader paths (R-3): the leader point moves along its path at
+    // the flock's max speed, then circles its last position (R-4).
     let tRules = TickProfiler.start()
+    let leaderSpeed = Int32(state.boidsParams.maxSpeed >> 16)
     for sfIdx in 0..<state.leaderPaths.count {
         var path = state.leaderPaths[sfIdx]
-        let reached = path.advance(
-            targetX: state.birds.posX[0],
-            targetY: state.birds.posY[0],
-            speed: 60
-        )
+        let reached = path.advance(speed: leaderSpeed)
         if reached {
             events.append(.leaderPath(subFlock: UInt8(sfIdx), waypointReached: path.currentTarget))
         }
@@ -161,17 +160,25 @@ public func applyTick(to state: GameState, rng: inout SeededRNG) -> (GameState, 
         }
     }
 
-    let starveEvents = computeStarvation(state: &state, rng: &rng)
-    for e in starveEvents {
-        events.append(.energy(e))
-        if case .starve(_, let count) = e {
-            events.append(.birdCountChange(delta: -count))
+    // R-9 starvation: 1% of the flock per 10 ticks at zero energy.
+    if state.tick % GameState.starvationRate == 0 {
+        let starveEvents = computeStarvation(state: &state, rng: &rng)
+        for e in starveEvents {
+            events.append(.energy(e))
+            if case .starve(_, let count) = e {
+                events.append(.birdCountChange(delta: -count))
+            }
         }
     }
 
     // 4. Falcons (R-10, R-11).
     let falconEvents = computeFalcons(state: &state, rng: &rng)
-    for e in falconEvents { events.append(.falcon(e)) }
+    for e in falconEvents {
+        events.append(.falcon(e))
+        if case .forcedSplit(let sf) = e {
+            events.append(.split(from: sf, into: sf == 0 ? 1 : 0))
+        }
+    }
 
     // 5. Condense/cooldown (R-4).
     if state.condenseActive > 0 {
@@ -184,44 +191,80 @@ public func applyTick(to state: GameState, rng: inout SeededRNG) -> (GameState, 
         state.condenseCooldown -= 1
     }
 
-    // 6. Sub-flock merge check (R-5).
-    if state.subFlockCount > 1 && state.tick % GameState.mergeCheckInterval == 0 {
-        // Check if sub-flocks are close enough to merge.
-        var shouldMerge = false
-        for sf0 in 0..<Int(state.subFlockCount) - 1 {
-            for sf1 in sf0 + 1..<Int(state.subFlockCount) {
-                let (cx0, cy0) = centroidOfFlock(birds: state.birds, assignments: state.subFlockAssignments, subFlock: UInt8(sf0))
-                let (cx1, cy1) = centroidOfFlock(birds: state.birds, assignments: state.subFlockAssignments, subFlock: UInt8(sf1))
-                let dx = cx0 - cx1
-                let dy = cy0 - cy1
-                if dx * dx + dy * dy < GameState.mergeProximity * GameState.mergeProximity {
-                    shouldMerge = true
-                }
-            }
-        }
-        if shouldMerge {
-            // Merge all into sub-flock 0 (R-5): one event per merged sub-flock,
-            // reporting the sub-flock that was merged away.
-            var merged: Set<UInt8> = []
-            for i in state.subFlockAssignments.indices where state.subFlockAssignments[i] != 0 {
-                let from = state.subFlockAssignments[i]
-                state.subFlockAssignments[i] = 0
-                if !merged.contains(from) {
-                    merged.insert(from)
-                    events.append(.merge(into: 0, from: from))
-                }
-            }
-        }
-    }
+    // 6. Sub-flock merge (R-5).
+    let mergeEvents = computeMerge(state: &state)
+    events.append(contentsOf: mergeEvents)
 
-    // 7. Day end check.
+    // 7. Roost claims during dusk (R-12) and the day-end tally (R-13).
+    let roostEvents = computeRoostClaims(state: &state)
+    for e in roostEvents { events.append(.roost(e)) }
+
+    // 8. Day end check.
     TickProfiler.accumulate(&TickProfiler.rulesNs, tRules)
     state.tick += 1
     if state.tick >= GameState.dayTicks {
         events.append(.dayEnd(tick: state.tick))
+        let (tallyEvents, victory) = checkVictory(state: &state)
+        for e in tallyEvents { events.append(.roost(e)) }
+        if let victory = victory {
+            events.append(.roost(victory))
+            events.append(.victory(winner: winnerOf(victory)))
+        }
     }
 
     return (state, events)
+}
+
+/// Map a roost victory event onto the GameEvent winner encoding (0 player,
+/// 1 rival).
+private func winnerOf(_ event: RoostEvent) -> Int {
+    if case .victory(let winner) = event { return winner }
+    return -1
+}
+
+/// The boids parameters in effect for the current tick (R-4): an active
+/// condense doubles cohesion for its remaining duration. Pure function so
+/// the doubling is unit-testable and applies identically in- and outside
+/// the reducer.
+public func effectiveParams(_ state: GameState) -> BoidsParams {
+    var params = state.boidsParams
+    if state.condenseActive > 0 {
+        params.cohWeight = Int32(clamping: Int64(params.cohWeight) * Int64(GameState.condenseCohesionMultiplier))
+    }
+    return params
+}
+
+/// Sub-flock merge (R-5): the sub-flock centroids must stay within 200 units
+/// for 30 consecutive ticks; then all birds merge into sub-flock 0. Pure
+/// function of the state so the streak is unit-testable.
+public func computeMerge(state: inout GameState) -> [GameEvent] {
+    var events: [GameEvent] = []
+    guard state.subFlockCount > 1 else {
+        state.mergeProximityStreak = 0
+        return events
+    }
+    let (cx0, cy0) = centroidOfFlock(birds: state.birds, assignments: state.subFlockAssignments, subFlock: 0)
+    let (cx1, cy1) = centroidOfFlock(birds: state.birds, assignments: state.subFlockAssignments, subFlock: 1)
+    let dx = cx0 - cx1
+    let dy = cy0 - cy1
+    if dx * dx + dy * dy < GameState.mergeProximity * GameState.mergeProximity {
+        state.mergeProximityStreak += 1
+    } else {
+        state.mergeProximityStreak = 0
+        return events
+    }
+    guard state.mergeProximityStreak >= GameState.mergeThresholdTicks else { return events }
+    state.mergeProximityStreak = 0
+    var merged: Set<UInt8> = []
+    for i in state.subFlockAssignments.indices where state.subFlockAssignments[i] != 0 {
+        let from = state.subFlockAssignments[i]
+        state.subFlockAssignments[i] = 0
+        if !merged.contains(from) {
+            merged.insert(from)
+            events.append(.merge(into: 0, from: from))
+        }
+    }
+    return events
 }
 
 /// Apply a player action to the game state.

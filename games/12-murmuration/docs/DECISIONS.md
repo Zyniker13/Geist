@@ -109,3 +109,25 @@ Architecture decision records. Every deviation from the roadmap is recorded here
   at game densities; emergent balance is revisited at the P8 balance pass.
   Regression: `testUltraDenseFlockAlignmentSumDoesNotOverflow` (2,700 co-located
   birds at max speed — trapped before both fixes).
+
+## ADR-0007 — Feeding candidates iterate in ascending flock order
+
+- **Status:** Accepted (P1)
+- **Context:** `computeFeeding` collected the sub-flocks with birds inside a
+  field into a `Set<UInt8>` and iterated it. A field's depletion is a shared,
+  capped pool: when the field is nearly full, the residual capacity goes to
+  whichever flock the loop visits first (the second flock's `where
+  currentDepletion < maxDepletion` then fails). Swift sets iterate in an
+  unspecified order that is not guaranteed stable, so two identical runs of the
+  same seed could award the same residual units to different flocks — caught as
+  a two-run energy divergence in `testReducerDeterministic`
+  (`[676,724]` vs `[674,726]` from tick 2 onward, birds bit-identical).
+- **Decision:** Feeding candidates are collected into an array and sorted
+  ascending before the feed loop; the residual therefore always goes to the
+  lowest-numbered flock present in the field. Set iteration may only be used
+  where order cannot affect the outcome (membership tests), never for
+  order-sensitive rules phases.
+- **Consequences:** INV-3 holds for the energy phase; the tie-break rule
+  (lowest flock wins a contested residual) is deterministic and pinned by
+  `testR8FeedingResidualGoesToLowestFlock`. Rival-flock claiming in P4 must
+  preserve this ordering rule.

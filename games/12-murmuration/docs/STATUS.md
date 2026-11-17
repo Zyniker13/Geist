@@ -123,22 +123,100 @@ unless both hashes match. `--progress N` prints tick state to stderr.
   avgTick=0.779ms, same hash). **PASS** with 2.6× headroom.
 
 **Determinism (INV-3, tool-level):** both full days in one process produce
-`finalHash=7e94d1021c3a13a1`, `deterministic=true`. Cross-process/cross-device
-checkpoint-hash evidence is the G1 gate item (Checkpoint.swift), not yet run.
+`finalHash=7e94d1021c3a13a1`, `deterministic=true` (superseded below — the
+P1.2–P1.5 rules pass changed trajectories; the current hash is recorded under
+the G1 gate evidence).
 
 **Tests:** `swift test --package-path Packages/MUCore`: **Executed 50 tests, with
 0 failures** (49 pre-existing + the new dense-flock regression; BoidsTests 7/7).
 
-### Known items for MU-P1.2 (leader paths, splits, condense, merges)
+### MU-P1.2–P1.5 rules engine completion (R-1…R-13)
 
-- Merge event emission was fixed early (one `.merge` per merged sub-flock, `from`
-  captured before the assignment is zeroed — previously one event per bird with
-  `from` always 0); the tagged R-5 merge test still belongs to MU-P1.2.
-- Lint debt from the first P1 commits cleared (for_where, shorthand_operator,
-  unused_enumerated, type_body_length via the Energy tests split into
-  EnergyRuleTests.swift); `make lint` 0 violations, 50/50 tests green.
+**Implementation:**
 
-### Next
+- `IntTrig` (Foundation/IntTrig.swift): 1024 binary degrees, precomputed Q16.16
+  sine table, `unitVectorQ16` — the integer-trig mandate (ADR-0002) replacing all
+  Double trig in rules math.
+- `LeaderPath` rewrite (R-3/R-4): the leader point traverses waypoints at the
+  flock's max speed, fires waypoint events, and circles its last position after
+  path completion; an empty path rests the attractor at the world center.
+- `Falcon` rewrite (R-10/R-11): patrol circle around the world center, dive
+  targets the lowest-density edge member inside the engage radius, kill budget
+  scales with local density, a dive through the centroid region forces a split;
+  the density metric uses the alignment radius (64) and dense flocks
+  (avg neighbors ≥ 10) halve dive success.
+- `Roost` rewrite (R-12/R-13): dusk majority accrual (one claim point per tick
+  to the strict majority holder, ties accrue nothing), `.claim` emitted on
+  majority change; day-end tally by claim points with exact-tie roosts left
+  unclaimed and the birds-alive tiebreak for the day.
+- `Energy`: starvation now kills exactly `birdCount / 100` of the starving
+  flock (floor) chosen by the seeded RNG, preserving every other flock (the old
+  version rebuilt the arrays from only the starving flock's survivors); feeding
+  candidates are collected in deterministic ascending flock order (see
+  regression 2 below).
+- `Reducer`: wind grid regenerates every 600 ticks pre-tick (R-1); boids step
+  with per-sub-flock leader attractors and per-cell wind vectors (R-1/R-3);
+  `effectiveParams(_:)` extracted so the R-4 condense doubling is unit-testable;
+  merges emit one `.merge(into:from:)` per merged sub-flock (R-5).
 
-MU-P1.2: leader paths, splits, condense, merges (R-3 to R-5) — fix the merge
-event emission, add tagged R-3/R-4/R-5 tests.
+**Regressions found and fixed during the pass (each with a test):**
+
+1. **Falcon kill-loop stale index (crash):** victims were removed in
+   distance-sorted order while the arrays shrank, so a later candidate could
+   index past the end (`testR3WaypointReachedEventsFire` trapped). Victims are
+   now removed highest-index-first.
+2. **Feeding candidate order broke INV-3 (flaky divergence):** the candidate
+   list was a `Set<UInt8>`; with a nearly-full field the residual capacity goes
+   to whichever flock the Set visits first, and Swift gives no iteration-order
+   guarantee — two identical runs of the same seed diverged in energy
+   (`[676,724]` vs `[674,726]` at tick 2, stable to tick 100). The candidate
+   list is now an ascending-sorted array; residual units always go to the
+   lowest flock (`testR8FeedingResidualGoesToLowestFlock`,
+   `testReducerDeterministic` pins two-run equality over 100 ticks).
+
+**S1.2 tagged tests + invariants:** every rule test names its rule ID. R-1
+(per-cell seeded wind, 600-tick regen), R-2 (day/dusk), R-3 (max-speed
+traversal, waypoint events), R-4 (condense ×2 via `effectiveParams`, cooldown,
+circling), R-5 (30-tick merge proximity, streak reset), R-6 (leader force
+weight, leader A/B, dense-flock overflow), R-7 (speed clamps with the
+decelerating-force exception), R-8 (drain, feeding, residual race), R-9
+(growth, starvation cadence), R-10 (dive radius, lowest-density targeting,
+kill cap), R-11 (density metric, halved success), R-12 (dusk accrual, no
+pre-dusk claims), R-13 (roost victory, point tie unclaimed, birds tiebreak);
+INV-1 (bird count changes only via count events), INV-2 (world bounds),
+INV-3 (step determinism + reducer two-run equality), INV-4 (hash vs brute
+force on 1,000 configurations, cell membership and ordering).
+Suite: **Executed 67 tests, with 0 failures.**
+
+**S1.4 golden replays:** `GameReplay` records (seed, contentVersion, world,
+timed actions, final hash) with `runReplay(_:)` and a stale-contentVersion
+guard; `sim --golden 20 --golden-out <dir>` generates deterministic per-seed
+action scripts (leader path, condense, second path, split + second-flock path,
+late condense; flock sizes 200–960). 20 records committed to
+`Tests/MUCoreTests/GoldenReplays/golden-01..20.json` (contentVersion 2);
+`EngineGoldenReplayTests` replays all 20 to their stored hashes and asserts a
+stale record fails loudly. Behavior-affecting engine changes now bump
+`GameState.replayContentVersion` and regenerate.
+
+### GATE G1 evidence (real outputs)
+
+- Tagged tests/invariants/coverage: `swift test --package-path Packages/MUCore`
+  → **Executed 67 tests, with 0 failures**; `make coverage` → docs/COVERAGE.md,
+  line coverage TOTAL **95.52%** (3,257 lines / 146 missed), Sources/MUCore
+  only **95.4%** (1,620 / 74) — ≥ 90% PASS. Every source file ≥ 78.57%, median
+  ~95%.
+- Checkpoint hashes (`--checkpoints 300`, 4,000 birds, seed 1, 16 checkpoints):
+  Release run 1 vs run 2 — identical; Release (Mac) vs Debug (Mac) — identical;
+  Release (Mac) vs arm64 iOS-simulator binary (iPad Pro 13-inch (M5),
+  `xcrun simctl spawn`, compiled `-sdk iphonesimulator
+  -target arm64-apple-ios17.0-simulator`) — identical. Final hash
+  `5cbccf1ff18d0a2a`, `deterministic=true` in every run. PASS.
+- Headless day budget: `make sim` (Release, Mac): two runs
+  `dayCPU=1.79s` and `dayCPU=2.04s`, `avgTick=0.373/0.425ms`, finalHash
+  `5cbccf1ff18d0a2a` both — ≤ 10 s PASS with ~5× headroom. Simulator-side day:
+  1.61 s.
+- `make lint`: **0 violations** (SwiftLint strict + swift-format + content-lint
+  + check-imports). `make sim`: exit 0.
+
+**GATE G1 PASSED** (2026-11-17). Next: merge to `main`, tag
+`murmur/gate-G1-pass`, verify CI on `main`, then P2 (vertical slice).

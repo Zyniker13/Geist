@@ -22,26 +22,71 @@ public struct BoidsParams: Sendable, Codable {
 }
 
 /// Per-tick world inputs for `stepBirds`: the active sub-flock's leader point,
-/// the wind vector (Q16.16), and the world bounds.
+/// the wind field (R-1: one Q16.16 vector per 256-unit cell, with a uniform
+/// fallback for grid-less callers), and the world bounds.
 public struct BoidsFrame: Sendable, Codable {
     public var leaderX: Int32
     public var leaderY: Int32
+    /// Leader point per sub-flock (R-3/R-4); falls back to leaderX/Y when empty.
+    public var leadersX: [Int32]
+    public var leadersY: [Int32]
     public var windXQ: Int32
     public var windYQ: Int32
     public var worldWidth: Int32
     public var worldHeight: Int32
+    /// Per-cell wind vectors (R-1), row-major over 256-unit cells; empty = uniform.
+    public var windCellsX: [Int32]
+    public var windCellsY: [Int32]
+    public var windGridCols: Int32
+    public var windGridRows: Int32
+    public var windCellSize: Int32
 
     public init(
         leaderX: Int32, leaderY: Int32,
         windXQ: Int32, windYQ: Int32,
-        worldWidth: Int32, worldHeight: Int32
+        worldWidth: Int32, worldHeight: Int32,
+        leadersX: [Int32] = [],
+        leadersY: [Int32] = [],
+        windCellsX: [Int32] = [],
+        windCellsY: [Int32] = [],
+        windGridCols: Int32 = 0,
+        windGridRows: Int32 = 0,
+        windCellSize: Int32 = 256
     ) {
         self.leaderX = leaderX
         self.leaderY = leaderY
+        self.leadersX = leadersX
+        self.leadersY = leadersY
         self.windXQ = windXQ
         self.windYQ = windYQ
         self.worldWidth = worldWidth
         self.worldHeight = worldHeight
+        self.windCellsX = windCellsX
+        self.windCellsY = windCellsY
+        self.windGridCols = windGridCols
+        self.windGridRows = windGridRows
+        self.windCellSize = windCellSize
+    }
+
+    /// The leader point acting on a bird of sub-flock `sf`.
+    @inline(__always)
+    public func leader(for sf: Int32) -> (x: Int32, y: Int32) {
+        let s = Int(sf)
+        if s < leadersX.count, s < leadersY.count { return (leadersX[s], leadersY[s]) }
+        return (leaderX, leaderY)
+    }
+
+    /// The wind vector (Q16.16) acting on a bird at `(px, py)`.
+    @inline(__always)
+    public func wind(at px: Int32, _ py: Int32) -> (x: Int32, y: Int32) {
+        if windCellsX.isEmpty || windGridCols <= 0 || windGridRows <= 0 || windCellSize <= 0 {
+            return (windXQ, windYQ)
+        }
+        let col = max(0, min(Int(windGridCols) - 1, Int(px) / Int(windCellSize)))
+        let row = max(0, min(Int(windGridRows) - 1, Int(py) / Int(windCellSize)))
+        let cell = row * Int(windGridCols) + col
+        guard cell < windCellsX.count, cell < windCellsY.count else { return (windXQ, windYQ) }
+        return (windCellsX[cell], windCellsY[cell])
     }
 }
 
@@ -148,13 +193,15 @@ public func stepBirds(
             forceX += f.x
             forceY += f.y
         }
-        let leaderDX = Int64(frame.leaderX) - Int64(px)
-        let leaderDY = Int64(frame.leaderY) - Int64(py)
+        let leader = frame.leader(for: Int32(birds.subFlock[i]))
+        let leaderDX = Int64(leader.x) - Int64(px)
+        let leaderDY = Int64(leader.y) - Int64(py)
         let leaderF = normalizedScaled(leaderDX, leaderDY, params.leaderWeight)
         forceX += leaderF.x
         forceY += leaderF.y
-        if frame.windXQ != 0 || frame.windYQ != 0 {
-            let windF = normalizedScaled(Int64(frame.windXQ), Int64(frame.windYQ), params.windWeight)
+        let (windX, windY) = frame.wind(at: px, py)
+        if windX != 0 || windY != 0 {
+            let windF = normalizedScaled(Int64(windX), Int64(windY), params.windWeight)
             forceX += windF.x
             forceY += windF.y
         }

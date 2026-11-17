@@ -16,11 +16,25 @@ cd games/12-murmuration
 make bootstrap   # once: xcodegen, swiftlint, swift-format
 make gen && make build && make test && make lint
 make spike       # boid tick-time spike (Release)
+make sim         # headless rules-engine day, 4,000 birds, twice (G1)
+make coverage    # MUCore coverage -> docs/COVERAGE.md (G1)
 ```
 
 ## Current state
 
-See [`STATUS.md`](STATUS.md) for the phase/gate ledger with sign-offs.
+**G0 (scaffold) and G1 (rules engine) passed.** The rules engine implements
+R-1…R-13 (wind grid, day/dusk, leader paths, condense, merges, energy
+drain/feeding/growth/starvation, falcon dives with the density shield, roost
+claims and victory) as pure integer math over `GameState` with a persistent
+`SeededRNG` — deterministic across Debug/Release and Mac vs the arm64 iOS
+simulator (checkpoint hashes every 300 ticks, final hash `5cbccf1ff18d0a2a`).
+67 MUCore tests, 20 committed golden replays, coverage 95.4% (sources).
+See [`STATUS.md`](STATUS.md) for the phase/gate ledger with sign-offs,
+[`DECISIONS.md`](DECISIONS.md) for ADRs (integer trig, neighbor-visit cap,
+rescale floors), and [`COVERAGE.md`](COVERAGE.md) for the coverage table.
+
+Next phase: P2 core-loop vertical slice (FlockRenderer, gestures, first
+playable regions).
 
 ## Owner-only items
 

@@ -1,8 +1,9 @@
-/// Leader paths (R-3): a sequence of waypoints that sub-flocks follow.
+/// Leader paths (R-3, R-4): the leader point a sub-flock is attracted to.
 ///
-/// The leader path is a list of (x, y) world positions. Birds in a sub-flock
-/// are attracted to the next waypoint on their leader's path. The leader advances
-/// through waypoints at a fixed speed.
+/// The leader point traverses the waypoint sequence in order, moving at the
+/// flock's max speed each tick (R-3). When every waypoint has been reached —
+/// equivalently, when the player lifts all fingers — the leader point circles
+/// its last position (R-4). All motion is integer Q16.16 (INV-3).
 import Foundation
 
 /// A single waypoint in a leader path.
@@ -16,21 +17,32 @@ public struct Waypoint: Codable, Sendable, Equatable, Hashable {
     }
 }
 
-/// A leader path: an ordered sequence of waypoints.
+/// A leader path: an ordered sequence of waypoints plus a moving leader point.
 public struct LeaderPath: Codable, Sendable, Equatable, Hashable {
     public var points: [Waypoint]
     /// The index of the current target waypoint.
     public var currentTarget: Int
 
-    /// The leader's current position (for interpolation).
+    /// The leader's current position (the attractor birds steer toward).
     public var currentX: Int32
     public var currentY: Int32
 
+    /// Circling phase after the path completes (R-4), in binary degrees.
+    public var circleAngle: Int32
+
+    /// Radius of the post-path circle (R-4: "circling its last position").
+    public static let circleRadius = 24
+
+    /// Circle advance per tick in binary degrees: 1024/128 = a full circle
+    /// every 128 ticks (~4.3 s), a slow deliberate orbit.
+    public static let circleStep = 8
+
     public init(points: [Waypoint]) {
         self.points = points
-        self.currentTarget = points.isEmpty ? 0 : 0
+        self.currentTarget = 0
         self.currentX = points.first?.x ?? 0
         self.currentY = points.first?.y ?? 0
+        self.circleAngle = 0
     }
 
     /// Whether this path is complete (all waypoints visited).
@@ -38,36 +50,39 @@ public struct LeaderPath: Codable, Sendable, Equatable, Hashable {
         currentTarget >= points.count
     }
 
-    /// Advance to the next waypoint if the leader is close enough.
-    /// Returns true if a new waypoint was reached.
-    public mutating func advance(targetX: Int32, targetY: Int32, speed: Int32) -> Bool {
-        guard !isComplete, currentTarget < points.count else { return false }
+    /// Move the leader point one tick along its path at `speed` world units
+    /// per tick (R-3). Returns true when a waypoint was just reached.
+    /// After the final waypoint the leader circles its last position (R-4).
+    public mutating func advance(speed: Int32) -> Bool {
+        if isComplete {
+            // Circle the last reached position deterministically.
+            circleAngle = (circleAngle &+ Int32(LeaderPath.circleStep)) & Int32(IntTrig.turns - 1)
+            guard let last = points.last else { return false }
+            let unit = unitVectorQ16(circleAngle)
+            currentX = last.x + Int32((Int64(unit.x) * Int64(LeaderPath.circleRadius)) >> 16)
+            currentY = last.y + Int32((Int64(unit.y) * Int64(LeaderPath.circleRadius)) >> 16)
+            return false
+        }
         let next = points[currentTarget]
-        let dx = targetX - currentX
-        let dy = targetY - currentY
-        let dist = Int32(sqrt(Double(dx * dx + dy * dy)))
+        let dx = Int64(next.x) - Int64(currentX)
+        let dy = Int64(next.y) - Int64(currentY)
+        let dist = Int32(isqrt64(UInt64(dx * dx + dy * dy)))
         if dist <= speed {
             currentX = next.x
             currentY = next.y
             currentTarget += 1
             return true
         }
-        // Interpolate toward target.
+        // Interpolate toward the waypoint at exactly `speed` per tick.
         if dist > 0 {
-            currentX += (dx * speed) / dist
-            currentY += (dy * speed) / dist
+            currentX += Int32((dx * Int64(speed)) / Int64(dist))
+            currentY += Int32((dy * Int64(speed)) / Int64(dist))
         }
         return false
     }
 
-    /// Compute the attractor position for a sub-flock's leader.
-    /// If the leader is between waypoints, interpolate.
-    public func attractor(for subFlock: UInt8, at tick: Int) -> (x: Int32, y: Int32) {
-        guard !isComplete, currentTarget < points.count else {
-            return (currentX, currentY)
-        }
-        // Use the current waypoint as the attractor.
-        let wp = points[currentTarget]
-        return (wp.x, wp.y)
+    /// The attractor position birds steer toward: the leader point itself.
+    public func attractor() -> (x: Int32, y: Int32) {
+        (currentX, currentY)
     }
 }

@@ -45,6 +45,26 @@ public struct GameState: Codable, Sendable, Equatable {
     /// Roost claim points per sub-flock (R-12).
     public var roostClaims: [[Int]]
 
+    /// Roost points owned by the state (R-1, R-12): position, radius, and
+    /// day-end claimant.
+    public var roosts: [RoostState]
+
+    /// Consecutive ticks the sub-flock centroids have been within
+    /// `mergeProximity` (R-5): the merge fires after `mergeThresholdTicks`.
+    public var mergeProximityStreak: Int
+
+    /// Wind vectors per 256-unit cell, row-major (R-1). Regenerated
+    /// deterministically every 600 ticks (20 s at 30 Hz) from the region seed.
+    public var windCellsX: [Int32]
+    public var windCellsY: [Int32]
+
+    /// Wind cell edge in world units (R-1).
+    public static let windCellSize = 256
+
+    /// Ticks between wind-field regenerations (R-1: every 20 seconds = 600
+    /// ticks at 30 Hz).
+    public static let windRegenTicks = 600
+
     /// Falcon states (R-10).
     public var falcons: [FalconState]
 
@@ -74,6 +94,10 @@ public struct GameState: Codable, Sendable, Equatable {
 
     /// Seed for deterministic simulation.
     public let seed: UInt64
+
+    /// Content version for golden replays. Bump whenever an engine change
+    /// alters replay outcomes, then regenerate the committed goldens.
+    public static let replayContentVersion = 2
 
     /// Content version for golden replays.
     public let contentVersion: Int
@@ -111,23 +135,18 @@ public struct GameState: Codable, Sendable, Equatable {
     /// Falcon dive radius (R-10).
     public static let diveRadius = 30
 
-    /// Density shield threshold (R-11).
+    /// Density shield threshold (R-11): average neighbor count at or above
+    /// this halves dive success.
     public static let densityShield = 10
 
-    /// Falcon dive success reduction in dense flocks (R-11).
-    public static let denseFlockDiveReduction = 0.5
+    /// Neighbor radius for the R-11 density metric (the alignment radius).
+    public static let defaultAlignRadius = 64
 
     /// Leader path sampling interval in ticks (R-3).
     public static let leaderPathSampleInterval = 1
 
     /// Falcon cooldown between dives in ticks (R-10).
     public static let falconDiveCooldown = 120
-
-    /// Falcon patrol speed in world units per tick (R-10).
-    public static let falconPatrolSpeed = 60 // Q16.16 → ~60 units/tick
-
-    /// Sub-flock merge proximity check interval (R-5).
-    public static let mergeCheckInterval = 30
 
     /// Condense duration in ticks (R-4).
     public static let condenseDuration = 60
@@ -152,7 +171,7 @@ public struct GameState: Codable, Sendable, Equatable {
         hasRival: Bool,
         windSeedOffset: Int,
         seed: UInt64,
-        contentVersion: Int = 1
+        contentVersion: Int = GameState.replayContentVersion
     ) {
         self.seed = seed
         self.contentVersion = contentVersion
@@ -177,11 +196,12 @@ public struct GameState: Codable, Sendable, Equatable {
             let x = centerX + dx
             let y = centerY + dy
 
-            // Random initial velocity (Q16.16).
+            // Random initial velocity (Q16.16) from the integer trig table.
             let speed = Int32(rng.next(upperBound: Int(boidsParams.maxSpeed - boidsParams.minSpeed) + 1)) + boidsParams.minSpeed
-            let angle = Int32(rng.next(upperBound: 360))
-            let cosA = (Int64(cosLookup(angle)) * Int64(speed)) >> 16
-            let sinA = (Int64(sinLookup(angle)) * Int64(speed)) >> 16
+            let angle = Int32(rng.next(upperBound: IntTrig.turns))
+            let unit = unitVectorQ16(angle)
+            let cosA = (Int64(unit.x) * Int64(speed)) >> 16
+            let sinA = (Int64(unit.y) * Int64(speed)) >> 16
 
             let sf: UInt8 = 0
             birds.append(x: x, y: y, velXQ: Int32(cosA), velYQ: Int32(sinA), subFlock: sf)
@@ -196,6 +216,10 @@ public struct GameState: Codable, Sendable, Equatable {
         )
         self.tick = 0
         self.leaderPaths = [LeaderPath(points: [])]
+        // With no path drawn yet, the leader point rests at the world center
+        // (an attractor of (0,0) would drag the flock into the corner).
+        self.leaderPaths[0].currentX = centerX
+        self.leaderPaths[0].currentY = centerY
         self.subFlockAssignments = subFlockAssignments
         self.energy = Array(repeating: 800, count: 1) // start at 800 energy
         self.initialBirdCount = birdCount
@@ -216,19 +240,36 @@ public struct GameState: Codable, Sendable, Equatable {
         self.fields = fields
 
         // Initialize roosts (R-12).
+        var roosts: [RoostState] = []
         var roostClaims: [[Int]] = []
-        for _ in 0..<roostCount {
+        for i in 0..<roostCount {
+            roosts.append(RoostState(
+                centerX: roostCenterX[i],
+                centerY: roostCenterY[i],
+                radius: Int32(roostRadius[i]),
+                claims: [0, 0],
+                claimant: -1
+            ))
             roostClaims.append([0, 0]) // [player flock, rival flock]
         }
+        self.roosts = roosts
         self.roostClaims = roostClaims
+        self.mergeProximityStreak = 0
+
+        // Seed the wind field (R-1): one vector per 256-unit cell.
+        let (wx, wy) = GameState.windField(
+            generation: 0, seed: seed, windSeedOffset: windSeedOffset,
+            worldWidth: worldWidth, worldHeight: worldHeight
+        )
+        self.windCellsX = wx
+        self.windCellsY = wy
 
         // Initialize falcons (R-10).
         var falcons: [FalconState] = []
         for i in 0..<falconCount {
             falcons.append(FalconState(
-                patrolAngle: Double(i) * (360.0 / Double(max(falconCount, 1))),
+                patrolAngle: Int32(i * 1024 / max(falconCount, 1)),
                 cooldown: 0,
-                diving: false,
                 diveTargetX: 0,
                 diveTargetY: 0,
                 currentX: centerX,
@@ -255,7 +296,11 @@ public struct GameState: Codable, Sendable, Equatable {
         && lhs.energy == rhs.energy
         && lhs.leaderPaths == rhs.leaderPaths
         && lhs.fields == rhs.fields
+        && lhs.roosts == rhs.roosts
         && lhs.roostClaims == rhs.roostClaims
+        && lhs.mergeProximityStreak == rhs.mergeProximityStreak
+        && lhs.windCellsX == rhs.windCellsX
+        && lhs.windCellsY == rhs.windCellsY
         && lhs.falcons == rhs.falcons
         && lhs.condenseCooldown == rhs.condenseCooldown
         && lhs.condenseActive == rhs.condenseActive
@@ -264,30 +309,39 @@ public struct GameState: Codable, Sendable, Equatable {
 
 // MARK: - Helpers
 
-/// Simple trigonometric lookup for initial bird velocities.
-/// Returns cos(angle) * 65536 as Q16.16.
-func cosLookup(_ angle: Int32) -> Int32 {
-    // Approximate cosine using a small table.
-    let a = angle % 360
-    switch a {
-    case 0: return 65536
-    case 45: return 46340
-    case 90: return 0
-    case 135: return -46340
-    case 180: return -65536
-    case 225: return -46340
-    case 270: return 0
-    case 315: return 46340
-    default:
-        // Linear interpolation between table entries.
-        let base = (a / 45) * 45
-        let frac = Int64(a - base) * 46340 / 45
-        let baseVal = cosLookup(base)
-        return baseVal - Int32(frac)
+extension GameState {
+    /// Deterministic per-cell wind angle hash: mixes the cell index, the wind
+    /// generation, the region seed, and the region's wind offset. Pure integer
+    /// (INV-3); golden-ratio multiplier avalanche gives well-spread angles.
+    static func windCellAngle(cellIndex: Int, generation: Int, seed: UInt64, windSeedOffset: Int) -> Int32 {
+        var h: UInt64 = 0x9E3779B97F4A7C15
+        h &+= UInt64(truncatingIfNeeded: cellIndex) &* 0xBF58476D1CE4E5B9
+        h &+= UInt64(truncatingIfNeeded: generation) &* 0x94D049BB133111EB
+        h &+= seed &+ UInt64(truncatingIfNeeded: windSeedOffset)
+        h ^= h >> 30; h = h &* 0xBF58476D1CE4E5B9
+        h ^= h >> 27; h = h &* 0x94D049BB133111EB
+        h ^= h >> 31
+        return Int32(truncatingIfNeeded: h % UInt64(IntTrig.turns))
     }
-}
 
-/// Simple sine lookup.
-func sinLookup(_ angle: Int32) -> Int32 {
-    cosLookup((angle + 270) % 360)
+    /// Regenerate the per-256-cell wind field (R-1) for `generation` = tick / 600.
+    /// Magnitude is 0.3 in Q16.16 (19661).
+    static func windField(
+        generation: Int, seed: UInt64, windSeedOffset: Int,
+        worldWidth: Int32, worldHeight: Int32
+    ) -> (x: [Int32], y: [Int32]) {
+        let cols = max(1, Int(worldWidth) / GameState.windCellSize)
+        let rows = max(1, Int(worldHeight) / GameState.windCellSize)
+        let count = cols * rows
+        var xs = [Int32](repeating: 0, count: count)
+        var ys = [Int32](repeating: 0, count: count)
+        let magnitudeQ16: Int32 = 19_661 // 0.3 units/tick
+        for cell in 0..<count {
+            let angle = windCellAngle(cellIndex: cell, generation: generation, seed: seed, windSeedOffset: windSeedOffset)
+            let unit = unitVectorQ16(angle)
+            xs[cell] = (Int32(unit.x) * magnitudeQ16) >> 16
+            ys[cell] = (Int32(unit.y) * magnitudeQ16) >> 16
+        }
+        return (xs, ys)
+    }
 }
