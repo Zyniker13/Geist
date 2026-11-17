@@ -63,6 +63,18 @@ public func stepBirds(
     let minSpeed2 = Int64(params.minSpeed) * Int64(params.minSpeed)
     let maxSpeed2 = Int64(params.maxSpeed) * Int64(params.maxSpeed)
 
+    // Neighbor-scan cap: in an ultra-dense flock a bird can have thousands of
+    // neighbors inside the cohesion radius, making the per-tick cost O(n · k)
+    // explode exactly when the flock is tightest (a 4,000-bird day ran ~7 ms
+    // per tick, far over the G1 budget). Boids steering needs a local sample,
+    // not the complete set, so each bird examines at most `maxNeighborVisits`
+    // neighbors per tick, taken in the deterministic iteration order (3x3
+    // cells row-major, bird IDs ascending within a cell). This bounds the
+    // worst case, keeps results reproducible (INV-3), and leaves the spatial
+    // hash itself exact (INV-4 covers the hash, not the steering subset).
+    // See docs/DECISIONS.md, "Neighbor-visit cap in stepBirds".
+    let maxNeighborVisits = 48
+
     for i in 0..<count {
         let px = birds.posX[i]
         let py = birds.posY[i]
@@ -77,18 +89,21 @@ public func stepBirds(
         var sepCount = 0
         var alignCount = 0
         var cohCount = 0
+        var visits = 0
 
         // 3x3 neighborhood, row-major from the top-left: fixed iteration order.
         var cy = home.cy - 1
-        while cy <= home.cy + 1 {
+        outer: while cy <= home.cy + 1 {
             if cy >= 0 && cy < hash.rows {
                 var cx = home.cx - 1
                 while cx <= home.cx + 1 {
                     if cx >= 0 && cx < hash.cols {
                         let cellRange = hash.range(cx: cx, cy: cy)
                         for slot in cellRange {
+                            if visits >= maxNeighborVisits { break outer }
                             let j = Int(hash.birdID(at: slot))
                             if j == i { continue }
+                            visits += 1
                             let dx = Int64(birds.posX[j]) - Int64(px)
                             let dy = Int64(birds.posY[j]) - Int64(py)
                             let d2 = dx * dx + dy * dy
@@ -202,13 +217,29 @@ public func stepBirds(
 /// unparenthesized `x << 16 / m * w >> 16` would parse as `(x << 16 / m) *
 /// (w >> 16)` and truncate the weight to whole units (0.8 and 0.6 would
 /// become zero). Verified by BoidsTests.testLeaderForceMatchesWeight.
+///
+/// `x`/`y` are raw sums over the neighbor set, so their magnitude is not
+/// bounded a priori (an ultra-dense flock puts thousands of neighbors inside
+/// the alignment radius, each contributing a full Q16.16 velocity). Squaring
+/// such a sum overflows Int64, so the inputs are first down-shifted
+/// deterministically until each fits the squaring budget. The shift only
+/// engages for sums that would otherwise trap, costs at most a few low-order
+/// bits of direction precision, and is pure integer math (INV-3).
 @inline(__always)
 private func normalizedScaled(_ x: Int64, _ y: Int64, _ weight: Int32) -> (x: Int64, y: Int64) {
-    let magnitude = isqrt64(UInt64(x * x + y * y))
+    // (2^31 - 1)^2 * 2 < Int64.max, so sums within this bound square safely.
+    let safe: Int64 = 2_147_483_647
+    var sx = x
+    var sy = y
+    while sx > safe || sx < -safe || sy > safe || sy < -safe {
+        sx >>= 1
+        sy >>= 1
+    }
+    let magnitude = isqrt64(UInt64(sx * sx + sy * sy))
     guard magnitude > 0 else { return (0, 0) }
     let scale = Int64(weight)
-    return ((((x << 16) / magnitude) * scale) >> 16,
-            (((y << 16) / magnitude) * scale) >> 16)
+    return ((((sx << 16) / magnitude) * scale) >> 16,
+            (((sy << 16) / magnitude) * scale) >> 16)
 }
 
 /// Rescale a Q16.16 velocity to magnitude >= `target` (min-speed branch).

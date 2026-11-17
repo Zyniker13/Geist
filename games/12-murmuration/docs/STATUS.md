@@ -80,3 +80,65 @@ records the real gate evidence.
 - project.yml .gitkeep exclusion fixed.
 
 Next: merge to `main`, tag `murmur/gate-G0-pass`, verify CI on `main`.
+
+## P1 (Rules Engine) — in progress
+
+### MU-P1.1 Spatial hash and boids (R-6, R-7, INV-4)
+
+**Headless sim tool** (`Tools/sim`): runs a full day (4,800 ticks) through
+`applyTick` with a persistent `SeededRNG`, one circling leader path (24 waypoints,
+R-3), feeding field and roost at the world center, one falcon. Reports per-tick
+timing distribution, day CPU, and `stateHash`; runs the day twice and exits 1
+unless both hashes match. `--progress N` prints tick state to stderr.
+
+**Defect found and fixed — alignment-sum Int64 overflow (SIGTRAP mid-day):**
+
+- Symptom: Release run trapped (SIGTRAP) at tick ~2131 with 2,999+ birds; a Debug
+  run at 4,000 birds spun at 100% CPU with no output. Standard tools (`lldb`,
+  `sample`) hung against the process, so the crash was located with a temporary
+  signal-handler backtrace probe (`dladdr` + `atos` symbolication) and bird-count
+  bisection.
+- Root cause (Debug backtrace: `stepBirds` → `normalizedScaled` at Boids.swift:127):
+  the alignment sum accumulates Q16.16 velocities over an unbounded neighbor set.
+  Once the flock collapses dense around the leader attractor (a full day of
+  leader attraction), a bird's 64-unit neighborhood holds thousands of birds, the
+  sum reaches ~7.1e9, and `normalizedScaled`'s `x * x + y * y` overflows Int64.
+  The G0 spike (3.7 ms/tick) never hit this because birds were still spread.
+- Fix 1: `normalizedScaled` down-shifts both components deterministically until
+  each fits the squaring budget (`|sum| ≤ 2^31−1` ⇒ `x²+y² < Int64.max`); pure
+  integer math, no behavior change for any previously valid input (INV-3).
+- Fix 2 (performance, same collapse): neighbor-visit cap of 48 per bird per tick
+  in the fixed iteration order — see ADR-0006.
+- Regression: `testUltraDenseFlockAlignmentSumDoesNotOverflow` (2,700 co-located
+  birds at max speed; trapped before the fix).
+
+**Performance (G1 budget: headless day ≤ 10 s at 4,000 birds on Mac):**
+
+- Phase profile (env-guarded `TickProfiler`, MU_PROFILE=1, two days = 9,600
+  ticks): `rebuildMs=85.0 boidsMs=65838.0 rulesMs=3.9` — the boid neighbor scan
+  is 99.6% of the tick; hash rebuild and rules are negligible.
+- Before the cap: `dayCPU=33.2s avgTick=6.916ms p95=11.111ms max=59.863ms`.
+- After the cap: `birds=4000 ticks=4800 dayCPU=3.79s avgTick=0.789ms p95=1.003ms
+  max=3.934ms finalHash=7e94d1021c3a13a1` (second run: dayCPU=3.74s,
+  avgTick=0.779ms, same hash). **PASS** with 2.6× headroom.
+
+**Determinism (INV-3, tool-level):** both full days in one process produce
+`finalHash=7e94d1021c3a13a1`, `deterministic=true`. Cross-process/cross-device
+checkpoint-hash evidence is the G1 gate item (Checkpoint.swift), not yet run.
+
+**Tests:** `swift test --package-path Packages/MUCore`: **Executed 50 tests, with
+0 failures** (49 pre-existing + the new dense-flock regression; BoidsTests 7/7).
+
+### Known items for MU-P1.2 (leader paths, splits, condense, merges)
+
+- Merge event emission was fixed early (one `.merge` per merged sub-flock, `from`
+  captured before the assignment is zeroed — previously one event per bird with
+  `from` always 0); the tagged R-5 merge test still belongs to MU-P1.2.
+- Lint debt from the first P1 commits cleared (for_where, shorthand_operator,
+  unused_enumerated, type_body_length via the Energy tests split into
+  EnergyRuleTests.swift); `make lint` 0 violations, 50/50 tests green.
+
+### Next
+
+MU-P1.2: leader paths, splits, condense, merges (R-3 to R-5) — fix the merge
+event emission, add tagged R-3/R-4/R-5 tests.

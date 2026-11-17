@@ -54,8 +54,8 @@ public struct LeaderPath: Codable, Sendable, Equatable, Hashable {
         }
         // Interpolate toward target.
         if dist > 0 {
-            currentX = currentX + (dx * speed) / dist
-            currentY = currentY + (dy * speed) / dist
+            currentX += (dx * speed) / dist
+            currentY += (dy * speed) / dist
         }
         return false
     }

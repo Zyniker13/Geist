@@ -90,17 +90,15 @@ public func computeFeeding(state: inout GameState, rng: inout SeededRNG) -> [Ene
             }
         }
 
-        for sf in subFlocksInField {
-            if field.currentDepletion < field.maxDepletion {
-                // Feed: gain energy proportional to bird count and field richness.
-                let birdCount = countBirdsInFlock(assignments: state.subFlockAssignments, subFlock: sf)
-                let gain = min(birdCount * field.richness / 10, field.maxDepletion - field.currentDepletion)
-                if gain > 0 {
-                    state.energy[Int(sf)] = min(GameState.maxEnergy, state.energy[Int(sf)] + gain)
-                    field.currentDepletion += gain
-                    field.ticksSinceFeed = 0
-                    events.append(.feed(subFlock: sf, amount: gain, fieldIndex: fieldIdx))
-                }
+        for sf in subFlocksInField where field.currentDepletion < field.maxDepletion {
+            // Feed: gain energy proportional to bird count and field richness.
+            let birdCount = countBirdsInFlock(assignments: state.subFlockAssignments, subFlock: sf)
+            let gain = min(birdCount * field.richness / 10, field.maxDepletion - field.currentDepletion)
+            if gain > 0 {
+                state.energy[Int(sf)] = min(GameState.maxEnergy, state.energy[Int(sf)] + gain)
+                field.currentDepletion += gain
+                field.ticksSinceFeed = 0
+                events.append(.feed(subFlock: sf, amount: gain, fieldIndex: fieldIdx))
             }
         }
 
@@ -161,31 +159,28 @@ public func computeGrowth(state: inout GameState, rng: inout SeededRNG) -> [Ener
 public func computeStarvation(state: inout GameState, rng: inout SeededRNG) -> [EnergyEvent] {
     var events: [EnergyEvent] = []
 
-    for sf in 0..<Int(state.subFlockCount) {
-        if state.energy[sf] <= 0 {
-            let birdCount = countBirdsInFlock(assignments: state.subFlockAssignments, subFlock: UInt8(sf))
-            let deathRate = birdCount / GameState.starvationRate // 1% per 10 ticks
-            if deathRate > 0 {
-                // Remove random birds from this flock.
-                var indicesToRemove: [Int] = []
-                var remaining: [(Int32, Int32, Int32, Int32)] = []
-                for (i, assignment) in state.subFlockAssignments.enumerated() where UInt8(sf) == assignment {
-                    if rng.next(upperBound: birdCount) < deathRate {
-                        indicesToRemove.append(i)
-                    } else {
-                        remaining.append((state.birds.posX[i], state.birds.posY[i], state.birds.velX[i], state.birds.velY[i]))
-                    }
+    for sf in 0..<Int(state.subFlockCount) where state.energy[sf] <= 0 {
+        let birdCount = countBirdsInFlock(assignments: state.subFlockAssignments, subFlock: UInt8(sf))
+        let deathRate = birdCount / GameState.starvationRate // 1% per 10 ticks
+        if deathRate > 0 {
+            // Remove random birds from this flock: survivors are collected and
+            // the flock arrays are rebuilt without them.
+            var remaining: [(Int32, Int32, Int32, Int32)] = []
+            for (i, assignment) in state.subFlockAssignments.enumerated() where UInt8(sf) == assignment {
+                if rng.next(upperBound: birdCount) < deathRate {
+                    continue
                 }
-
-                // Rebuild the bird arrays.
-                state.birds = BirdSoA(capacity: remaining.count)
-                state.subFlockAssignments = state.subFlockAssignments.filter { $0 != UInt8(sf) }
-                for (posX, posY, velX, velY) in remaining {
-                    state.birds.append(x: posX, y: posY, velXQ: velX, velYQ: velY, subFlock: UInt8(sf))
-                }
-
-                events.append(.starve(subFlock: UInt8(sf), deadBirds: deathRate))
+                remaining.append((state.birds.posX[i], state.birds.posY[i], state.birds.velX[i], state.birds.velY[i]))
             }
+
+            // Rebuild the bird arrays.
+            state.birds = BirdSoA(capacity: remaining.count)
+            state.subFlockAssignments = state.subFlockAssignments.filter { $0 != UInt8(sf) }
+            for (posX, posY, velX, velY) in remaining {
+                state.birds.append(x: posX, y: posY, velXQ: velX, velYQ: velY, subFlock: UInt8(sf))
+            }
+
+            events.append(.starve(subFlock: UInt8(sf), deadBirds: deathRate))
         }
     }
 

@@ -52,6 +52,31 @@ public enum GameEvent: Codable, Sendable, Equatable, Hashable {
 
 // MARK: - Reducer
 
+/// Temporary phase profiler for P1 performance work, enabled via the
+/// MU_PROFILE environment variable. Overhead when disabled is one Bool check
+/// per phase; it reads no state, so determinism (INV-3) is unaffected.
+public enum TickProfiler {
+    public static let enabled = ProcessInfo.processInfo.environment["MU_PROFILE"] != nil
+    nonisolated(unsafe) static var rebuildNs: UInt64 = 0
+    nonisolated(unsafe) static var boidsNs: UInt64 = 0
+    nonisolated(unsafe) static var rulesNs: UInt64 = 0
+    nonisolated(unsafe) static var ticks: UInt64 = 0
+
+    @inline(__always) static func start() -> UInt64 {
+        enabled ? DispatchTime.now().uptimeNanoseconds : 0
+    }
+
+    @inline(__always) static func accumulate(_ phase: inout UInt64, _ t0: UInt64) {
+        if enabled { phase &+= DispatchTime.now().uptimeNanoseconds &- t0 }
+    }
+
+    /// One-line summary of accumulated phase time (ms) and tick count.
+    public static func report() -> String {
+        let ms: (UInt64) -> String = { String(format: "%.1f", Double($0) / 1_000_000.0) }
+        return "profile ticks=\(ticks) rebuildMs=\(ms(rebuildNs)) boidsMs=\(ms(boidsNs)) rulesMs=\(ms(rulesNs))"
+    }
+}
+
 /// Apply one tick of simulation.
 /// Returns (newState, events).
 public func applyTick(to state: GameState, rng: inout SeededRNG) -> (GameState, [GameEvent]) {
@@ -67,7 +92,7 @@ public func applyTick(to state: GameState, rng: inout SeededRNG) -> (GameState, 
     )
 
     // Update leader attractors.
-    for (sfIdx, _) in state.leaderPaths.enumerated() {
+    for sfIdx in state.leaderPaths.indices {
         let path = state.leaderPaths[sfIdx]
         let attractor = path.attractor(for: UInt8(sfIdx), at: state.tick)
         if sfIdx == 0 {
@@ -86,19 +111,25 @@ public func applyTick(to state: GameState, rng: inout SeededRNG) -> (GameState, 
     boidsFrame.worldHeight = state.worldHeight
 
     // Rebuild spatial hash.
+    let tRebuild = TickProfiler.start()
     var sh = state.spatialHash
     sh.rebuild(posX: state.birds.posX, posY: state.birds.posY, count: state.birds.count)
+    TickProfiler.accumulate(&TickProfiler.rebuildNs, tRebuild)
 
     // Step boids.
+    let tBoids = TickProfiler.start()
     stepBirds(
         birds: &state.birds,
         hash: &sh,
         frame: boidsFrame,
         params: state.boidsParams
     )
+    TickProfiler.accumulate(&TickProfiler.boidsNs, tBoids)
+    if TickProfiler.enabled { TickProfiler.ticks &+= 1 }
     events.append(.boidStep(tick: state.tick, birdCount: state.birds.count))
 
     // 2. Advance leader paths (R-3).
+    let tRules = TickProfiler.start()
     for sfIdx in 0..<state.leaderPaths.count {
         var path = state.leaderPaths[sfIdx]
         let reached = path.advance(
@@ -169,17 +200,22 @@ public func applyTick(to state: GameState, rng: inout SeededRNG) -> (GameState, 
             }
         }
         if shouldMerge {
-            // Merge all into sub-flock 0.
-            for i in 0..<state.subFlockAssignments.count {
-                if state.subFlockAssignments[i] != 0 {
-                    state.subFlockAssignments[i] = 0
-                    events.append(.merge(into: 0, from: state.subFlockAssignments[i]))
+            // Merge all into sub-flock 0 (R-5): one event per merged sub-flock,
+            // reporting the sub-flock that was merged away.
+            var merged: Set<UInt8> = []
+            for i in state.subFlockAssignments.indices where state.subFlockAssignments[i] != 0 {
+                let from = state.subFlockAssignments[i]
+                state.subFlockAssignments[i] = 0
+                if !merged.contains(from) {
+                    merged.insert(from)
+                    events.append(.merge(into: 0, from: from))
                 }
             }
         }
     }
 
     // 7. Day end check.
+    TickProfiler.accumulate(&TickProfiler.rulesNs, tRules)
     state.tick += 1
     if state.tick >= GameState.dayTicks {
         events.append(.dayEnd(tick: state.tick))

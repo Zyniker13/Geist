@@ -84,3 +84,28 @@ Architecture decision records. Every deviation from the roadmap is recorded here
   ≤ target, mathematically guaranteed. All integer, deterministic (INV-3).
 - **Consequences:** The clamp invariant holds exactly (±2 tolerance is now slack, not
   necessity). Spike 4000×300 completes with a stable final hash.
+
+## ADR-0006 — Neighbor-visit cap in stepBirds
+
+- **Status:** Accepted (P1)
+- **Context:** The G0 spike measured 3.7 ms/tick with 4,000 birds in the spawn
+  spread, but a full day through `applyTick` lets the flock collapse into a dense
+  cluster around the leader attractor. At that density a bird's 3×3 neighborhood
+  holds thousands of birds, so the O(n·k) neighbor scan exploded: the headless day
+  ran ~6.9 ms/tick (33 s/day, G1 budget is 10 s) and, worse, the alignment sum
+  (Q16.16 velocities over thousands of neighbors) overflowed Int64 when squared in
+  `normalizedScaled`, trapping the process mid-day (SIGTRAP at tick ~2131).
+- **Decision:** Each bird examines at most 48 neighbors per tick
+  (`maxNeighborVisits` engine constant in `Boids.swift`, not a balance knob). The
+  subset is the first 48 in the fixed iteration order (3×3 cells row-major, bird
+  IDs ascending within a cell), so results stay reproducible (INV-3). The spatial
+  hash itself remains exact — INV-4 covers hash-vs-brute-force queries, not the
+  steering subset. `normalizedScaled` additionally down-shifts both components
+  deterministically until they fit the squaring budget (`|sum| ≤ 2^31−1`), so no
+  input can trap regardless of the cap.
+- **Consequences:** Day CPU 33 s → 3.8 s at 4,000 birds (0.78 ms/tick avg, p95
+  1.0 ms); final hash stable across runs. Dense-flock steering now uses a local
+  sample, which is the standard boids formulation and visually indistinguishable
+  at game densities; emergent balance is revisited at the P8 balance pass.
+  Regression: `testUltraDenseFlockAlignmentSumDoesNotOverflow` (2,700 co-located
+  birds at max speed — trapped before both fixes).

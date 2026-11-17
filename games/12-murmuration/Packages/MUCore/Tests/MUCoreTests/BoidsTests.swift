@@ -229,4 +229,31 @@ final class BoidsTests: XCTestCase {
         let driftOff = downwind(withoutWind)
         XCTAssertGreaterThan(driftOn - driftOff, 100, "wind did not drift the flock downwind: \(driftOn) vs \(driftOff)")
     }
+
+    // Regression: an ultra-dense flock (thousands of neighbors inside the
+    // alignment radius) pushes the alignment sum past 2^31. Squaring that
+    // sum inside normalizedScaled used to overflow Int64 and trap the
+    // process mid-tick (SIGTRAP in Release, "Fatal error" in Debug) once a
+    // real day's worth of ticks let the flock collapse into a dense cluster.
+    func testUltraDenseFlockAlignmentSumDoesNotOverflow() {
+        let n = 2700
+        var birds = BirdSoA(capacity: n)
+        for _ in 0..<n {
+            birds.append(x: 1024, y: 768, velXQ: 2_621_440, velYQ: 0, subFlock: 0)
+        }
+        var hash = SpatialHash(width: 2048, height: 1536, cellSize: 96)
+        hash.rebuild(posX: birds.posX, posY: birds.posY, count: n)
+        stepBirds(
+            birds: &birds, hash: &hash,
+            frame: frame(width: 2048, height: 1536),
+            params: BoidsParams()
+        )
+        // All birds are co-located and aligned +x: separation and cohesion
+        // contribute zero (zero displacement), alignment is +x at full
+        // weight, so every bird stays at max speed heading +x.
+        for i in 0..<n {
+            XCTAssertEqual(birds.velX[i], 2_621_440)
+            XCTAssertEqual(birds.velY[i], 0)
+        }
+    }
 }
