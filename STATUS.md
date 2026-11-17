@@ -3,10 +3,10 @@
 This file is the single place to resume the program from. Keep every field below current after every meaningful step (see "Resuming After a Restart" in `ROADMAP.md`). Per-game detail (gate evidence and sign-offs) lives in each game's `docs/STATUS.md`.
 
 - **Current game:** Murmuration (`12-murmuration`)
-- **Phase:** P0 (Setup) — **GATE G0 PASSED** (2026-11-17). All checks green: SwiftPM 43/43 tests, lint 0, spike 3.63–3.84 ms ≤ 4 ms, kernel defects fixed (shift-precedence, world-edge avoidance, cruise floor, exact rescale).
-- **Last done:** G0 sign-off committed (1178db9). Merge to main, tag `murmur/gate-G0-pass`, CI check.
-- **Next step:** Murmuration P1 (rules engine: R-6/R-7 boids tasks, leader paths, energy, falcons, roosts).
-- **Blocked on:** Night Market P10 (simulator stack, host reboot needed); Murmuration P0 proceeds independently.
+- **Phase:** P1 (Rules Engine) — in progress on `murmur/phase/P1-rules-engine`: rules engine + rule-ID tests committed (2c6e2cb, c521ece); headless sim tool (`Tools/sim`) built, uncommitted.
+- **Last done:** Night Market P10 complete — G10 closed. Simulator stack recovered (host rebooted overnight 2026-11-17; issue #10 ladder applied on top), release screenshots + preview video captured and frame-verified, `make test` TEST SUCCEEDED (UI 5/5 in 64.5 s) + `make lint` 0 on the final tree. Merged to main (2a5b968), tag `night-market/gate-G10-pass` pushed, issue #10 closed, release steps filed as #12.
+- **Next step:** verify the Murmuration headless sim tool (build Release, run, determinism), commit it, then continue P1 (MU-P1.1–P1.5 rule tests, coverage ≥ 90%, G1 checks).
+- **Blocked on:** nothing — Night Market's remaining steps are owner-only in #12.
 
 ## Environment Check
 
@@ -32,8 +32,8 @@ If Xcode 27.2 or an iOS 26-or-later runtime is missing and cannot be installed w
 
 | Order | No. | Folder | Game | State | Last Gate | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | 04 | [`04-night-market`](games/04-night-market/ROADMAP.md) | Night Market | Blocked (P10) | `night-market/gate-G9-pass` | P10 screenshots/preview blocked on simulator stack (host reboot needed); Murmuration P0 starts |
-| 2 | 12 | [`12-murmuration`](games/12-murmuration/ROADMAP.md) | Murmuration | In Progress (P1) | — | G0 passed (43 tests, 0 failures, lint 0, spike 3.63–3.84 ms ≤ 4 ms); P1: rules engine (boids tasks, leader paths, energy, falcons, roosts) |
+| 1 | 04 | [`04-night-market`](games/04-night-market/ROADMAP.md) | Night Market | Done | `night-market/gate-G10-pass` | All gates G0–G10 tagged; TestFlight/App Store steps owner-only in #12 |
+| 2 | 12 | [`12-murmuration`](games/12-murmuration/ROADMAP.md) | Murmuration | In Progress (P1) | `murmur/gate-G0-pass` | P1: rules engine + rule-ID tests committed; headless sim tool next |
 | 3 | 02 | [`02-orrery`](games/02-orrery/ROADMAP.md) | Orrery | Not Started | — | — |
 | 4 | 14 | [`14-beacon-coast`](games/14-beacon-coast/ROADMAP.md) | Beacon Coast | Not Started | — | — |
 | 5 | 13 | [`13-terrace`](games/13-terrace/ROADMAP.md) | Terrace | Not Started | — | — |
@@ -58,7 +58,7 @@ If Xcode 27.2 or an iOS 26-or-later runtime is missing and cannot be installed w
 | 24 | 05 | [`05-dispatch`](games/05-dispatch/ROADMAP.md) | Dispatch | Not Started | — | — |
 | 25 | 07 | [`07-meridian`](games/07-meridian/ROADMAP.md) | Meridian | Not Started | — | — |
 
-**Totals:** 0 done, 1 in progress, 24 not started.
+**Totals:** 1 done, 1 in progress, 23 not started.
 
 ## Needs the Maintainer
 
@@ -67,8 +67,8 @@ Items are GitHub issues labeled `needs-maintainer` (the gh token is issues-only;
 - [#7](https://github.com/Zyniker13/Geist/issues/7) [night-market/program] [blocked] Push access for the build agent's deploy key — commits and gate tags for P0/P1/P2 wait locally (clean fast-forward).
 - [#6](https://github.com/Zyniker13/Geist/issues/6) [night-market] [blocked] macOS automation grant so `NMUITestsMac` can run (headless TCC timeout). Until then, Mac evidence is the scripted-run path.
 - [#8](https://github.com/Zyniker13/Geist/issues/8) [night-market] [question] Confirm the 120 fps vs 60 Hz frame-budget substitution for NM-P0.2.
+- [#12](https://github.com/Zyniker13/Geist/issues/12) [night-market] Release actions: bundle ID + App Store Connect record, signed archives + TestFlight upload, asset placement, pricing, release tag — Night Market is Done through G10; these are the owner-only steps.
 - [#9](https://github.com/Zyniker13/Geist/issues/9) [night-market] [blocked] Game Center/iCloud sandbox + Pencil hardware verification (P7/P10).
-- [#10](https://github.com/Zyniker13/Geist/issues/10) [night-market] [blocked] P10 release assets (screenshots, preview video) blocked on host CoreSimulator stack — SpringBoard rendering frozen after simulator boot. App processes launch but never draw. Requires a Mac host reboot. Once rebooted: one fresh boot → serial install/launch/screenshot cycle → release-screens.sh → release-preview.sh → G10 tag → release maintainer issue (TestFlight).
 
 ## Log
 
@@ -95,3 +95,5 @@ One line per meaningful step, newest last: date, phase or game and stage, what w
 - 2026-11-16: Night Market P10 blocked on host CoreSimulator stack (SpringBoard rendering frozen, app processes run but never draw). P9 merged (fd232c7), G9 tag pushed, CI green. Needs Mac host reboot to resume screenshots/preview video. Program moves to Murmuration P0.
 - 2026-11-16: Night Market P9 complete (beta prep): Release archives iOS + macOS (CODE_SIGNING_ALLOWED=NO, 0 errors), soak 6 maps × 500 nights illegal=0 (AUTOPILOT OK), balance re-sweep on the final build keeps the default ramp (ADR-0011), telemetry-free stats export in ProfileStore, beta notes + tester guide (docs/BETA.md), preview-video notes (docs/release/preview.md). Local make test wedged tonight (xcodebuild test-session deadlock on both simulators after a factory erase; builds + swift tests unaffected; concurrent foreign xcodebuild from another profile present during several wedges — documented in the game's harness notes); final-tree full suite runs on main CI (8a676a3). Tag night-market/gate-G9-pass pushed; P10 release polish next.
 - 2026-11-17: Murmuration P0 complete (setup): repo layout, project.yml (iOS + macOS targets), Makefile, CI workflow (murmuration.yml), 7 SwiftPM packages (MUCore/MUContent/MUAI/MURender/MUAudio/MUPlatform/MUMeta), lint configs. All 43 SwiftPM tests green, lint 0, spike 3.63–3.84 ms ≤ 4 ms. Kernel defects fixed (shift-precedence, world-edge avoidance, cruise floor, exact rescale). G0 passed; merged to main (ecd14ae), tag `murmur/gate-G0-pass` pushed, CI green.
+- 2026-11-17: Murmuration P1 started on `murmur/phase/P1-rules-engine`: rules engine (GameState, Reducer, LeaderPath, Energy, Falcon, Roost — 2c6e2cb) and rule-ID tests (c521ece) committed; headless sim tool drafted in Tools/sim (uncommitted).
+- 2026-11-17: Night Market P10 complete — simulator stack recovered (host rebooted overnight + issue #10 ladder), four release screenshots + 65.29 s preview video captured and frame-verified (launcher shot needed a script fix: -uitest-* args suppress the NewNightMenu), make test TEST SUCCEEDED (UI 5/5 in 64.5 s) + make lint 0 on the final tree. Merged to main (2a5b968), tag `night-market/gate-G10-pass` pushed, issue #10 closed, release steps filed as #12. Night Market is Done.

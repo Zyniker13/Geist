@@ -24,8 +24,10 @@ shot() {
   echo "captured $1"
 }
 
-# 1. Launcher (fresh install shows the menu sheet).
-xcrun simctl launch "$UDID" "$BUNDLE" -uitest-fresh
+# 1. Launcher (fresh install, no flags: any -uitest-* suppresses the
+#    NewNightMenu in GameScreen.onAppear, so launch bare — no save exists
+#    after the uninstall above, so showLauncher becomes true).
+xcrun simctl launch "$UDID" "$BUNDLE"
 sleep 6
 shot 01-launcher
 
