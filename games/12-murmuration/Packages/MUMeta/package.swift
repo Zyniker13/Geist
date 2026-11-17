@@ -3,22 +3,22 @@
 import PackageDescription
 
 let package = Package(
-    name: "MMMeta",
+    name: "MUMeta",
     platforms: [
         .iOS(.v17),
         .macOS(.v14),
     ],
     products: [
-        .library(name: "MMMeta", targets: ["MMMeta"])
+        .library(name: "MUMeta", targets: ["MUMeta"])
     ],
     dependencies: [],
     targets: [
         .target(
-            name: "MMMeta",
+            name: "MUMeta",
         ),
         .testTarget(
-            name: "MMMetaTests",
-            dependencies: ["MMMeta"],
+            name: "MUMetaTests",
+            dependencies: ["MUMeta"],
         ),
     ]
 )

@@ -1,7 +1,7 @@
 import XCTest
-@testable import MMContent
+@testable import MUContent
 
-final class MMContentTests: XCTestCase {
+final class MUContentTests: XCTestCase {
     func testExample() throws {
         XCTAssertTrue(true)
     }

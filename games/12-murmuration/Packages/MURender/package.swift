@@ -3,25 +3,25 @@
 import PackageDescription
 
 let package = Package(
-    name: "MMRender",
+    name: "MURender",
     platforms: [
         .iOS(.v17),
         .macOS(.v14),
     ],
     products: [
-        .library(name: "MMRender", targets: ["MMRender"])
+        .library(name: "MURender", targets: ["MURender"])
     ],
     dependencies: [
-        .package(path: "../MMCore")
+        .package(path: "../MUCore")
     ],
     targets: [
         .target(
-            name: "MMRender",
-            dependencies: ["MMCore"],
+            name: "MURender",
+            dependencies: ["MUCore"],
         ),
         .testTarget(
-            name: "MMRenderTests",
-            dependencies: ["MMRender"],
+            name: "MURenderTests",
+            dependencies: ["MURender"],
         ),
     ]
 )

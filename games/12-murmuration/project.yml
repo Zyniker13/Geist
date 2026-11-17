@@ -2,14 +2,10 @@
 
 name: Murmuration
 options:
-  bundleIdPrefix: com.example
   deploymentTarget:
     iOS: "26.0"
     macOS: "26.0"
-  xcodeVersion: "27.2"
   createIntermediateGroups: true
-  fileExtensions:
-    pbxproj: pbxproj
 
 settings:
   base:
@@ -24,58 +20,122 @@ configFiles:
   Release: Config/Bundle.xcconfig
 
 packages:
-  MMCore:
-    path: Packages/MMCore
-  MMContent:
-    path: Packages/MMContent
-  MMLogic:
-    path: Packages/MMLogic
-  MMRender:
-    path: Packages/MMRender
-  MMPlatform:
-    path: Packages/MMPlatform
-  MMMeta:
-    path: Packages/MMMeta
+  MUCore:
+    path: Packages/MUCore
+  MUContent:
+    path: Packages/MUContent
+  MUAI:
+    path: Packages/MUAI
+  MURender:
+    path: Packages/MURender
+  MUAudio:
+    path: Packages/MUAudio
+  MUPlatform:
+    path: Packages/MUPlatform
+  MUMeta:
+    path: Packages/MUMeta
 
 targets:
-  MM:
+  MU:
     type: application
     platform: iOS
+    configFiles:
+      Debug: Config/Bundle.xcconfig
+      Release: Config/Bundle.xcconfig
     sources:
-      - App/iOS
-      - App/Shared
+      - path: App/iOS
+      - path: App/Shared
       - path: Resources
-        type: group
+        buildPhase: resources
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: $(GEIST_BUNDLE_ID)
-        SWIFT_EMIT_LOC_STRINGS: YES
     info:
       path: App/iOS/Info.plist
       properties:
-        UISupportedInterfaceOrientations:
-          - UIInterfaceOrientationPortrait
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait, UIInterfaceOrientationPortraitUpsideDown, UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight]
+        UIRequiresFullScreen: true
     dependencies:
-      - package: MMCore
-      - package: MMContent
-      - package: MMLogic
-      - package: MMRender
-      - package: MMPlatform
+      - package: MUCore
+      - package: MUContent
+      - package: MUAI
+      - package: MURender
+      - package: MUAudio
+      - package: MUPlatform
+      - package: MUMeta
 
-  MM-macOS:
+  MU-macOS:
     type: application
     platform: macOS
+    configFiles:
+      Debug: Config/Bundle.xcconfig
+      Release: Config/Bundle.xcconfig
     sources:
-      - App/macOS
-      - App/Shared
+      - path: App/macOS
+      - path: App/Shared
       - path: Resources
-        type: group
+        buildPhase: resources
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: $(GEIST_BUNDLE_ID)
+        GENERATE_INFOPLIST_FILE: YES
     dependencies:
-      - package: MMCore
-      - package: MMContent
-      - package: MMLogic
-      - package: MMRender
-      - package: MMPlatform
+      - package: MUCore
+      - package: MUContent
+      - package: MUAI
+      - package: MURender
+      - package: MUAudio
+      - package: MUPlatform
+      - package: MUMeta
+
+  MUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    configFiles:
+      Debug: Config/Bundle.xcconfig
+      Release: Config/Bundle.xcconfig
+    sources:
+      - path: Tests/UITests
+        excludes:
+          - "MUITestsMac.swift"
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: $(GEIST_BUNDLE_ID).tests
+        GENERATE_INFOPLIST_FILE: YES
+    dependencies:
+      - target: MU
+
+  MUITestsMac:
+    type: bundle.ui-testing
+    platform: macOS
+    configFiles:
+      Debug: Config/Bundle.xcconfig
+      Release: Config/Bundle.xcconfig
+    sources:
+      - path: Tests/UITests
+        excludes:
+          - "MUITests.swift"
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: $(GEIST_BUNDLE_ID).mac-tests
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_TARGET_NAME: MU-macOS
+    dependencies:
+      - target: MU-macOS
+
+schemes:
+  MU:
+    build:
+      targets:
+        MU: all
+    test:
+      targets:
+        - MUITests
+  MU-macOS:
+    build:
+      targets:
+        MU-macOS: all
+    test:
+      targets:
+        - MUITestsMac

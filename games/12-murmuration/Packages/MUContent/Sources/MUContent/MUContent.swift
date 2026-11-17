@@ -1,1 +1,1 @@
-// Murmuration Content — maps, patterns, and objectives.
+// Murmuration Content — region catalog, campaign, modifiers, validation.

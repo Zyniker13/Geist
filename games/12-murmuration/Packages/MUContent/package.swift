@@ -3,25 +3,25 @@
 import PackageDescription
 
 let package = Package(
-    name: "MMContent",
+    name: "MUContent",
     platforms: [
         .iOS(.v17),
         .macOS(.v14),
     ],
     products: [
-        .library(name: "MMContent", targets: ["MMContent"])
+        .library(name: "MUContent", targets: ["MUContent"])
     ],
     dependencies: [
-        .package(path: "../MMCore")
+        .package(path: "../MUCore")
     ],
     targets: [
         .target(
-            name: "MMContent",
-            dependencies: ["MMCore"],
+            name: "MUContent",
+            dependencies: ["MUCore"],
         ),
         .testTarget(
-            name: "MMContentTests",
-            dependencies: ["MMContent"],
+            name: "MUContentTests",
+            dependencies: ["MUContent"],
         ),
     ]
 )

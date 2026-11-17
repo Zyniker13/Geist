@@ -1,7 +1,7 @@
 import XCTest
-@testable import MMLogic
+@testable import MUAI
 
-final class MMLogicTests: XCTestCase {
+final class MUAITests: XCTestCase {
     func testExample() throws {
         XCTAssertTrue(true)
     }

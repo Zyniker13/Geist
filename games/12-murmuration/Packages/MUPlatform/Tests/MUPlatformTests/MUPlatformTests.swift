@@ -1,7 +1,7 @@
 import XCTest
-@testable import MMPlatform
+@testable import MUPlatform
 
-final class MMPlatformTests: XCTestCase {
+final class MUPlatformTests: XCTestCase {
     func testExample() throws {
         XCTAssertTrue(true)
     }

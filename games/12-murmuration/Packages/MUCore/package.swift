@@ -3,23 +3,24 @@
 import PackageDescription
 
 let package = Package(
-    name: "MMCore",
+    name: "MUCore",
     platforms: [
         .iOS(.v17),
         .macOS(.v14),
     ],
     products: [
-        .library(name: "MMCore", targets: ["MMCore"])
+        .library(name: "MUCore", targets: ["MUCore"])
     ],
     dependencies: [],
     targets: [
         .target(
-            name: "MMCore",
+            name: "MUCore",
             dependencies: [],
         ),
         .testTarget(
-            name: "MMCoreTests",
-            dependencies: ["MMCore"],
+            name: "MUCoreTests",
+            dependencies: ["MUCore"],
+            resources: [.copy("GoldenReplays")],
         ),
     ]
 )

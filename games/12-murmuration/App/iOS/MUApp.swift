@@ -1,11 +1,15 @@
-import UIKit
 import SwiftUI
 
 @main
-struct MMApp: App {
+struct MUApp: App {
+    @StateObject private var debug = DebugState()
+
     var body: some Scene {
         WindowGroup {
-            Text("Murmuration")
+            MenuView()
+                .environmentObject(debug)
+                .overlay(DebugGestureCatcher(onThreeFingerDoubleTap: { debug.toggle() }))
+                .task { debug.loadFromLaunchArguments() }
         }
     }
 }

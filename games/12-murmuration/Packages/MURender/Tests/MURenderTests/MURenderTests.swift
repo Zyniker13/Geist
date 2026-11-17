@@ -1,7 +1,7 @@
 import XCTest
-@testable import MMRender
+@testable import MURender
 
-final class MMRenderTests: XCTestCase {
+final class MURenderTests: XCTestCase {
     func testExample() throws {
         XCTAssertTrue(true)
     }

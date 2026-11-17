@@ -1,7 +1,7 @@
 import XCTest
-@testable import MMMeta
+@testable import MUMeta
 
-final class MMMetaTests: XCTestCase {
+final class MUMetaTests: XCTestCase {
     func testExample() throws {
         XCTAssertTrue(true)
     }

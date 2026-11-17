@@ -3,8 +3,8 @@
 This file is the single place to resume the program from. Keep every field below current after every meaningful step (see "Resuming After a Restart" in `ROADMAP.md`). Per-game detail (gate evidence and sign-offs) lives in each game's `docs/STATUS.md`.
 
 - **Current game:** Murmuration (`12-murmuration`)
-- **Phase:** P0 (Setup) — PASSED; repo layout, project.yml, Makefile, CI, SwiftPM packages, lint configs, stubs all built and tested. Next: P1 (Core Architecture) — define game state, flocking simulation, SpriteKit scene.
-- **Last done:** Murmuration P0 scaffold committed on `murmur/phase/P0-setup` (5e4165f); iOS + macOS builds pass, all 6 SwiftPM packages test pass, SwiftLint + swift-format clean.
+- **Phase:** P0 (Setup) — PASSED; repo layout, project.yml, Makefile, CI, SwiftPM packages, lint configs, stubs all built and tested. Fixed two Swift 6.4.2 crashes in Fixed.swift (raw.magnitude, division quotient bit overflow). Next: P1 (Core Architecture) — define game state, flocking simulation, SpriteKit scene.
+- **Last done:** Murmuration P0 scaffold committed on `murmur/phase/P0-setup` (5e4165f); Fixed.swift crash fix (8f215e8). iOS + macOS builds pass, all 6 SwiftPM packages test pass, SwiftLint + swift-format clean.
 - **Next step:** Murmuration P1 — define `GameState`, flocking simulation loop (cohesion/alignment/separation), SpriteKit scene setup.
 - **Blocked on:** Night Market P10 (simulator stack, host reboot needed); Murmuration P0 proceeds independently.
 

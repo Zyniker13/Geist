@@ -1,51 +1,56 @@
+SHELL := /bin/bash
+.PHONY: bootstrap gen build test lint snapshot perf coverage sim content-lint spike todo
+
 bootstrap:
-	@echo "Installing dependencies..."
-	@brew install --overwrite xcodegen swiftlint swift-format 2>/dev/null || true
+	brew install --overwrite xcodegen swiftlint swift-format 2>/dev/null || true
 
 gen:
-	@echo "Generating Xcode project..."
-	@xcodegen generate --spec project.yml
+	xcodegen generate --spec project.yml
 
 build: gen
-	@echo "Building iOS..."
-	@xcodebuild build -scheme MM -destination 'platform=iOS Simulator,name=iPad Pro 13-inch (M5)' -configuration Debug 2>&1 | tee /dev/null
-	@echo "Building macOS..."
-	@xcodebuild build -scheme MM-macOS -configuration Debug 2>&1 | tee /dev/null
+	xcodebuild build -scheme MU -destination 'platform=iOS Simulator,name=iPad Pro 13-inch (M5)' -configuration Debug
+	xcodebuild build -scheme MU-macOS -destination 'platform=macOS' -configuration Debug
 
 test: gen
-	@echo "Running Swift tests..."
-	@for pkg in MMCore MMContent MMLogic MMRender MMPlatform MMMeta; do \
-		swift test --package-path Packages/$$pkg 2>&1 | tee /dev/null; \
-	done
-	@echo "Running iOS tests..."
-	@xcodebuild test -scheme MM -destination 'platform=iOS Simulator,name=iPad Pro 13-inch (M5)' -configuration Debug 2>&1 | tee /dev/null
+	swift test --package-path Packages/MUCore
+	swift test --package-path Packages/MUContent
+	swift test --package-path Packages/MUAI
+	swift test --package-path Packages/MURender
+	swift test --package-path Packages/MUAudio
+	swift test --package-path Packages/MUPlatform
+	swift test --package-path Packages/MUMeta
+	xcodebuild test -scheme MU -destination 'platform=iOS Simulator,name=iPad Pro 13-inch (M5)' -configuration Debug
 
 lint:
-	@echo "Running SwiftLint..."
-	@swiftlint --strict --config .swiftlint.yml
-	@echo "Running swift-format..."
-	@swift-format lint --recursive Packages/ App/ Tests/ --configuration .swift-format
+	swiftlint --strict --config .swiftlint.yml
+	swift-format lint --recursive Packages/ App/ Tests/ --configuration .swift-format
+	./Tools/content-lint
+	./Tools/check-imports.sh
 
 content-lint:
-	@echo "Linting content files..."
-	@./Tools/content-lint 2>/dev/null || echo "content-lint tool not yet implemented"
+	./Tools/content-lint
 
-snapshot:
-	@echo "Capturing release screenshots..."
-	@./Tools/release-screens.sh 2>/dev/null || echo "release-screens.sh not yet implemented"
+# MU-P0.1 spike: boid tick time on Mac Release (gate: <= 4 ms for 4,000 birds).
+spike:
+	swift build -c release --package-path Tools/spike
+	swift run -c release --package-path Tools/spike spike --birds 4000 --ticks 300
 
-perf:
-	@echo "Running performance benchmarks..."
-	@echo "Perf benchmarks not yet implemented"
-
+# S1.3 (P1): headless rules-engine runs. Placeholder until the reducer lands.
 sim:
-	@echo "Running simulator tests..."
-	@echo "Simulator tests not yet implemented"
+	@echo "sim arrives with P1 (Tools/sim, S1.3)"
+
+snapshot: gen
+	xcodebuild test -scheme MU -destination 'platform=iOS Simulator,name=iPad Pro 13-inch (M5)' -configuration Debug -only-testing:Snapshots
+
+perf: gen
+	xcodebuild test -scheme MU -destination 'platform=iOS Simulator,name=iPad Pro 13-inch (M5)' -configuration Debug -only-testing:PerfTests
 
 coverage:
-	@echo "Generating test coverage..."
-	@echo "Coverage not yet implemented"
+	swift test --enable-code-coverage --package-path Packages/MUCore
+	@xcrun llvm-cov report Packages/MUCore/.build/debug/MUCorePackageTests.xctest/Contents/MacOS/MUCorePackageTests \
+		-instr-profile Packages/MUCore/.build/debug/codecov/default.profdata \
+		> /tmp/mu-cov.txt || true
+	@grep -E 'TOTAL|Sources' /tmp/mu-cov.txt | sed 's|/Users.*/Sources/|Sources/|' > docs/COVERAGE.md || true
 
 todo:
-	@echo "TODO items:"
-	@grep -rn "TODO:" Games/ App/ Tests/ Packages/ 2>/dev/null || true
+	grep -rn 'TODO(' Packages/ App/ 2>/dev/null | sort || true

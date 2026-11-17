@@ -1,1 +1,1 @@
-// Murmuration Logic — flocking algorithms and simulation.
+// Murmuration AI — rival flock steering, falcons, and the autoplayer.
