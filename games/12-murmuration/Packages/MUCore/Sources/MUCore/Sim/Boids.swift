@@ -4,7 +4,7 @@
 /// All math is integer (Q16.16 velocities, Int64 accumulators, integer sqrt) so the
 /// simulation is bit-identical across devices (INV-3). Neighbor iteration order is
 /// deterministic: 3x3 cells row-major, bird IDs ascending within a cell.
-public struct BoidsParams: Sendable {
+public struct BoidsParams: Sendable, Codable {
     public var sepRadius: Int32 = 24
     public var alignRadius: Int32 = 64
     public var cohRadius: Int32 = 96
@@ -23,7 +23,7 @@ public struct BoidsParams: Sendable {
 
 /// Per-tick world inputs for `stepBirds`: the active sub-flock's leader point,
 /// the wind vector (Q16.16), and the world bounds.
-public struct BoidsFrame: Sendable {
+public struct BoidsFrame: Sendable, Codable {
     public var leaderX: Int32
     public var leaderY: Int32
     public var windXQ: Int32
