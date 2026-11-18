@@ -5,8 +5,8 @@ This file is the single place to resume the program from. Keep every field below
 - **Current game:** Murmuration (`12-murmuration`)
 - **Phase:** P2 (Vertical Slice) — in progress on `murmur/phase/P2-vertical-slice`.
 - **Last done:** P2 vertical slice built: Metal `FlockRenderer` (instanced disks, trace ribbons, hills), app shell (iOS + macOS), HUD, Autoplayer, G2 UI tests. Kernel bug fixed: `birds.subFlock` desync on split/merge (INV-3; both arrays now updated in the Reducer), goldens regenerated at contentVersion 3. Package suites green (MUCore 67/67, MUAI 15/15, MURender green), lint 0.
-- **Next step:** G2 UI-test evidence (iPad simulator + Mac) — chained run waiting for a foreign xcodebuild to finish; then `make test` full suite, merge, tag `murmur/gate-G2-pass`.
-- **Blocked on:** nothing (foreign builds from another profile are sequenced around via the chain script).
+- **Next step:** G2 UI-test evidence via the new `ui-test-ios`/`ui-test-macos` CI jobs (ADR-0009: overlapping Xcode campaigns from two agents on this Mac kill each other's simulator, so the UI legs run on the GitHub runner); then `make test` equivalent from CI, merge, tag `murmur/gate-G2-pass`.
+- **Blocked on:** nothing (UI-test evidence moved to CI per ADR-0009; local simulator work resumes when no foreign campaign is active).
 
 ## Environment Check
 

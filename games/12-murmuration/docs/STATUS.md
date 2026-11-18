@@ -284,4 +284,17 @@ stale record fails loudly. Behavior-affecting engine changes now bump
   + check-imports).
 - `swift test` per package: MUCore **67/67**, MUAI **15/15**, MURender green,
   MUContent/MUAudio/MUPlatform/MUMeta green.
-- G2 UI-test runs (iPad simulator + Mac) in progress; evidence below.
+
+### Harness note (ADR-0009)
+
+Two agents share this Mac and run their own Xcode campaigns; overlapping
+`xcodebuild test` runs kill each other's booted simulator (the display UUID
+changes mid-run and `simctl io` stops answering) and wedge at 0 CPU — three
+consecutive P2 gate attempts, each killed per the wedge ladder. Plain builds
+are unaffected. The G2 UI-test evidence therefore runs in
+`.github/workflows/murmuration.yml` (`ui-test-ios` on an iPad simulator,
+`ui-test-macos` on `platform=macOS`); the jobs execute the same three tests
+per platform (`testThreeDayAutoplay`, `testPauseResumePreservesHash`,
+`testPerfFrameBudgetWithThreeThousandBirds`). Gate evidence below cites the
+CI runs; local simulator screenshots resume when no foreign campaign is
+active.

@@ -131,3 +131,45 @@ Architecture decision records. Every deviation from the roadmap is recorded here
   (lowest flock wins a contested residual) is deterministic and pinned by
   `testR8FeedingResidualGoesToLowestFlock`. Rival-flock claiming in P4 must
   preserve this ordering rule.
+
+## ADR-0008 — `birds.subFlock` and `subFlockAssignments` update together; replay contentVersion bumped to 3
+
+- **Status:** Accepted (P2)
+- **Context:** The P2 AI tests exposed a kernel desync: `applyAction(.splitFlock)`
+  and the merge path rewrote only `state.subFlockAssignments`, while the boids
+  kernel reads `state.birds.subFlock` for per-sub-flock leader selection. After a
+  split, both clouds steered to the same attractor and re-merged within seconds,
+  which broke `testSixtyTicksWithPilotsDoesNotMerge` and made
+  `testGentleRivalFleesWhenCloudsCoincide` unstable (near-coincident centroids
+  gave the flee direction to the RNG).
+- **Decision:** The Reducer updates both arrays on every split and merge (the
+  two views of the same assignment are never allowed to diverge). Because this
+  changes simulation behavior for every seed that splits or merges, this is a
+  behavior-affecting engine change under the S1.4 contract:
+  `GameState.replayContentVersion` is bumped 2 → 3 and all 20 golden replays
+  are regenerated with `sim --golden 20`.
+- **Consequences:** Replay records at contentVersion 2 fail loudly (stale
+  guard), as intended. `GentleRival` additionally uses a deterministic standoff
+  offset (+x from world center) when centroid separation < 64, so day-start AI
+  behavior no longer depends on RNG ordering. Regressions:
+  `testSixtyTicksWithPilotsDoesNotMerge`,
+  `testGentleRivalFleesWhenCloudsCoincide`.
+
+## ADR-0009 — G2 UI-test evidence runs on the GitHub runner, not this Mac
+
+- **Status:** Accepted (P2)
+- **Context:** Two agents share this host and run their own Xcode campaigns.
+  Whenever two `xcodebuild test` campaigns overlap, one campaign's booted
+  simulator dies mid-handoff (its `simctl io` probe stops responding and its
+  display UUID changes) and the other campaign wedges at 0 CPU — observed on
+  three consecutive local runs during the P2 gate, each killed per the wedge
+  ladder. Plain builds are unaffected (`xcodebuild build` completes normally).
+- **Decision:** The G2 UI-test evidence (three-day Autoplay, pause/resume
+  hash, 3,000-bird frame budget on iPad; `MUITestsMac` on macOS) is produced by
+  the `.github/workflows/murmuration.yml` `ui-test-ios` and `ui-test-macos`
+  jobs on a clean GitHub runner instead of this Mac. Package suites and lint
+  still run locally and in CI. Local simulator work (screenshots, fps probes)
+  resumes only when no foreign `xcodebuild` campaign is active.
+- **Consequences:** Gate evidence for the UI legs cites CI run logs; the local
+  harness limitation is recorded here rather than worked around by weakening
+  any test.
