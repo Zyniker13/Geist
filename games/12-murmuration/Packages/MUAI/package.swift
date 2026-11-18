@@ -12,12 +12,13 @@ let package = Package(
         .library(name: "MUAI", targets: ["MUAI"])
     ],
     dependencies: [
-        .package(path: "../MUCore")
+        .package(path: "../MUCore"),
+        .package(path: "../MUContent"),
     ],
     targets: [
         .target(
             name: "MUAI",
-            dependencies: ["MUCore"],
+            dependencies: ["MUCore", "MUContent"],
         ),
         .testTarget(
             name: "MUAITests",
