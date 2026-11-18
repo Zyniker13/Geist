@@ -38,7 +38,7 @@ final class MUGateTestsMac: XCTestCase {
     func testThreeDayAutoplay() throws {
         let app = XCUIApplication()
         GameUITest.launch(app: app, region: "meadow", days: 3, fast: 120)
-        let final = app.otherElements["game.final"]
+        let final = GameUITest.finalElement(app)
         XCTAssertTrue(
             final.waitForExistence(timeout: 240),
             "three autoplay days never completed"
@@ -68,12 +68,14 @@ final class MUGateTestsMac: XCTestCase {
     func testPerfFrameBudgetWithThreeThousandBirds() throws {
         let app = XCUIApplication()
         GameUITest.launch(app: app, region: "meadow", birds: 3000)
-        let overlay = app.otherElements["debug.overlay"]
-        XCTAssertTrue(overlay.waitForExistence(timeout: 15), "overlay missing in perf run")
+        // The FPS row only exists in the live game overlay; waiting on it is
+        // platform-agnostic and, if the session never started, the fps
+        // assertion below still fails on the 0 from the menu overlay.
+        let fpsRow = app.staticTexts["debug.fps"]
+        XCTAssertTrue(fpsRow.waitForExistence(timeout: 15), "overlay missing in perf run")
 
         Thread.sleep(forTimeInterval: 5)
 
-        let fpsRow = app.staticTexts["debug.fps"]
         let frameRow = app.staticTexts["debug.frame"]
         let fps = GameUITest.intValue(of: fpsRow, prefix: "FPS")
         XCTAssertNotNil(fps, "no FPS reading: \(fpsRow.label)")

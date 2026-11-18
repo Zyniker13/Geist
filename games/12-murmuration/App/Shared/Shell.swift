@@ -101,6 +101,10 @@ struct MenuView: View {
         }
         .onAppear {
             catalog = (try? RegionCatalog.loadBundled()) ?? RegionCatalog(regions: [])
+            // The UI-test harness starts a session without tapping Play.
+            if ProcessInfo.processInfo.arguments.contains("-uitest-play") {
+                playing = true
+            }
         }
     }
 

@@ -36,9 +36,15 @@ enum GameUITest {
         app.launch()
     }
 
+    /// The program-done card, queried platform-agnostically (the SwiftUI
+    /// container exposes as different element types on iOS and macOS).
+    static func finalElement(_ app: XCUIApplication) -> XCUIElement {
+        app.descendants(matching: .any).matching(identifier: "game.final").firstMatch
+    }
+
     /// Wait for the program-done card and return the final hash label.
     static func finalHash(app: XCUIApplication, timeout: TimeInterval = 240) -> String {
-        let final = app.otherElements["game.final"]
+        let final = finalElement(app)
         XCTAssertTrue(
             final.waitForExistence(timeout: timeout),
             "the game never reached program done"
