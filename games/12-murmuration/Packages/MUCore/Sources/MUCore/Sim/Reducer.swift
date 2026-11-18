@@ -259,6 +259,7 @@ public func computeMerge(state: inout GameState) -> [GameEvent] {
     for i in state.subFlockAssignments.indices where state.subFlockAssignments[i] != 0 {
         let from = state.subFlockAssignments[i]
         state.subFlockAssignments[i] = 0
+        state.birds.subFlock[i] = 0
         if !merged.contains(from) {
             merged.insert(from)
             events.append(.merge(into: 0, from: from))
@@ -287,12 +288,16 @@ public func applyAction(_ action: GameAction, to state: GameState) -> (GameState
         guard state.subFlockCount <= 2 else { return (state, events) } // Max 2 sub-flocks.
         let newSF = UInt8(state.subFlockCount)
         state.energy.append(800) // New sub-flock starts at 800 energy.
-        // Reassign some birds to the new sub-flock.
+        // Reassign some birds to the new sub-flock. The boids kernel reads
+        // `birds.subFlock` while merge/energy logic reads
+        // `subFlockAssignments`; both arrays must move together or the new
+        // sub-flock keeps steering to the old leader point.
         var reassigned = 0
         let targetCount = Int(Double(state.birds.count) * ratio)
         for i in 0..<state.subFlockAssignments.count {
             if state.subFlockAssignments[i] == from && reassigned < targetCount {
                 state.subFlockAssignments[i] = newSF
+                state.birds.subFlock[i] = newSF
                 reassigned += 1
             }
         }

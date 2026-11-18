@@ -97,7 +97,10 @@ public struct GameState: Codable, Sendable, Equatable {
 
     /// Content version for golden replays. Bump whenever an engine change
     /// alters replay outcomes, then regenerate the committed goldens.
-    public static let replayContentVersion = 2
+    /// v3: splitFlock/merge now sync `birds.subFlock` (the boids kernel's
+    /// view) with `subFlockAssignments`, so a split sub-flock steers to its
+    /// own leader point instead of the old one.
+    public static let replayContentVersion = 3
 
     /// Content version for golden replays.
     public let contentVersion: Int
