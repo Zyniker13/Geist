@@ -277,6 +277,19 @@ stale record fails loudly. Behavior-affecting engine changes now bump
    `previousBirds` from fresh state), `GameSurface` (`MTKView` types).
 6. **Unused binding warning** in `RulesEngineTests`
    (`diveStart(_, _)`).
+7. **Autoplay stalled forever after day 1 (would have failed G2):**
+   `GameModel.advanceFrame` skipped `runOneTick` whenever `dayEnded` was set,
+   but `runOneTick` is what routes day-end ticks through
+   `advanceAfterDayEnd` (card pause, next day). With no finger to tap
+   Continue, autoplay hung on the results card forever; menu and the
+   single-day perf test still passed, masking it. Reproduced locally by
+   running the Release macOS app with the exact UI-test launch arguments
+   plus `-uitest-trace` (playback trace on stdout): the run stopped dead
+   at `day=1 tick=4800` with the day-end line printed and nothing after.
+   Fix: the tick loops condition on `!finished` only. Regression:
+   `testThreeDayAutoplay` / `testPauseResumePreservesHash` (both platforms),
+   re-verified locally with the trace (`finished: 3 days recorded`,
+   no slow ticks).
 
 ### Test state (pre-G2)
 
@@ -297,4 +310,9 @@ are unaffected. The G2 UI-test evidence therefore runs in
 per platform (`testThreeDayAutoplay`, `testPauseResumePreservesHash`,
 `testPerfFrameBudgetWithThreeThousandBirds`). Gate evidence below cites the
 CI runs; local simulator screenshots resume when no foreign campaign is
-active.
+active. UI-test jobs run the Release configuration (ADR-0012): a Debug
+kernel costs ~70 ms per 3,000-bird tick vs ~0.9 ms in Release, pegging the
+main thread and starving accessibility snapshots. Local verification trick
+that needs no simulator: build `MU-macOS` Release and run the binary
+directly with the exact UI-test launch arguments plus `-uitest-trace`
+(stdout playback trace) — reproduces harness behavior headlessly.
