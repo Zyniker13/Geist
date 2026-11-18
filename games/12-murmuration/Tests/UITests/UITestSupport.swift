@@ -48,14 +48,16 @@ enum GameUITest {
             // this flag set in argv can stall the SwiftUI scene pipeline before
             // the root view builds (see ADR-0015). So on macOS the flags travel
             // ONLY by file and by the app's defaults domain; MULaunch prefers
-            // the file, then the defaults channel. Bound to
-            // MULaunch.configPath/defaultsSuiteKey.
+            // the file, then the defaults channel, then an environment-variable
+            // channel (MU_UITEST_FLAGS) that always works on CI. Bound to
+            // MULaunch.configPath/defaultsSuiteKey/envKey.
             try? args.joined(separator: "\n").write(
                 toFile: "/tmp/mu-uitest-config.txt", atomically: true, encoding: .utf8
             )
             try? "probe".write(toFile: GameUITest.probePath, atomically: true, encoding: .utf8)
             let suite = UserDefaults(suiteName: GameUITest.defaultsSuite)
             suite?.set(args, forKey: "mu-flags")
+            app.environment["MU_UITEST_FLAGS"] = args.joined(separator: "\n")
         #else
             app.launchArguments = args
         #endif

@@ -59,6 +59,18 @@ enum MULaunch {
                 return flags
             }
             note("launch: no defaults flags; using process arguments")
+            // Environment-variable channel: always available on CI (unlike
+            // /tmp which can be inaccessible and unlike defaults which
+            // requires a valid app-group suite name).
+            if let env = ProcessInfo.processInfo.environment["MU_UITEST_FLAGS"],
+                !env.isEmpty
+            {
+                let flags = env.split(separator: "\n").map(String.init).filter { !$0.isEmpty }
+                if !flags.isEmpty {
+                    note("launch: using env channel (\(flags.count) flags)")
+                    return flags
+                }
+            }
         #endif
         return ProcessInfo.processInfo.arguments
     }
