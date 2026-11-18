@@ -77,6 +77,7 @@ final class MUGateTestsMac: XCTestCase {
         let fpsRow = app.staticTexts["debug.fps"]
         guard fpsRow.waitForExistence(timeout: 15) else {
             GameUITest.dumpTrace()
+            GameUITest.dumpTree(app)
             XCTFail("overlay missing in perf run")
             return
         }
@@ -92,6 +93,7 @@ final class MUGateTestsMac: XCTestCase {
         let frameMs = GameUITest.sampleFrameMedian(row: frameRow)
         guard let frameMs else {
             GameUITest.dumpTrace()
+            GameUITest.dumpTree(app)
             XCTFail("no frame-cost reading: \(frameRow.label)")
             return
         }

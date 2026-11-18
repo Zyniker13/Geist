@@ -96,6 +96,7 @@ enum GameUITest {
         }
         let hashRow = app.staticTexts["debug.hash"]
         guard hashRow.waitForExistence(timeout: 10) else {
+            dumpTree(app)
             return ""
         }
         let label = hashRow.label
@@ -173,6 +174,15 @@ enum GameUITest {
             dump(file: "/tmp/mu-uitest-trace.log", tag: "MU-TRACE")
             dumpDefaults()
         #endif
+    }
+
+    /// Prints the app's accessibility element tree into the runner log:
+    /// the ground truth for "which overlay rows exist and what their
+    /// labels read" (ADR-0015 debugging, macOS AX churn diagnosis).
+    static func dumpTree(_ app: XCUIApplication) {
+        print("[MU-TREE] begin")
+        print(app.debugDescription)
+        print("[MU-TREE] end")
     }
 
     #if os(macOS)

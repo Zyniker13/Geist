@@ -21,6 +21,9 @@ final class DebugState: ObservableObject {
         if arguments.contains("-uitest-overlay") {
             visible = true
         }
+        MULaunch.note(
+            "debugstate: overlayFlag=\(arguments.contains("-uitest-overlay")) visible=\(visible)"
+        )
         if let index = arguments.firstIndex(of: "-uitest-seed"), index + 1 < arguments.count,
             let value = UInt64(arguments[index + 1])
         {
@@ -34,18 +37,39 @@ final class DebugState: ObservableObject {
 }
 
 /// The live in-game overlay: FPS, tick, state hash, frame cost.
-struct GameDebugOverlay: View {
-    @ObservedObject var model: GameModel
+///
+/// The model changes published state every frame, which re-evaluates any
+/// observing view every frame. On macOS that per-frame churn destabilized
+/// the accessibility tree on the CI runner (rows observed with empty
+/// labels, siblings dropping out). The overlay therefore holds no model
+/// observation: it samples the model on a 2 Hz task into local state, and
+/// its Equatable conformance keeps parent-driven re-evaluations from
+/// re-rendering the body. A sampled overlay still satisfies the gate
+/// cadence: FPS windows refresh at ~1 Hz and frame cost updates per frame.
+struct GameDebugOverlay: View, Equatable {
+    private struct Sample {
+        var fps = 0
+        var tick = 0
+        var hash = ""
+        var frameMs = 0.0
+    }
+
+    /// All parent-created instances are equal: the body reads only the
+    /// sampled state, so parent churn must not re-render it.
+    nonisolated static func == (lhs: Self, rhs: Self) -> Bool { true }
+
+    let model: GameModel
+    @State private var sample = Sample()
 
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text("FPS \(model.fps)")
+            Text("FPS \(sample.fps)")
                 .accessibilityIdentifier("debug.fps")
-            Text("tick \(model.state.tick)")
+            Text("tick \(sample.tick)")
                 .accessibilityIdentifier("debug.tick")
-            Text("hash \(model.hashLabel)")
+            Text("hash \(sample.hash)")
                 .accessibilityIdentifier("debug.hash")
-            Text(String(format: "frame %.2fms", model.frameMs))
+            Text("frame \(sample.frameMs, specifier: "%.2f")ms")
                 .accessibilityIdentifier("debug.frame")
         }
         .font(.system(size: 11, weight: .semibold, design: .monospaced))
@@ -55,6 +79,20 @@ struct GameDebugOverlay: View {
         .cornerRadius(6)
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("debug.overlay")
+        .task { await pollModel() }
+    }
+
+    /// Samples the model every 0.5 s until the overlay leaves the tree.
+    private func pollModel() async {
+        while !Task.isCancelled {
+            sample = Sample(
+                fps: model.fps,
+                tick: model.state.tick,
+                hash: model.hashLabel,
+                frameMs: model.frameMs
+            )
+            try? await Task.sleep(nanoseconds: 500_000_000)
+        }
     }
 }
 
