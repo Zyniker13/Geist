@@ -9,7 +9,14 @@ final class DebugState: ObservableObject {
     @Published var visible = false
     @Published var seed: UInt64 = 1
 
-    func loadLaunchFlags() {
+    init() {
+        applyLaunchFlags()
+    }
+
+    /// -uitest-overlay and -uitest-seed, applied at construction so the
+    /// overlay state does not wait for .task/.onAppear callbacks (which
+    /// never fired on the CI runner while body evaluation provably did).
+    private func applyLaunchFlags() {
         let arguments = MULaunch.arguments()
         if arguments.contains("-uitest-overlay") {
             visible = true
@@ -79,8 +86,24 @@ struct MenuDebugOverlay: View {
 /// The menu (S0.4): Play enters the P2 vertical slice.
 struct MenuView: View {
     @EnvironmentObject var debug: DebugState
-    @State private var playing = false
-    @State private var catalog = RegionCatalog(regions: [])
+    // Startup state resolves at view-init time, not in .task/.onAppear:
+    // on the CI runner those callbacks never fired while body evaluation
+    // provably did (menu tests passed), so flag-driven state must not
+    // wait for them (docs/STATUS.md, run 44286953243).
+    @State private var playing: Bool
+    @State private var catalog: RegionCatalog
+
+    init() {
+        let arguments = MULaunch.arguments()
+        let autoPlay = arguments.contains("-uitest-play")
+        _playing = State(initialValue: autoPlay)
+        _catalog = State(
+            initialValue: (try? RegionCatalog.loadBundled()) ?? RegionCatalog(regions: [])
+        )
+        if autoPlay {
+            MUTrace.log("shell: launching play session args=\(arguments.joined(separator: " "))")
+        }
+    }
 
     var body: some View {
         ZStack {
@@ -98,24 +121,6 @@ struct MenuView: View {
                     }
                     .padding(12)
                 }
-            }
-        }
-        .onAppear {
-            catalog = (try? RegionCatalog.loadBundled()) ?? RegionCatalog(regions: [])
-            #if os(macOS)
-                // Unconditional launch selfreport: raw process args + which
-                // flag source won. This is the only app-side evidence that
-                // survives when launchArguments are dropped by the runner.
-                MULaunch.note(
-                    "shell.onAppear args=\(ProcessInfo.processInfo.arguments.joined(separator: " "))"
-                )
-            #endif
-            // The UI-test harness starts a session without tapping Play.
-            if MULaunch.arguments().contains("-uitest-play") {
-                MUTrace.log(
-                    "shell: launching play session args=\(MULaunch.arguments().joined(separator: " "))"
-                )
-                playing = true
             }
         }
     }

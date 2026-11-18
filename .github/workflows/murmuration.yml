@@ -120,7 +120,20 @@ jobs:
         # build's bounds-checked kernel is ~80x slower (70 ms/tick at 3,000
         # birds vs 0.9 ms in Release), pegs the main thread, starves the
         # accessibility snapshot, and can never meet the frame budget.
-        run: xcodebuild test -scheme MU -destination "id=${{ env.simUDID }}" -configuration Release
+        # One retry: the shared runner's co-tenant load has sunk the fps
+        # gate on quiet-code commits (ADR-0016); a real regression fails
+        # both attempts deterministically.
+        run: |
+          st=1
+          for attempt in 1 2; do
+            echo "=== UI test attempt $attempt ==="
+            if xcodebuild test -scheme MU -destination "id=${{ env.simUDID }}" -configuration Release; then
+              st=0
+              break
+            fi
+            echo "attempt $attempt failed; retrying once"
+          done
+          exit $st
 
   ui-test-macos:
     runs-on: macos-latest
@@ -140,4 +153,16 @@ jobs:
           xcodebuild -version
       - name: UI test (macOS)
         working-directory: games/12-murmuration
-        run: xcodebuild test -scheme MU-macOS -destination 'platform=macOS' -configuration Release
+        # One retry, same policy as the iOS job (ADR-0016): a loaded runner
+        # can sink the perf gate; a real regression fails both attempts.
+        run: |
+          st=1
+          for attempt in 1 2; do
+            echo "=== UI test attempt $attempt ==="
+            if xcodebuild test -scheme MU-macOS -destination 'platform=macOS' -configuration Release; then
+              st=0
+              break
+            fi
+            echo "attempt $attempt failed; retrying once"
+          done
+          exit $st

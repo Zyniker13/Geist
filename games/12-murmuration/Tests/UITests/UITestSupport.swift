@@ -3,6 +3,15 @@ import XCTest
 /// Shared helpers for the G2 UI tests (three-day autoplay, pause/resume
 /// hashes, and the 3,000-bird perf probe).
 enum GameUITest {
+    /// The app's own defaults domain, shared with the runner through
+    /// UserDefaults(suiteName:) — a flags channel independent of /tmp
+    /// (MULaunch.swift reads it when the config file is unusable).
+    static let defaultsSuite = "com.example.murmuration"
+    /// A runner-written file the app never writes: MULaunch records
+    /// whether the app can see it, which distinguishes a /tmp access
+    /// failure from a never-running startup path.
+    static let probePath = "/tmp/mu-uitest-probe.txt"
+
     /// Launch args that start the game immediately with the Autoplayer.
     static func launch(
         app: XCUIApplication,
@@ -33,15 +42,22 @@ enum GameUITest {
             args += ["-uitest-hash"]
         }
         args += ["-uitest-trace"]
-        app.launchArguments = args
         #if os(macOS)
             // The macOS runner has dropped launchArguments in CI (the app sat on
-            // the menu with no trace file), so the flags also travel by file;
-            // the app's MULaunch prefers the file when present. Bound to
-            // MULaunch.configPath in the app.
+            // the menu with no trace file), and locally a bare-exec launch with
+            // this flag set in argv can stall the SwiftUI scene pipeline before
+            // the root view builds (see ADR-0015). So on macOS the flags travel
+            // ONLY by file and by the app's defaults domain; MULaunch prefers
+            // the file, then the defaults channel. Bound to
+            // MULaunch.configPath/defaultsSuiteKey.
             try? args.joined(separator: "\n").write(
                 toFile: "/tmp/mu-uitest-config.txt", atomically: true, encoding: .utf8
             )
+            try? "probe".write(toFile: GameUITest.probePath, atomically: true, encoding: .utf8)
+            let suite = UserDefaults(suiteName: GameUITest.defaultsSuite)
+            suite?.set(args, forKey: "mu-flags")
+        #else
+            app.launchArguments = args
         #endif
         app.launch()
         #if os(macOS)
@@ -56,6 +72,10 @@ enum GameUITest {
     static func clearFileConfig() {
         #if os(macOS)
             try? FileManager.default.removeItem(atPath: "/tmp/mu-uitest-config.txt")
+            try? FileManager.default.removeItem(atPath: GameUITest.probePath)
+            let suite = UserDefaults(suiteName: GameUITest.defaultsSuite)
+            suite?.removeObject(forKey: "mu-flags")
+            suite?.removeObject(forKey: "mu-note")
         #endif
     }
 
@@ -150,8 +170,53 @@ enum GameUITest {
         #if os(macOS)
             dump(file: "/tmp/mu-uitest-note.log", tag: "MU-NOTE")
             dump(file: "/tmp/mu-uitest-trace.log", tag: "MU-TRACE")
+            dumpDefaults()
         #endif
     }
+
+    #if os(macOS)
+        /// The defaults mirror lives in the app's prefs plist — a channel
+        /// independent of /tmp. Empty here means either the app's startup
+        /// code never ran or the app is sandboxed (its defaults would live
+        /// inside the container instead, which the container check and the
+        /// direct plist read below still surface).
+        private static func dumpDefaults() {
+            let suite = UserDefaults(suiteName: GameUITest.defaultsSuite)
+            let note = suite?.stringArray(forKey: "mu-note") ?? []
+            if note.isEmpty {
+                print("[MU-NOTE-DEFAULTS] empty (app never wrote, or its defaults are containerized)")
+            } else {
+                print("[MU-NOTE-DEFAULTS] begin")
+                for line in note {
+                    print("[MU-NOTE-DEFAULTS] \(line)")
+                }
+                print("[MU-NOTE-DEFAULTS] end")
+            }
+            let container = NSString(
+                string: "~/Library/Containers/com.example.murmuration"
+            ).expandingTildeInPath
+            let sandboxed = FileManager.default.fileExists(atPath: container)
+            print(
+                "[MU-SANDBOX] app container exists=\(sandboxed)"
+                    + " (true ⇒ the app is sandboxed on this machine)"
+            )
+            let containerPlist = container + "/Data/Library/Preferences/com.example.murmuration.plist"
+            if let data = FileManager.default.contents(atPath: containerPlist),
+                let plist = try? PropertyListSerialization.propertyList(
+                    from: data, options: [], format: nil
+                ) as? [String: Any],
+                let note = plist["mu-note"] as? [String]
+            {
+                print("[MU-NOTE-CONTAINER] begin")
+                for line in note {
+                    print("[MU-NOTE-CONTAINER] \(line)")
+                }
+                print("[MU-NOTE-CONTAINER] end")
+            } else {
+                print("[MU-NOTE-CONTAINER] no container plist note")
+            }
+        }
+    #endif
 
     #if os(macOS)
         private static func dump(file: String, tag: String) {

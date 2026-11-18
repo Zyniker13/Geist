@@ -5,7 +5,11 @@ This file is the single place to resume the program from. Keep every field below
 - **Current game:** Murmuration (`12-murmuration`)
 - **Phase:** P2 (Vertical Slice) — in progress on `murmur/phase/P2-vertical-slice`.
 - **Last done:** P2 vertical slice built: Metal `FlockRenderer` (instanced disks, trace ribbons, hills), app shell (iOS + macOS), HUD, Autoplayer, G2 UI tests. Kernel bug fixed: `birds.subFlock` desync on split/merge (INV-3; both arrays now updated in the Reducer), goldens regenerated at contentVersion 3. Package suites green (MUCore 67/67, MUAI 15/15, MURender green), lint 0.
-- **Next step:** G2 UI-test evidence via the new `ui-test-ios`/`ui-test-macos` CI jobs (ADR-0009: overlapping Xcode campaigns from two agents on this Mac kill each other's simulator, so the UI legs run on the GitHub runner); then `make test` equivalent from CI, merge, tag `murmur/gate-G2-pass`.
+- **Next step:** G2 CI green on `murmur/phase/P2-vertical-slice`: macOS gate
+  tests fail on the runner because the app's startup callbacks never ran
+  there (ADR-0015 moved startup resolution to view-init time + a defaults
+  channel); iOS perf gate is load-flaky (ADR-0014 median + peak). Next push
+  carries ADR-0015; then merge, tag `murmur/gate-G2-pass`.
 - **Blocked on:** nothing (UI-test evidence moved to CI per ADR-0009; local simulator work resumes when no foreign campaign is active).
 
 ## Environment Check
@@ -33,7 +37,7 @@ If Xcode 27.2 or an iOS 26-or-later runtime is missing and cannot be installed w
 | Order | No. | Folder | Game | State | Last Gate | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | 04 | [`04-night-market`](games/04-night-market/ROADMAP.md) | Night Market | Done | `night-market/gate-G10-pass` | All gates G0–G10 tagged; TestFlight/App Store steps owner-only in #12 |
-| 2 | 12 | [`12-murmuration`](games/12-murmuration/ROADMAP.md) | Murmuration | In Progress (P2) | `murmur/gate-G1-pass` | P2 vertical slice built; autoplay day-end stall fixed (c4f85f0); G2 evidence pending CI run on c4f85f0 |
+| 2 | 12 | [`12-murmuration`](games/12-murmuration/ROADMAP.md) | Murmuration | In Progress (P2) | `murmur/gate-G1-pass` | P2 vertical slice built; autoplay stall fixed; ADR-0014 robust perf sampling; ADR-0015 view-init startup resolution + defaults flag channel (macOS CI startup callbacks never ran); G2 CI run pending on the ADR-0015 push |
 | 3 | 02 | [`02-orrery`](games/02-orrery/ROADMAP.md) | Orrery | Not Started | — | — |
 | 4 | 14 | [`14-beacon-coast`](games/14-beacon-coast/ROADMAP.md) | Beacon Coast | Not Started | — | — |
 | 5 | 13 | [`13-terrace`](games/13-terrace/ROADMAP.md) | Terrace | Not Started | — | — |
