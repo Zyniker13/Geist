@@ -15,7 +15,7 @@ struct MUApp: App {
                         .frame(width: 0, height: 0)
                         .accessibilityHidden(true)
                 )
-                .task { debug.loadFromLaunchArguments() }
+                .task { debug.loadLaunchFlags() }
         }
         .commands {
             // ⌘⇧D also lives in the menu bar so the shortcut is discoverable (S0.7).

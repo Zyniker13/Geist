@@ -19,26 +19,30 @@ import MURender
 /// in the launch args.
 enum MUTrace {
     #if os(macOS)
-    static let filePath = "/tmp/mu-uitest-trace.log"
+        static let filePath = "/tmp/mu-uitest-trace.log"
     #endif
     // All trace writers run on the main thread (Shell, PlayView, the MTKView
     // delegate); the flag only gates a one-time truncate.
     nonisolated(unsafe) private static var fresh = false
 
     static func log(_ line: String) {
-        guard ProcessInfo.processInfo.arguments.contains("-uitest-trace") else { return }
+        guard MULaunch.arguments().contains("-uitest-trace") else { return }
         print("[MU] \(line)")
         fflush(stdout)
         #if os(macOS)
-        if !fresh {
-            fresh = true
-            FileManager.default.createFile(atPath: filePath, contents: nil)
-        }
-        if let fh = FileHandle(forWritingAtPath: filePath) {
-            defer { try? fh.close() }
-            fh.seekToEndOfFile()
-            fh.write(Data("[MU] \(line)\n".utf8))
-        }
+            if !fresh {
+                fresh = true
+                if !FileManager.default.createFile(atPath: filePath, contents: nil) {
+                    MULaunch.note("trace: createFile failed at \(filePath)")
+                }
+            }
+            if let fh = FileHandle(forWritingAtPath: filePath) {
+                defer { try? fh.close() }
+                fh.seekToEndOfFile()
+                fh.write(Data("[MU] \(line)\n".utf8))
+            } else {
+                MULaunch.note("trace: cannot open \(filePath) for append")
+            }
         #endif
     }
 }
@@ -242,16 +246,19 @@ final class GameModel: ObservableObject {
         }
         if state.tick - lastTraceTick >= 300 || state.tick == 1 {
             lastTraceTick = state.tick
-            playbackTrace("day=\(day) tick=\(state.tick) birds=\(state.birds.count) fps=\(fps) dayEnded=\(dayEnded) finished=\(finished)")
+            playbackTrace(
+                "day=\(day) tick=\(state.tick) birds=\(state.birds.count) fps=\(fps) dayEnded=\(dayEnded) finished=\(finished)"
+            )
         }
     }
 
     private func appendTrace() {
         let path = state.leaderPaths[0]
-        trace.append(TracePoint(
-            x: Float(path.currentX), y: Float(path.currentY),
-            age: 0
-        ))
+        trace.append(
+            TracePoint(
+                x: Float(path.currentX), y: Float(path.currentY),
+                age: 0
+            ))
         if trace.count > Self.traceLength {
             trace.removeFirst(trace.count - Self.traceLength)
         }

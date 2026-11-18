@@ -329,5 +329,22 @@ directly with the exact UI-test launch arguments plus `-uitest-trace`
 - 7ff557a (44275135778): file-backed lifecycle trace mirror
   (`/tmp/mu-uitest-trace.log`), `NSApp.activate` before the UI-test window,
   failure dumps of the mirror, peak-over-window FPS sampling in both perf
-  tests. Awaiting result — the trace pinpoints which macOS stage
-  (shell launch / playview ready / first draw) is missing under XCTest.
+  tests. Result: `ui-test-ios` **green** (peak sampling fixed the 45-fps
+  single-window flake); `ui-test-macos` red with a shifted signature —
+  pause/resume timed out at 489 s (two 240 s `finalHash` waits = app on
+  menu), perf "overlay missing", menu tests green. No `[MU-TRACE]` lines and
+  no trace file: the trace flag itself never reached the app.
+- **Diagnosis (ADR-0013):** macOS XCUI runners dropped
+  `XCUIApplication.launchArguments` — the app started plain, so every
+  `-uitest-play`-dependent test waited on a menu-screen app. iOS received
+  identical args, and the headless direct-executable run proves the app's
+  parsing, so the loss sits between the macOS runner and the app process.
+- **Fix:** flags now travel by file on macOS (`/tmp/mu-uitest-config.txt`,
+  preferred by the app's single reader `MULaunch.arguments()`); an
+  unconditional note file (`/tmp/mu-uitest-note.log`) records the launch
+  facts and trace-write failures, and both files are dumped on failure.
+  Local Release smoke verified both channels (2026-11-18): file config with
+  empty argv → note logs `launch: using file config (11 flags)`, play
+  session runs, `finished: 1 days recorded` recorded in the trace; argv
+  fallback with no config file → `launch: no usable file config; using
+  process arguments`, identical playback.

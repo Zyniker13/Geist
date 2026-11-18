@@ -83,18 +83,16 @@ final class MUGateTests: XCTestCase {
         XCTAssertGreaterThanOrEqual(fps ?? 0, 55, "fps below the 60 Hz display cap")
 
         let frameRow = app.staticTexts["debug.frame"]
-        // "frame 3.21ms" → 3.21
-        let frameLabel = frameRow.exists ? frameRow.label : ""
-        let frameMs = frameLabel
-            .replacingOccurrences(of: "frame ", with: "")
-            .replacingOccurrences(of: "ms", with: "")
-        if let value = Double(frameMs) {
-            XCTAssertLessThanOrEqual(
-                value, 8.4,
-                "frame build \(value)ms exceeds the 8.33 ms (120 fps) budget"
-            )
-        } else {
-            XCTFail("no frame-cost reading: \(frameLabel)")
+        // Median over independent ~2 s windows: a single sample spikes under
+        // co-tenant load (ADR-0014).
+        let frameMs = GameUITest.sampleFrameMedian(row: frameRow)
+        guard let frameMs else {
+            XCTFail("no frame-cost reading: \(frameRow.label)")
+            return
         }
+        XCTAssertLessThanOrEqual(
+            frameMs, 8.4,
+            "frame build \(frameMs)ms exceeds the 8.33 ms (120 fps) budget"
+        )
     }
 }

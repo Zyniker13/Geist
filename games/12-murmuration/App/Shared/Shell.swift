@@ -9,13 +9,14 @@ final class DebugState: ObservableObject {
     @Published var visible = false
     @Published var seed: UInt64 = 1
 
-    func loadFromLaunchArguments() {
-        let arguments = ProcessInfo.processInfo.arguments
+    func loadLaunchFlags() {
+        let arguments = MULaunch.arguments()
         if arguments.contains("-uitest-overlay") {
             visible = true
         }
         if let index = arguments.firstIndex(of: "-uitest-seed"), index + 1 < arguments.count,
-           let value = UInt64(arguments[index + 1]) {
+            let value = UInt64(arguments[index + 1])
+        {
             seed = value
         }
     }
@@ -84,7 +85,7 @@ struct MenuView: View {
     var body: some View {
         ZStack {
             if playing {
-                PlayView(config: GameLaunchConfig.fromLaunchArguments(), catalog: catalog)
+                PlayView(config: GameLaunchConfig.resolved(), catalog: catalog)
             } else {
                 menu
             }
@@ -101,10 +102,18 @@ struct MenuView: View {
         }
         .onAppear {
             catalog = (try? RegionCatalog.loadBundled()) ?? RegionCatalog(regions: [])
+            #if os(macOS)
+                // Unconditional launch selfreport: raw process args + which
+                // flag source won. This is the only app-side evidence that
+                // survives when launchArguments are dropped by the runner.
+                MULaunch.note(
+                    "shell.onAppear args=\(ProcessInfo.processInfo.arguments.joined(separator: " "))"
+                )
+            #endif
             // The UI-test harness starts a session without tapping Play.
-            if ProcessInfo.processInfo.arguments.contains("-uitest-play") {
+            if MULaunch.arguments().contains("-uitest-play") {
                 MUTrace.log(
-                    "shell: launching play session args=\(ProcessInfo.processInfo.arguments.joined(separator: " "))"
+                    "shell: launching play session args=\(MULaunch.arguments().joined(separator: " "))"
                 )
                 playing = true
             }

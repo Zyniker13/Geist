@@ -34,11 +34,28 @@ enum GameUITest {
         }
         args += ["-uitest-trace"]
         app.launchArguments = args
+        #if os(macOS)
+            // The macOS runner has dropped launchArguments in CI (the app sat on
+            // the menu with no trace file), so the flags also travel by file;
+            // the app's MULaunch prefers the file when present. Bound to
+            // MULaunch.configPath in the app.
+            try? args.joined(separator: "\n").write(
+                toFile: "/tmp/mu-uitest-config.txt", atomically: true, encoding: .utf8
+            )
+        #endif
         app.launch()
         #if os(macOS)
-        // A background/occluded window pauses MTKView's display link, so the
-        // gate run must hold the frontmost window for ticks to flow.
-        app.activate()
+            // A background/occluded window pauses MTKView's display link, so the
+            // gate run must hold the frontmost window for ticks to flow.
+            app.activate()
+        #endif
+    }
+
+    /// Plain app.launch() paths (menu tests) must not inherit a stale config
+    /// file from an earlier gate test, or the app would auto-play.
+    static func clearFileConfig() {
+        #if os(macOS)
+            try? FileManager.default.removeItem(atPath: "/tmp/mu-uitest-config.txt")
         #endif
     }
 
@@ -93,21 +110,60 @@ enum GameUITest {
         return peak
     }
 
-    /// Prints the app-side trace mirror into the runner log on failure:
+    /// Median frame-build ms over independent ~2 s overlay windows: a single
+    /// sample spikes under co-tenant load, so the median (robust to transient
+    /// spikes) is the gate metric; it still fails if the typical frame build
+    /// exceeds budget (ADR-0014).
+    static func sampleFrameMedian(
+        row: XCUIElement, reads: Int = 6, spacing: TimeInterval = 2
+    ) -> Double? {
+        var samples: [Double] = []
+        for _ in 0..<reads {
+            if row.exists, let value = frameMs(of: row) {
+                samples.append(value)
+            }
+            Thread.sleep(forTimeInterval: spacing)
+        }
+        guard !samples.isEmpty else { return nil }
+        samples.sort()
+        let mid = samples.count / 2
+        return samples.count.isMultiple(of: 2)
+            ? (samples[mid - 1] + samples[mid]) / 2
+            : samples[mid]
+    }
+
+    /// Parse "frame 3.21ms" → 3.21.
+    private static func frameMs(of row: XCUIElement) -> Double? {
+        let label = row.label
+        guard let start = label.range(of: "frame ") else { return nil }
+        let rest = label[start.upperBound...]
+        guard let end = rest.range(of: "ms") else { return nil }
+        return Double(rest[..<end.lowerBound].trimmingCharacters(in: .whitespaces))
+    }
+
+    /// Prints the app-side diagnostic files into the runner log on failure:
     /// the launched app's stdout is not captured on macOS, so the gate
-    /// tests surface its playback trace through the runner instead.
+    /// tests surface its playback trace through the runner instead. The
+    /// note file is unconditional (launch facts, trace-write failures);
+    /// the trace file only exists when -uitest-trace took effect.
     static func dumpTrace() {
         #if os(macOS)
-        let path = "/tmp/mu-uitest-trace.log"
-        guard let text = try? String(contentsOfFile: path, encoding: .utf8), !text.isEmpty else {
-            print("[MU-TRACE] no trace file at \(path) (app never wrote one)")
-            return
-        }
-        print("[MU-TRACE] begin")
-        for line in text.split(separator: "\n") {
-            print("[MU-TRACE] \(line)")
-        }
-        print("[MU-TRACE] end")
+            dump(file: "/tmp/mu-uitest-note.log", tag: "MU-NOTE")
+            dump(file: "/tmp/mu-uitest-trace.log", tag: "MU-TRACE")
         #endif
     }
+
+    #if os(macOS)
+        private static func dump(file: String, tag: String) {
+            guard let text = try? String(contentsOfFile: file, encoding: .utf8), !text.isEmpty else {
+                print("[\(tag)] no file at \(file) (app never wrote one)")
+                return
+            }
+            print("[\(tag)] begin")
+            for line in text.split(separator: "\n") {
+                print("[\(tag)] \(line)")
+            }
+            print("[\(tag)] end")
+        }
+    #endif
 }

@@ -3,6 +3,7 @@ import XCTest
 /// Mac smoke: the placeholder menu launches, and ⌘⇧D toggles the debug overlay (S0.4, S0.7).
 final class MUITestsMac: XCTestCase {
     func testMenuLaunches() throws {
+        GameUITest.clearFileConfig()
         let app = XCUIApplication()
         app.launch()
 
@@ -14,6 +15,7 @@ final class MUITestsMac: XCTestCase {
     }
 
     func testCommandShiftDTogglesOverlay() throws {
+        GameUITest.clearFileConfig()
         let app = XCUIApplication()
         app.launch()
 
@@ -85,17 +87,17 @@ final class MUGateTestsMac: XCTestCase {
         XCTAssertGreaterThanOrEqual(fps ?? 0, 55, "fps below the 60 Hz display cap")
 
         let frameRow = app.staticTexts["debug.frame"]
-        let frameLabel = frameRow.exists ? frameRow.label : ""
-        let frameMs = frameLabel
-            .replacingOccurrences(of: "frame ", with: "")
-            .replacingOccurrences(of: "ms", with: "")
-        if let value = Double(frameMs) {
-            XCTAssertLessThanOrEqual(
-                value, 8.4,
-                "frame build \(value)ms exceeds the 8.33 ms (120 fps) budget"
-            )
-        } else {
-            XCTFail("no frame-cost reading: \(frameLabel)")
+        // Median over independent ~2 s windows: a single sample spikes under
+        // co-tenant load (ADR-0014).
+        let frameMs = GameUITest.sampleFrameMedian(row: frameRow)
+        guard let frameMs else {
+            GameUITest.dumpTrace()
+            XCTFail("no frame-cost reading: \(frameRow.label)")
+            return
         }
+        XCTAssertLessThanOrEqual(
+            frameMs, 8.4,
+            "frame build \(frameMs)ms exceeds the 8.33 ms (120 fps) budget"
+        )
     }
 }

@@ -17,10 +17,10 @@ struct GameLaunchConfig {
     var hashUpdates = false
     var seed: UInt64?
 
-    /// Parse the -uitest-* launch arguments.
-    static func fromLaunchArguments() -> GameLaunchConfig {
+    /// Parse the effective UI-test flags (file config on macOS, else argv).
+    static func resolved() -> GameLaunchConfig {
         var config = GameLaunchConfig()
-        let args = ProcessInfo.processInfo.arguments
+        let args = MULaunch.arguments()
         func value(_ flag: String) -> String? {
             guard let index = args.firstIndex(of: flag), index + 1 < args.count else {
                 return nil
@@ -45,15 +45,17 @@ struct PlayView: View {
 
     init(config: GameLaunchConfig, catalog: RegionCatalog) {
         let region = catalog.region(id: config.regionID) ?? catalog.regions.first
-        let chosen = region ?? Region(
-            id: "fallback", name: "Fallback",
-            worldWidth: 2048, worldHeight: 1536,
-            birdCount: 800, falconCount: 1, hasRival: false, rivalStartBirds: 0,
-            windSeedOffset: 0, seed: 1,
-            roosts: [.init(x: 1024, y: 768, radius: 128)],
-            fields: [.init(x: 1024, y: 768, radius: 128, richness: 10)],
-            palette: .standard
-        )
+        let chosen =
+            region
+            ?? Region(
+                id: "fallback", name: "Fallback",
+                worldWidth: 2048, worldHeight: 1536,
+                birdCount: 800, falconCount: 1, hasRival: false, rivalStartBirds: 0,
+                windSeedOffset: 0, seed: 1,
+                roosts: [.init(x: 1024, y: 768, radius: 128)],
+                fields: [.init(x: 1024, y: 768, radius: 128, richness: 10)],
+                palette: .standard
+            )
         let adjusted: Region
         if let birds = config.birdOverride {
             adjusted = chosen.withBirdCount(birds)
@@ -62,12 +64,13 @@ struct PlayView: View {
         } else {
             adjusted = chosen
         }
-        _model = StateObject(wrappedValue: GameModel(
-            region: adjusted,
-            totalDays: config.totalDays,
-            autoplay: config.autoplay,
-            ticksPerFrame: config.ticksPerFrame
-        ))
+        _model = StateObject(
+            wrappedValue: GameModel(
+                region: adjusted,
+                totalDays: config.totalDays,
+                autoplay: config.autoplay,
+                ticksPerFrame: config.ticksPerFrame
+            ))
         // Applied after init via the view's task (published-mutable only).
         _pendingPauseAt = State(initialValue: config.pauseAt)
         _pendingHash = State(initialValue: config.hashUpdates)
@@ -101,7 +104,7 @@ struct PlayView: View {
         .task {
             model.pauseAtTick = pendingPauseAt
             model.hashUpdates = pendingHash
-            if ProcessInfo.processInfo.arguments.contains("-uitest-trace") {
+            if MULaunch.arguments().contains("-uitest-trace") {
                 model.enablePlaybackTrace()
             }
         }
@@ -110,9 +113,9 @@ struct PlayView: View {
     @ViewBuilder
     private var surface: some View {
         #if os(iOS)
-        GameSurface(model: model)
+            GameSurface(model: model)
         #else
-        GameSurfaceMac(model: model)
+            GameSurfaceMac(model: model)
         #endif
     }
 }
