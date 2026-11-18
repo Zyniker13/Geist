@@ -3,7 +3,7 @@ name: Murmuration CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, 'murmur/**']
     paths:
       - 'games/12-murmuration/**'
       - '.github/workflows/murmuration.yml'
