@@ -19,7 +19,6 @@ let package = Package(
         .target(
             name: "MURender",
             dependencies: ["MUCore", "MUContent"],
-            resources: [.process("Shaders.metal")],
         ),
         .testTarget(
             name: "MURenderTests",

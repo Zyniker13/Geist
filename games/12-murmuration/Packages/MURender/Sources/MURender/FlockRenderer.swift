@@ -120,7 +120,7 @@ public final class FlockRenderer: NSObject, MTKViewDelegate {
         }
         let library: MTLLibrary
         do {
-            library = try device.makeDefaultLibrary(bundle: Bundle.module)
+            library = try device.makeLibrary(source: ShaderSource.metal, options: nil)
         } catch {
             throw RenderError.shaderLibrary(error)
         }

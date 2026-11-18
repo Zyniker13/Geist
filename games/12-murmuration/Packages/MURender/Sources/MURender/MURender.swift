@@ -1,6 +1,6 @@
 // Murmuration Render — Metal instanced bird rendering and landscape layers.
 //
-// The Metal shaders live in Shaders.metal; FlockRenderer.swift drives them.
+// The Metal shaders live in Shaders.swift (compiled at runtime); FlockRenderer.swift drives them.
 // This file holds shared render-side math that needs a Swift home.
 
 import Foundation
