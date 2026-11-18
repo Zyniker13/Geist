@@ -173,3 +173,53 @@ Architecture decision records. Every deviation from the roadmap is recorded here
 - **Consequences:** Gate evidence for the UI legs cites CI run logs; the local
   harness limitation is recorded here rather than worked around by weakening
   any test.
+
+## ADR-0010 — Metal shaders compile at runtime from an embedded source string
+
+- **Status:** Accepted (P2)
+- **Context:** The shader text lived in `Shaders.metal` and loaded through
+  `makeDefaultLibrary(bundle: Bundle.module)`. Plain SwiftPM does not place a
+  compiled `default.metallib` in the package resource bundle — and some
+  SwiftPM versions do not even auto-treat `.metal` as a resource — so package
+  tests that build a renderer failed on the CI runner while passing locally.
+- **Decision:** The shader text lives in `Shaders.swift` as one Swift string
+  and compiles at runtime via `device.makeLibrary(source:)`. MURender carries
+  no package resource bundle.
+- **Consequences:** One canonical shader copy, identical behavior on every
+  toolchain (local, CI, app targets); a few milliseconds of one-time compile
+  cost per renderer init; the Swift-Metal struct layout contract stays pinned
+  by tests.
+
+## ADR-0012: Performance gates are measured in Release builds
+
+- **Date:** 2026-11-18
+- **Status:** Accepted
+- **Context:** CI UI-test jobs initially ran `-configuration Debug`. In Debug the
+  MUCore kernel is ~80x slower (a 3,000-bird tick measured 70 ms vs 0.9 ms in
+  Release on the same machine, via a standalone `TickProfiler` benchmark). A
+  Debug-built app pegs the main thread for seconds per frame under
+  `-uitest-fast 120`, starving XCUITest's accessibility snapshot (the macOS
+  perf run returned an empty element tree) and pushing autoplay runs past
+  their waits. Measuring a frame-rate budget against unshipped Debug code is
+  also not meaningful.
+- **Decision:** UI-test jobs build with `-configuration Release`, matching
+  `_CONVENTIONS.md` §7, whose budgets describe shipped behavior. Package unit
+  tests stay Debug for fast iteration; release-mode package tests are run once
+  locally per gate (MUCore: pass, 2026-11-18).
+- **Consequences:** CI numbers reflect real performance. Debug-only compiler
+  diagnostics no longer gate; Release-only optimizer issues surface in the UI
+  jobs, so a local Release package test run accompanies each gate.
+
+## ADR-0011 — Phase-branch CI runs by adding the branch prefix to the workflow trigger
+
+- **Status:** Accepted (P2)
+- **Context:** The workflow triggers on pushes to `main` and pull requests to
+  `main`, but the build agent's token cannot open pull requests, so a phase
+  branch never ran CI before merge and the branch-green-before-merge rule had
+  no evidence source.
+- **Decision:** Each game's workflow adds its own branch prefix to
+  `on.push.branches` (Murmuration: `murmur/**`). GitHub evaluates the pushed
+  branch's workflow file, so the branch run starts on push; after the merge
+  the same trigger covers the game's later phase branches.
+- **Consequences:** Phase work needs no pull requests; future games copy the
+  pattern when their UI-test jobs appear (P2).

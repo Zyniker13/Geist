@@ -116,7 +116,11 @@ jobs:
           echo "simUDID=$UDID" >> "$GITHUB_ENV"
       - name: UI test (iOS, iPad simulator)
         working-directory: games/12-murmuration
-        run: xcodebuild test -scheme MU -destination "id=${{ env.simUDID }}" -configuration Debug
+        # Release: performance gates measure shipped-code speed. A Debug
+        # build's bounds-checked kernel is ~80x slower (70 ms/tick at 3,000
+        # birds vs 0.9 ms in Release), pegs the main thread, starves the
+        # accessibility snapshot, and can never meet the frame budget.
+        run: xcodebuild test -scheme MU -destination "id=${{ env.simUDID }}" -configuration Release
 
   ui-test-macos:
     runs-on: macos-latest
@@ -136,4 +140,4 @@ jobs:
           xcodebuild -version
       - name: UI test (macOS)
         working-directory: games/12-murmuration
-        run: xcodebuild test -scheme MU-macOS -destination 'platform=macOS' -configuration Debug
+        run: xcodebuild test -scheme MU-macOS -destination 'platform=macOS' -configuration Release
