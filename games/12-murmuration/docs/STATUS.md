@@ -316,3 +316,18 @@ main thread and starving accessibility snapshots. Local verification trick
 that needs no simulator: build `MU-macOS` Release and run the binary
 directly with the exact UI-test launch arguments plus `-uitest-trace`
 (stdout playback trace) — reproduces harness behavior headlessly.
+
+### G2 CI evidence (in progress)
+
+- 44261637143 (895b019, Release): `test` green; `ui-test-ios` green;
+  `ui-test-macos` red — autoplay + perf fail on the missing play overlay,
+  menu test passes.
+- 44267447119 (c4f85f0, day-end stall fix): same macOS signature; iOS green.
+- 44267847600 (fbba1a8, docs): `ui-test-ios` red on a single-window FPS
+  flake (45 < 55 under runner load; autoplay + pause/resume passed);
+  macOS unchanged.
+- 7ff557a (44275135778): file-backed lifecycle trace mirror
+  (`/tmp/mu-uitest-trace.log`), `NSApp.activate` before the UI-test window,
+  failure dumps of the mirror, peak-over-window FPS sampling in both perf
+  tests. Awaiting result — the trace pinpoints which macOS stage
+  (shell launch / playview ready / first draw) is missing under XCTest.
