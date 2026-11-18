@@ -85,7 +85,7 @@ final class MacGameView: MTKView {
     private var flockZeroBuilder = LeaderPathBuilder()
     private var flockOneBuilder = LeaderPathBuilder()
 
-    override func acceptsFirstResponder() -> Bool { true }
+    override var acceptsFirstResponder: Bool { true }
 
     // MARK: - Mouse
 
@@ -139,13 +139,13 @@ final class MacGameView: MTKView {
         let location = convert(event.locationInWindow, from: nil)
         let flipped = SIMD2(Float(location.x), Float(bounds.height - location.y))
         let drawable = drawableSize
-        let scaleX = drawable.width / max(bounds.width, 1)
-        let scaleY = drawable.height / max(bounds.height, 1)
+        let scaleX = Float(drawable.width) / Float(max(bounds.width, 1))
+        let scaleY = Float(drawable.height) / Float(max(bounds.height, 1))
         let worldSize = SIMD2(
             Float(model.region.worldWidth), Float(model.region.worldHeight)
         )
         return FlockRenderer.worldPoint(
-            viewPoint: SIMD2(Float(flipped.x * scaleX), Float(flipped.y * scaleY)),
+            viewPoint: SIMD2(flipped.x * scaleX, flipped.y * scaleY),
             viewSize: SIMD2(Float(drawable.width), Float(drawable.height)),
             worldSize: worldSize
         )
