@@ -101,6 +101,9 @@ struct PlayView: View {
         .task {
             model.pauseAtTick = pendingPauseAt
             model.hashUpdates = pendingHash
+            if ProcessInfo.processInfo.arguments.contains("-uitest-trace") {
+                model.enablePlaybackTrace()
+            }
         }
     }
 

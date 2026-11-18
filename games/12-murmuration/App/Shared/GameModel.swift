@@ -142,8 +142,11 @@ final class GameModel: ObservableObject {
         }
         if lastFrameTime == 0 { lastFrameTime = now }
         var ran = false
+        // The loop condition must not exclude dayEnded: runOneTick routes
+        // day-end ticks through advanceAfterDayEnd (the card pause, then the
+        // next day). Excluding them stalled autoplay forever after day 1.
         if ticksPerFrame > 1 {
-            for _ in 0..<ticksPerFrame where !dayEnded && !finished {
+            for _ in 0..<ticksPerFrame where !finished {
                 runOneTick()
                 ran = true
             }
@@ -153,7 +156,7 @@ final class GameModel: ObservableObject {
             var steps = Int(pendingTicks / budget)
             pendingTicks -= Double(steps) * budget
             steps = min(steps, 4)  // never spiral on a slow frame
-            for _ in 0..<steps where !dayEnded && !finished {
+            for _ in 0..<steps where !finished {
                 runOneTick()
                 ran = true
             }
@@ -180,6 +183,7 @@ final class GameModel: ObservableObject {
             advanceAfterDayEnd()
             return
         }
+        let tickStart = CACurrentMediaTime()
         previousBirds = state.birds
         falconPrev = state.falcons.map { SIMD2(Float($0.currentX), Float($0.currentY)) }
 
@@ -200,6 +204,15 @@ final class GameModel: ObservableObject {
         }
         if dayEnded {
             finishDay()
+            playbackTrace("day end at tick \(state.tick): pause=\(dayEndPauseTicks) results=\(results.count)")
+        }
+        let tickMs = (CACurrentMediaTime() - tickStart) * 1000
+        if tickMs > 250 {
+            playbackTrace("SLOW TICK day=\(day) tick=\(state.tick): \(Int(tickMs))ms birds=\(state.birds.count)")
+        }
+        if state.tick - lastTraceTick >= 300 || state.tick == 1 {
+            lastTraceTick = state.tick
+            playbackTrace("day=\(day) tick=\(state.tick) birds=\(state.birds.count) fps=\(fps) dayEnded=\(dayEnded) finished=\(finished)")
         }
     }
 
@@ -262,19 +275,39 @@ final class GameModel: ObservableObject {
             return
         }
         guard day < totalDays else {
+            playbackTrace("finished: \(results.count) days recorded")
             finished = true
             return
         }
         day += 1
+        playbackTrace("day start: \(day)/\(totalDays)")
         state = region.makeGameState()
         rng = SeededRNG(seed: region.seed)
         previousBirds = state.birds
         falconPrev = []
         trace = []
+        lastTraceTick = -1
         dayEnded = false
         autoplayer = autoplay ? Autoplayer() : nil
         rival = GentleRival()
         startDayIfNeeded()
+    }
+
+    /// Trace playback for the UI-test harness: stdout lines on a tick
+    /// cadence and at every lifecycle edge, so a hung session can be
+    /// diagnosed from the runner log.
+    private var tracePlayback: Bool = false
+    private var lastTraceTick = -1
+
+    func enablePlaybackTrace() {
+        tracePlayback = true
+        playbackTrace("playview ready: ticksPerFrame=\(ticksPerFrame) totalDays=\(totalDays) autoplay=\(autoplay)")
+    }
+
+    func playbackTrace(_ line: String) {
+        guard tracePlayback else { return }
+        print("[MU] \(line)")
+        fflush(stdout)
     }
 
     // MARK: - Player actions
