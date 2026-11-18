@@ -373,3 +373,16 @@ directly with the exact UI-test launch arguments plus `-uitest-trace`
   `/tmp` reads (config) and writes (note) both fail on the CI runner while
   the same channels work locally under a direct Release-binary launch.
   Next step: local macOS UI-test reproduction attempt.
+- 44304669853 (1a0f9a0, Release; ADR-0015/0016): only `ui-test-macos` red;
+  `test`, `build-ios`, `build-macos`, `lint`, `ui-test-ios` green.
+- 44311488195 (dc21d70): same shape — only `ui-test-macos` red.
+- 44318232496 (f134f08): same shape — only `ui-test-macos` red.
+- 44332054817 (54995b7): same shape — only `ui-test-macos` red.
+- Evidence caveat for the four runs above: the job logs are not readable
+  with the available token (issues-only; the logs REST endpoint returns
+  403, and the job's web page requires sign-in), so their failure
+  signatures are unrecorded. To make the next red run diagnosable, commit
+  10b7f9d uploads the `/tmp/mu-uitest-*` diagnostics and the per-attempt
+  xcresult bundle as a workflow artifact on any outcome
+  (`mu-g2-diag-macos-<run>-<attempt>` / `mu-g2-diag-ios-…`), readable
+  anonymously on this public repository.
