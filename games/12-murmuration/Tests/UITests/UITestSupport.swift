@@ -57,7 +57,6 @@ enum GameUITest {
             try? "probe".write(toFile: GameUITest.probePath, atomically: true, encoding: .utf8)
             let suite = UserDefaults(suiteName: GameUITest.defaultsSuite)
             suite?.set(args, forKey: "mu-flags")
-            app.environment["MU_UITEST_FLAGS"] = args.joined(separator: "\n")
         #else
             app.launchArguments = args
         #endif
