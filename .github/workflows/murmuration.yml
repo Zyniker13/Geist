@@ -127,13 +127,30 @@ jobs:
           st=1
           for attempt in 1 2; do
             echo "=== UI test attempt $attempt ==="
-            if xcodebuild test -scheme MU -destination "id=${{ env.simUDID }}" -configuration Release; then
+            if xcodebuild test -scheme MU -destination "id=${{ env.simUDID }}" -configuration Release -resultBundlePath "/tmp/mu-g2-ios-$attempt.xcresult"; then
               st=0
               break
             fi
             echo "attempt $attempt failed; retrying once"
           done
           exit $st
+
+      - name: Collect UI-test diagnostics
+        if: always()
+        run: |
+          mkdir -p _mu-g2-diag
+          find /tmp -maxdepth 1 -name 'mu-uitest-*' -exec cp -R {} _mu-g2-diag/ \; || true
+          find /tmp -maxdepth 1 -name 'mu-g2-ios-*.xcresult' -exec cp -R {} _mu-g2-diag/ \; || true
+          ls -la _mu-g2-diag || true
+
+      - name: Upload UI-test diagnostics
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: mu-g2-diag-ios-${{ github.run_id }}-${{ github.run_attempt }}
+          path: _mu-g2-diag
+          retention-days: 5
+          if-no-files-found: ignore
 
   ui-test-macos:
     runs-on: macos-latest
@@ -159,10 +176,28 @@ jobs:
           st=1
           for attempt in 1 2; do
             echo "=== UI test attempt $attempt ==="
-            if xcodebuild test -scheme MU-macOS -destination 'platform=macOS' -configuration Release; then
+            if xcodebuild test -scheme MU-macOS -destination 'platform=macOS' -configuration Release -resultBundlePath "/tmp/mu-g2-mac-$attempt.xcresult"; then
               st=0
               break
             fi
             echo "attempt $attempt failed; retrying once"
           done
           exit $st
+
+      - name: Collect UI-test diagnostics
+        if: always()
+        run: |
+          mkdir -p _mu-g2-diag
+          find /tmp -maxdepth 1 -name 'mu-uitest-*' -exec cp -R {} _mu-g2-diag/ \; || true
+          find /tmp -maxdepth 1 -name 'mu-g2-mac-*.xcresult' -exec cp -R {} _mu-g2-diag/ \; || true
+          ls -la _mu-g2-diag || true
+
+      - name: Upload UI-test diagnostics
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: mu-g2-diag-macos-${{ github.run_id }}-${{ github.run_attempt }}
+          path: _mu-g2-diag
+          retention-days: 5
+          if-no-files-found: ignore
+
