@@ -1,17 +1,13 @@
 import SwiftUI
 import MUCore
+import MUContent
 
-/// Debug overlay state (S0.7): FPS, tick, seed, and state hash.
-///
-/// Values come from the running simulation once the core loop lands (P2); the seed and
-/// hash are live from P0 via the trivial-state harness.
+/// Debug overlay visibility state (S0.7), launched by `-uitest-overlay`,
+/// the three-finger double tap (iOS), or ⌘⇧D (macOS).
 @MainActor
 final class DebugState: ObservableObject {
     @Published var visible = false
-    @Published var fps = 0
-    @Published var tick = 0
     @Published var seed: UInt64 = 1
-    @Published var hash = ""
 
     func loadFromLaunchArguments() {
         let arguments = ProcessInfo.processInfo.arguments
@@ -22,31 +18,51 @@ final class DebugState: ObservableObject {
            let value = UInt64(arguments[index + 1]) {
             seed = value
         }
-        refreshHash()
     }
 
     func toggle() {
         visible.toggle()
     }
-
-    func refreshHash() {
-        hash = String(format: "%016llx", stateHash(TrivialState(seed: seed)))
-    }
 }
 
-/// The overlay itself: four monospaced rows over the scene, bottom-left.
-struct DebugOverlay: View {
-    @ObservedObject var debug: DebugState
+/// The live in-game overlay: FPS, tick, state hash, frame cost.
+struct GameDebugOverlay: View {
+    @ObservedObject var model: GameModel
 
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text("FPS \(debug.fps)")
+            Text("FPS \(model.fps)")
                 .accessibilityIdentifier("debug.fps")
-            Text("tick \(debug.tick)")
+            Text("tick \(model.state.tick)")
                 .accessibilityIdentifier("debug.tick")
-            Text("seed \(debug.seed)")
+            Text("hash \(model.hashLabel)")
+                .accessibilityIdentifier("debug.hash")
+            Text(String(format: "frame %.2fms", model.frameMs))
+                .accessibilityIdentifier("debug.frame")
+        }
+        .font(.system(size: 11, weight: .semibold, design: .monospaced))
+        .foregroundStyle(.white)
+        .padding(6)
+        .background(Color.black.opacity(0.55))
+        .cornerRadius(6)
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("debug.overlay")
+    }
+}
+
+/// The menu overlay (S0.7, P0 harness): trivial-state tick/seed/hash.
+struct MenuDebugOverlay: View {
+    var seed: UInt64
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text("FPS 0")
+                .accessibilityIdentifier("debug.fps")
+            Text("tick 0")
+                .accessibilityIdentifier("debug.tick")
+            Text("seed \(seed)")
                 .accessibilityIdentifier("debug.seed")
-            Text("hash \(debug.hash)")
+            Text("hash \(String(format: "%016llx", stateHash(TrivialState(seed: seed))))")
                 .accessibilityIdentifier("debug.hash")
         }
         .font(.system(size: 11, weight: .semibold, design: .monospaced))
@@ -59,11 +75,36 @@ struct DebugOverlay: View {
     }
 }
 
-/// P0 placeholder menu (S0.4): the app launches here until the core-loop slice in P2.
+/// The menu (S0.4): Play enters the P2 vertical slice.
 struct MenuView: View {
     @EnvironmentObject var debug: DebugState
+    @State private var playing = false
+    @State private var catalog = RegionCatalog(regions: [])
 
     var body: some View {
+        ZStack {
+            if playing {
+                PlayView(config: GameLaunchConfig.fromLaunchArguments(), catalog: catalog)
+            } else {
+                menu
+            }
+            if debug.visible && !playing {
+                VStack {
+                    Spacer()
+                    HStack {
+                        MenuDebugOverlay(seed: debug.seed)
+                        Spacer()
+                    }
+                    .padding(12)
+                }
+            }
+        }
+        .onAppear {
+            catalog = (try? RegionCatalog.loadBundled()) ?? RegionCatalog(regions: [])
+        }
+    }
+
+    private var menu: some View {
         ZStack {
             LinearGradient(
                 colors: [
@@ -85,27 +126,13 @@ struct MenuView: View {
                 Text("Steer a flock of thousands with sweeping gestures.")
                     .foregroundStyle(.white.opacity(0.85))
                 Button("Play") {
-                    // The playable slice arrives with P2.
+                    playing = true
                 }
                 .buttonStyle(.borderedProminent)
                 .accessibilityIdentifier("menu.play")
                 Spacer()
-                Text("Placeholder menu — core loop lands in P2")
-                    .font(.caption)
-                    .foregroundStyle(.white.opacity(0.65))
             }
             .padding(24)
-
-            VStack {
-                Spacer()
-                HStack {
-                    if debug.visible {
-                        DebugOverlay(debug: debug)
-                    }
-                    Spacer()
-                }
-                .padding(12)
-            }
         }
     }
 }
