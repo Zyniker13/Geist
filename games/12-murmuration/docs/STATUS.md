@@ -348,3 +348,28 @@ directly with the exact UI-test launch arguments plus `-uitest-trace`
   session runs, `finished: 1 days recorded` recorded in the trace; argv
   fallback with no config file → `launch: no usable file config; using
   process arguments`, identical playback.
+- **Quiet-machine baseline (sim-lock'd, 2026-11-18):** full iOS UI suite on
+  the shared iPad Pro 13-inch (M5) simulator, serialized behind the other
+  bots via `sim-lock` (old code, single-sample frame read):
+  `** TEST SUCCEEDED **` — `Executed 5 tests, with 0 failures (0 unexpected)
+  in 717.992 (718.122) seconds`. Confirms the frame-build budget is met on a
+  quiet machine; the earlier 10.22 ms > 8.33 ms failure was a co-tenant-load
+  flake, not a regression. The ADR-0014 median sampling makes the gate
+  robust to that load.
+- 44286953243 (c493e8e, Release): `test`, `build-ios`, `build-macos`, `lint`
+  green; `ui-test-ios` red — `testPerfFrameBudgetWithThreeThousandBirds`
+  FPS 53 < 55 (peak over 6 × ~2 s windows; runner heavily loaded in every
+  window; menu tests on iOS pass); `ui-test-macos` red — all three gate
+  tests fail (pause/resume 486.7 s = two 240 s waits, perf 17.2 s
+  "overlay missing", autoplay 242.1 s), menu tests green, and the
+  unconditional note file `/tmp/mu-uitest-note.log` was **never written**
+  ("[MU-NOTE] no file at /tmp/mu-uitest-note.log (app never wrote one)" in
+  the job log) despite two independent call paths in the app (`.task` →
+  `DebugState.loadLaunchFlags()` → `MULaunch.arguments()` → `resolve()` →
+  `note()`, and `MenuView.onAppear` → `note()`), and no `[MU-TRACE]` lines.
+  The app process launched, stayed alive the full 240 s (XCUI polled
+  continuously, pid stable), and passed menu tests — so the failure is
+  neither a crash nor a launch failure. Open question: why the app-side
+  `/tmp` reads (config) and writes (note) both fail on the CI runner while
+  the same channels work locally under a direct Release-binary launch.
+  Next step: local macOS UI-test reproduction attempt.
