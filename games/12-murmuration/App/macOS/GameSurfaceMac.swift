@@ -54,11 +54,20 @@ final class MacDrawCoordinator: NSObject, MTKViewDelegate {
             ),
             hillSeed: model.region.seed
         )
+        if renderer == nil {
+            MUTrace.log("surface: renderer init failed")
+        }
     }
 
     func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {}
 
+    private static var tracedFirstDraw = false
+
     func draw(in view: MTKView) {
+        if !Self.tracedFirstDraw {
+            Self.tracedFirstDraw = true
+            MUTrace.log("surface: first draw")
+        }
         let frameStart = CACurrentMediaTime()
         let now = CACurrentMediaTime()
         let ticked = model.advanceFrame(now: now)

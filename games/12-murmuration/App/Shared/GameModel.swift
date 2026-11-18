@@ -13,6 +13,36 @@ import MUContent
 import MUAI
 import MURender
 
+/// File-backed trace mirror for the UI-test gate diagnostics: stdout of a
+/// launched app is not captured in the macOS xcodebuild log, so the gate
+/// tests read the mirrored file instead. No-op unless `-uitest-trace` is
+/// in the launch args.
+enum MUTrace {
+    #if os(macOS)
+    static let filePath = "/tmp/mu-uitest-trace.log"
+    #endif
+    // All trace writers run on the main thread (Shell, PlayView, the MTKView
+    // delegate); the flag only gates a one-time truncate.
+    nonisolated(unsafe) private static var fresh = false
+
+    static func log(_ line: String) {
+        guard ProcessInfo.processInfo.arguments.contains("-uitest-trace") else { return }
+        print("[MU] \(line)")
+        fflush(stdout)
+        #if os(macOS)
+        if !fresh {
+            fresh = true
+            FileManager.default.createFile(atPath: filePath, contents: nil)
+        }
+        if let fh = FileHandle(forWritingAtPath: filePath) {
+            defer { try? fh.close() }
+            fh.seekToEndOfFile()
+            fh.write(Data("[MU] \(line)\n".utf8))
+        }
+        #endif
+    }
+}
+
 /// One completed day's tally, shown on the results card (R-13).
 struct DayResult: Equatable, Identifiable {
     var id: Int { day }
@@ -306,8 +336,7 @@ final class GameModel: ObservableObject {
 
     func playbackTrace(_ line: String) {
         guard tracePlayback else { return }
-        print("[MU] \(line)")
-        fflush(stdout)
+        MUTrace.log(line)
     }
 
     // MARK: - Player actions

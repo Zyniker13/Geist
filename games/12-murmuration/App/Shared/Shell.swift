@@ -103,8 +103,9 @@ struct MenuView: View {
             catalog = (try? RegionCatalog.loadBundled()) ?? RegionCatalog(regions: [])
             // The UI-test harness starts a session without tapping Play.
             if ProcessInfo.processInfo.arguments.contains("-uitest-play") {
-                print("[MU] shell: launching play session")
-                fflush(stdout)
+                MUTrace.log(
+                    "shell: launching play session args=\(ProcessInfo.processInfo.arguments.joined(separator: " "))"
+                )
                 playing = true
             }
         }

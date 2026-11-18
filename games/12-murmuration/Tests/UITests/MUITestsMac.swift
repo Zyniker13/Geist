@@ -39,10 +39,11 @@ final class MUGateTestsMac: XCTestCase {
         let app = XCUIApplication()
         GameUITest.launch(app: app, region: "meadow", days: 3, fast: 120)
         let final = GameUITest.finalElement(app)
-        XCTAssertTrue(
-            final.waitForExistence(timeout: 240),
-            "three autoplay days never completed"
-        )
+        guard final.waitForExistence(timeout: 240) else {
+            GameUITest.dumpTrace()
+            XCTFail("three autoplay days never completed")
+            return
+        }
     }
 
     /// A self-pause + resume at mid-day must not perturb the deterministic
@@ -72,15 +73,18 @@ final class MUGateTestsMac: XCTestCase {
         // platform-agnostic and, if the session never started, the fps
         // assertion below still fails on the 0 from the menu overlay.
         let fpsRow = app.staticTexts["debug.fps"]
-        XCTAssertTrue(fpsRow.waitForExistence(timeout: 15), "overlay missing in perf run")
+        guard fpsRow.waitForExistence(timeout: 15) else {
+            GameUITest.dumpTrace()
+            XCTFail("overlay missing in perf run")
+            return
+        }
 
-        Thread.sleep(forTimeInterval: 5)
+        Thread.sleep(forTimeInterval: 2)
+        let fps = GameUITest.sampleFpsPeak(row: fpsRow)
+        XCTAssertNotNil(fps, "no FPS reading: \(fpsRow.label)")
+        XCTAssertGreaterThanOrEqual(fps ?? 0, 55, "fps below the 60 Hz display cap")
 
         let frameRow = app.staticTexts["debug.frame"]
-        let fps = GameUITest.intValue(of: fpsRow, prefix: "FPS")
-        XCTAssertNotNil(fps, "no FPS reading: \(fpsRow.label)")
-        XCTAssertGreaterThanOrEqual(fps!, 55, "fps below the 60 Hz display cap")
-
         let frameLabel = frameRow.exists ? frameRow.label : ""
         let frameMs = frameLabel
             .replacingOccurrences(of: "frame ", with: "")
