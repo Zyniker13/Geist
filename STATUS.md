@@ -3,10 +3,10 @@
 This file is the single place to resume the program from. Keep every field below current after every meaningful step (see "Resuming After a Restart" in `ROADMAP.md`). Per-game detail (gate evidence and sign-offs) lives in each game's `docs/STATUS.md`.
 
 - **Current game:** Murmuration (`12-murmuration`)
-- **Phase:** P1 (Rules Engine) — **complete, merged, tagged** `murmur/gate-G1-pass` (merge 5d877f2 on main).
-- **Last done:** G1 gate closed: 67/67 tagged tests + INV-1..INV-4, 20 goldens, coverage 95.4% sources, checkpoint hashes identical (Release×2, Debug, arm64-sim vs Mac; finalHash `5cbccf1ff18d0a2a`), day CPU 2.0 s ≤ 10 s, lint 0. Committed tree verified in a worktree before merging.
-- **Next step:** confirm CI green on main for 5d877f2, then start Murmuration P2 (core-loop vertical slice: FlockRenderer, gestures, three regions).
-- **Blocked on:** nothing.
+- **Phase:** P2 (Vertical Slice) — in progress on `murmur/phase/P2-vertical-slice`.
+- **Last done:** P2 vertical slice built: Metal `FlockRenderer` (instanced disks, trace ribbons, hills), app shell (iOS + macOS), HUD, Autoplayer, G2 UI tests. Kernel bug fixed: `birds.subFlock` desync on split/merge (INV-3; both arrays now updated in the Reducer), goldens regenerated at contentVersion 3. Package suites green (MUCore 67/67, MUAI 15/15, MURender green), lint 0.
+- **Next step:** G2 UI-test evidence (iPad simulator + Mac) — chained run waiting for a foreign xcodebuild to finish; then `make test` full suite, merge, tag `murmur/gate-G2-pass`.
+- **Blocked on:** nothing (foreign builds from another profile are sequenced around via the chain script).
 
 ## Environment Check
 
@@ -33,7 +33,7 @@ If Xcode 27.2 or an iOS 26-or-later runtime is missing and cannot be installed w
 | Order | No. | Folder | Game | State | Last Gate | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | 04 | [`04-night-market`](games/04-night-market/ROADMAP.md) | Night Market | Done | `night-market/gate-G10-pass` | All gates G0–G10 tagged; TestFlight/App Store steps owner-only in #12 |
-| 2 | 12 | [`12-murmuration`](games/12-murmuration/ROADMAP.md) | Murmuration | In Progress (P2 next) | `murmur/gate-G1-pass` | P1 rules engine merged (5d877f2): 67/67 tests, 20 goldens, coverage 95.4%, checkpoint hashes cross-device |
+| 2 | 12 | [`12-murmuration`](games/12-murmuration/ROADMAP.md) | Murmuration | In Progress (P2) | `murmur/gate-G1-pass` | P2 vertical slice built (renderer, shell, G2 UI tests); subFlock desync kernel bug fixed, goldens v3; G2 evidence pending |
 | 3 | 02 | [`02-orrery`](games/02-orrery/ROADMAP.md) | Orrery | Not Started | — | — |
 | 4 | 14 | [`14-beacon-coast`](games/14-beacon-coast/ROADMAP.md) | Beacon Coast | Not Started | — | — |
 | 5 | 13 | [`13-terrace`](games/13-terrace/ROADMAP.md) | Terrace | Not Started | — | — |
@@ -98,3 +98,5 @@ One line per meaningful step, newest last: date, phase or game and stage, what w
 - 2026-11-17: Murmuration P1 started on `murmur/phase/P1-rules-engine`: rules engine (GameState, Reducer, LeaderPath, Energy, Falcon, Roost — 2c6e2cb) and rule-ID tests (c521ece) committed; headless sim tool drafted in Tools/sim (uncommitted).
 - 2026-11-17: Night Market P10 complete — simulator stack recovered (host rebooted overnight + issue #10 ladder), four release screenshots + 65.29 s preview video captured and frame-verified (launcher shot needed a script fix: -uitest-* args suppress the NewNightMenu), make test TEST SUCCEEDED (UI 5/5 in 64.5 s) + make lint 0 on the final tree. Merged to main (2a5b968), tag `night-market/gate-G10-pass` pushed, issue #10 closed, release steps filed as #12. Night Market is Done.
 - 2026-11-17: Murmuration P1 rules pass: headless sim day rewritten to full `applyTick` (crash bisected to an Int64 overflow in `normalizedScaled` at ultra density — down-shift guard + regression test; neighbor-visit cap 48 fixed the 33 s day → 3.8 s, ADR-0006). R-1…R-13 implemented (IntTrig 1024-step sine table per ADR-0002, LeaderPath/Falcon/Roost/Energy rewrites, wind grid, `effectiveParams`); two INV-3 regressions found and fixed with tests (falcon kill-loop index order; feeding `Set` iteration order → ADR-0007). S1.2 rule-ID suite 67/67 with INV-1…INV-4 (INV-4 at 1,000 configs); S1.4 twenty golden replays committed (contentVersion 2) replaying to stored hashes.
+- 2026-11-17: Murmuration P1 merged to main (5d877f2) and tagged `murmur/gate-G1-pass`; CI green on main.
+- 2026-11-17: Murmuration P2 vertical slice built on `murmur/phase/P2-vertical-slice`: Metal `FlockRenderer` (instanced disks, per-bird trace ribbons, layered hills; `PipelineSpec` + extension statics for lint limits), iOS + macOS app shell (`GameModel`, `GameSurface`/`GameSurfaceMac`, `PlayView`, `HUD`, `Shell`), `Autoplayer` gesture source, and the three G2 UI tests per platform. Kernel defect fixed with regressions: `birds.subFlock` desync on split/merge (boids kernel read stale assignments → re-merge; Reducer now updates both arrays), plus a deterministic AI standoff for near-coincident centroids. `replayContentVersion` 2→3, all 20 goldens regenerated. Package suites green (MUCore 67/67, MUAI 15/15, MURender green), `make lint` 0. G2 UI-test evidence in progress (chained around a foreign xcodebuild).

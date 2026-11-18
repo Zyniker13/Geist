@@ -220,3 +220,68 @@ stale record fails loudly. Behavior-affecting engine changes now bump
 
 **GATE G1 PASSED** (2026-11-17). Next: merge to `main`, tag
 `murmur/gate-G1-pass`, verify CI on `main`, then P2 (vertical slice).
+
+## P2 (Vertical Slice) — in progress
+
+### MU-P2.1 Metal renderer (MURender)
+
+- `FlockRenderer`: Metal instanced-disk renderer (3,000-bird budget), per-bird
+  trace ribbon, layered hill background, palette-driven colors. `PipelineSpec`
+  struct groups pipeline parameters (lint `function_parameter_count` ≤ 5);
+  static helpers live in an extension (lint `type_body_length` ≤ 400).
+- `PaletteData` colors are `SIMD4<Float>`; accessors are `.x/.y/.z` (not
+  `.r/.g/.b`).
+- Layout tests pin the Swift↔Metal struct contract: `DiskInstance` stride 32
+  (color at offset 16), `TraceVertex` stride 16, `HillVertex` stride 32
+  (matches `Shaders.metal`). `HillVertex` is `Equatable`.
+
+### MU-P2.2 App shell (iOS + macOS)
+
+- `GameModel` (Shared): owns the reducer, autoplay, pause/resume with
+  checkpoint hash; `previousBirds` is captured from the fresh state after the
+  tick, not the pre-tick state.
+- `GameSurface` (iOS) / `GameSurfaceMac` (macOS): `MTKView`-backed surface;
+  `FlockRenderer.worldPoint` takes an `MTKView`; pan gesture casts
+  `gesture.view as? MTKView`.
+- `PlayView`, `HUD`, `Shell`: play/pause, day counter, flock/roost readout.
+- `Autoplayer`: deterministic gesture source for UI tests (tap, pan, hold).
+
+### MU-P2.3 UI tests (G2 coverage)
+
+`Tests/UITests/MUITests.swift` (iPad) and `MUITestsMac.swift` (Mac), each:
+- `testThreeDayAutoplay` — Autoplayer gestures drive 3 full days.
+- `testPauseResumePreservesHash` — checkpoint hash survives pause/resume.
+- `testPerfFrameBudgetWithThreeThousandBirds` — frame budget at 3,000 birds.
+
+### Defects found and fixed during P2 (each with a regression test)
+
+1. **`birds.subFlock` desync on split/merge (INV-3 break, AI tests failed):**
+   `applyAction(.splitFlock)` and the merge path updated only
+   `state.subFlockAssignments`, while the boids kernel reads
+   `state.birds.subFlock` for leader selection — after a split both clouds
+   steered to the same leader and re-merged. Fix: both arrays are updated
+   together in `Reducer.swift` (split and merge). Regressions:
+   `testSixtyTicksWithPilotsDoesNotMerge`,
+   `testGentleRivalFleesWhenCloudsCoincide`.
+2. **Near-coincident centroids at day start (flaky AI):** after the starting
+   split the two clouds interleave (centroids within ~7 units), so the flee
+   direction was RNG-driven. Fix: `GentleRival` uses a deterministic standoff
+   offset (+x from world center) when the centroid separation magnitude is
+   < 64.
+3. **Golden replays stale after the kernel fix:** `replayContentVersion`
+   bumped 2 → 3 and all 20 goldens regenerated (`sim --golden 20`);
+   `EngineGoldenReplayTests` replay all 20 to their stored hashes.
+4. **`PaletteData` accessor mismatch:** `.r/.g/.b` on `SIMD4<Float>` did not
+   compile; call sites use `.x/.y/.z`.
+5. **App-layer build errors:** `GameModel` (`var ai` for AI mutation;
+   `previousBirds` from fresh state), `GameSurface` (`MTKView` types).
+6. **Unused binding warning** in `RulesEngineTests`
+   (`diveStart(_, _)`).
+
+### Test state (pre-G2)
+
+- `make lint`: **0 violations** (SwiftLint strict + swift-format + content-lint
+  + check-imports).
+- `swift test` per package: MUCore **67/67**, MUAI **15/15**, MURender green,
+  MUContent/MUAudio/MUPlatform/MUMeta green.
+- G2 UI-test runs (iPad simulator + Mac) in progress; evidence below.
