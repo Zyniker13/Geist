@@ -12,12 +12,13 @@ let package = Package(
         .library(name: "MURender", targets: ["MURender"])
     ],
     dependencies: [
-        .package(path: "../MUCore")
+        .package(path: "../MUCore"),
+        .package(path: "../MUContent"),
     ],
     targets: [
         .target(
             name: "MURender",
-            dependencies: ["MUCore"],
+            dependencies: ["MUCore", "MUContent"],
         ),
         .testTarget(
             name: "MURenderTests",
