@@ -170,4 +170,41 @@ final class SoloObjectiveTests: XCTestCase {
                            "victory iff the settled count met the target")
         }
     }
+
+    // MARK: - Shared settled-count helper (P3.2 tutorial)
+
+    /// The tutorial's roost step and the day-end solo victory must count the
+    /// same way: each bird once, the first roost radius containing it.
+    func testCountSettledInRoostsCountsEachBirdOnceAcrossOverlappingRoosts() {
+        var state = makeState(birdCount: 3, roostCount: 2, soloTargetBirds: 3)
+        // Collapse both roosts onto the same center so their radii fully
+        // overlap; a bird inside must count once, not twice.
+        state.roosts[0].centerX = 512
+        state.roosts[0].centerY = 768
+        state.roosts[1].centerX = 512
+        state.roosts[1].centerY = 768
+        state.birds.posX = [512, 100, 1900]
+        state.birds.posY = [768, 768, 768]
+
+        XCTAssertEqual(countSettledInRoosts(state: state), 1,
+                       "a bird inside two overlapping roost radii counts once; the other two are outside")
+    }
+
+    func testCountSettledInRoostsMatchesCheckVictorySettledCount() {
+        var state = makeState(birdCount: 4, roostCount: 1, soloTargetBirds: 2)
+        state.birds.posX = [512, 512, 1800, 1800]
+        state.birds.posY = [768, 768, 768, 768]
+
+        let expected = countSettledInRoosts(state: state)
+        let (events, _) = checkVictory(state: &state)
+        let solo = events.first { event in
+            if case .soloDayEnd = event { return true }; return false
+        }
+        XCTAssertEqual(expected, 2)
+        if case .soloDayEnd(let settled, _)? = solo {
+            XCTAssertEqual(settled, expected, "checkVictory and the helper agree")
+        } else {
+            XCTFail("expected a soloDayEnd event")
+        }
+    }
 }

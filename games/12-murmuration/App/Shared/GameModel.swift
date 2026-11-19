@@ -85,6 +85,16 @@ final class GameModel: ObservableObject {
     /// When true, `hashLabel` refreshes every 30 ticks and at pause/finish.
     var hashUpdates = false
 
+    /// The five-step tutorial (P3.2). When present, the model drives it:
+    /// the `tutorialDriver` issues the current step's action each tick and
+    /// the `tutorialEngine` samples the post-tick state to advance the step.
+    @Published private(set) var tutorialStep: Int = -1
+    @Published private(set) var tutorialComplete = false
+    /// The tutorial's steps (for the HUD banner). Empty when no tutorial.
+    @Published private(set) var tutorialSteps: [TutorialStep] = []
+    private var tutorialEngine: TutorialEngine?
+    private var tutorialDriver = TutorialDriver()
+
     private var rng: SeededRNG
     private var autoplayer: Autoplayer?
     private var rival = GentleRival()
@@ -107,7 +117,8 @@ final class GameModel: ObservableObject {
         totalDays: Int = 1,
         autoplay: Bool = false,
         ticksPerFrame: Int = 1,
-        save: SavedGame? = nil
+        save: SavedGame? = nil,
+        tutorial: Tutorial? = nil
     ) {
         self.region = region
         self.totalDays = totalDays
@@ -128,6 +139,12 @@ final class GameModel: ObservableObject {
         }
         if autoplay {
             self.autoplayer = Autoplayer()
+        }
+        if let tutorial {
+            self.tutorialEngine = TutorialEngine(steps: tutorial.steps)
+            self.tutorialStep = 0
+            self.tutorialSteps = tutorial.steps
+            MUTrace.log("tutorial: loaded \(tutorial.steps.count) steps region=\(tutorial.region)")
         }
         startDayIfNeeded()
     }
@@ -230,12 +247,21 @@ final class GameModel: ObservableObject {
             apply(action)
         }
 
+        // Tutorial (P3.2): issue the current step's action before the tick so
+        // it takes effect this tick; the engine samples the post-tick state.
+        if !tutorialComplete,
+           let step = tutorialEngine?.currentStep,
+           let action = tutorialDriver.action(goal: step.goal, state: state) {
+            apply(action)
+        }
+
         let (next, events) = applyTick(to: state, rng: &rng)
         state = next
         appendTrace()
         for event in events {
             handle(event)
         }
+        advanceTutorial()
         if dayEnded {
             finishDay()
             playbackTrace("day end at tick \(state.tick): pause=\(dayEndPauseTicks) results=\(results.count)")
@@ -249,6 +275,24 @@ final class GameModel: ObservableObject {
             playbackTrace(
                 "day=\(day) tick=\(state.tick) birds=\(state.birds.count) fps=\(fps) dayEnded=\(dayEnded) finished=\(finished)"
             )
+        }
+    }
+
+    /// Sample the post-tick state to advance the tutorial (P3.2). Called once
+    /// per tick after the simulation step. When a step's goal is met the
+    /// engine advances; when the last step completes, `tutorialComplete` is
+    /// set and the UI shows the completion banner.
+    private func advanceTutorial() {
+        guard var engine = tutorialEngine, !tutorialComplete else { return }
+        let completed = engine.progress(state: state)
+        tutorialStep = engine.stepIndex
+        tutorialEngine = engine
+        guard completed else { return }
+        if engine.isComplete {
+            tutorialComplete = true
+            MUTrace.log("tutorial.complete")
+        } else {
+            MUTrace.log("tutorial.step \(engine.stepIndex) \(engine.currentStep?.id ?? "")")
         }
     }
 

@@ -101,6 +101,26 @@ public func computeRoostClaims(state: inout GameState) -> [RoostEvent] {
     return events
 }
 
+/// Count the birds settled inside any roost radius (R-13 / P3.2). Each bird
+/// counts once: the first roost radius containing it. Integer math only
+/// (INV-3). Shared by the day-end solo victory and the tutorial's roost step
+/// so both observe the same number.
+public func countSettledInRoosts(state: GameState) -> Int {
+    var settled = 0
+    for i in 0..<state.birds.count {
+        for roost in state.roosts {
+            let r2 = Int64(roost.radius) * Int64(roost.radius)
+            let dx = Int64(state.birds.posX[i]) - Int64(roost.centerX)
+            let dy = Int64(state.birds.posY[i]) - Int64(roost.centerY)
+            if dx * dx + dy * dy <= r2 {
+                settled += 1
+                break
+            }
+        }
+    }
+    return settled
+}
+
 /// Resolve the day (R-13). Solo regions (P3.2, `soloTargetBirds > 0`): the
 /// day is won when the number of birds settled inside any roost radius meets
 /// the target; no rival, no roost tally. Versus regions: claim each roost by
@@ -114,19 +134,7 @@ public func checkVictory(state: inout GameState) -> ([RoostEvent], RoostEvent?) 
     // R-13 / P3.2 solo objective: count birds settled inside any roost
     // radius (integer math, INV-3) and compare with the target.
     if state.soloTargetBirds > 0 {
-        var settled = 0
-        // Each bird counts once: the first roost radius containing it.
-        for i in 0..<state.birds.count {
-            for roost in state.roosts {
-                let r2 = Int64(roost.radius) * Int64(roost.radius)
-                let dx = Int64(state.birds.posX[i]) - Int64(roost.centerX)
-                let dy = Int64(state.birds.posY[i]) - Int64(roost.centerY)
-                if dx * dx + dy * dy <= r2 {
-                    settled += 1
-                    break
-                }
-            }
-        }
+        let settled = countSettledInRoosts(state: state)
         events.append(.soloDayEnd(settled: settled, target: state.soloTargetBirds))
         if settled >= state.soloTargetBirds {
             return (events, .victory(winner: 0))

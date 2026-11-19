@@ -1,0 +1,111 @@
+{
+  "id": "tutorial-meadow",
+  "name": "Tutorial Meadow",
+  "worldWidth": 2048,
+  "worldHeight": 1536,
+  "birdCount": 40,
+  "falconCount": 0,
+  "hasRival": false,
+  "rivalStartBirds": 0,
+  "soloTargetBirds": 5,
+  "windSeedOffset": 12,
+  "seed": 7,
+  "roosts": [
+    {
+      "x": 1024,
+      "y": 1100,
+      "radius": 160
+    }
+  ],
+  "fields": [
+    {
+      "x": 1024,
+      "y": 500,
+      "radius": 160,
+      "richness": 90
+    }
+  ],
+  "obstacles": [],
+  "windPattern": "uniform",
+  "falconBehavior": "lurk",
+  "palette": {
+    "skyTop": {
+      "r": 0.19,
+      "g": 0.17,
+      "b": 0.3,
+      "a": 1.0
+    },
+    "skyHigh": {
+      "r": 0.45,
+      "g": 0.37,
+      "b": 0.58,
+      "a": 1.0
+    },
+    "skyLow": {
+      "r": 0.87,
+      "g": 0.55,
+      "b": 0.55,
+      "a": 1.0
+    },
+    "skyBottom": {
+      "r": 0.97,
+      "g": 0.74,
+      "b": 0.52,
+      "a": 1.0
+    },
+    "hillFar": {
+      "r": 0.33,
+      "g": 0.31,
+      "b": 0.28,
+      "a": 1.0
+    },
+    "hillMid": {
+      "r": 0.23,
+      "g": 0.21,
+      "b": 0.19,
+      "a": 1.0
+    },
+    "hillNear": {
+      "r": 0.13,
+      "g": 0.12,
+      "b": 0.11,
+      "a": 1.0
+    },
+    "birdInk": {
+      "r": 0.106,
+      "g": 0.102,
+      "b": 0.133,
+      "a": 1.0
+    },
+    "birdHighlight": {
+      "r": 0.243,
+      "g": 0.361,
+      "b": 0.42,
+      "a": 1.0
+    },
+    "rival": {
+      "r": 0.353,
+      "g": 0.231,
+      "b": 0.165,
+      "a": 1.0
+    },
+    "fieldOchre": {
+      "r": 0.788,
+      "g": 0.639,
+      "b": 0.357,
+      "a": 1.0
+    },
+    "fieldGreen": {
+      "r": 0.494,
+      "g": 0.612,
+      "b": 0.416,
+      "a": 1.0
+    },
+    "falcon": {
+      "r": 0.13,
+      "g": 0.1,
+      "b": 0.08,
+      "a": 1.0
+    }
+  }
+}

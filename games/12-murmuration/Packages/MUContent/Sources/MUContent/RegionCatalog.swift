@@ -40,19 +40,62 @@ public struct RegionCatalog: Sendable {
 
     /// Load the bundled regions from `Resources/Content/regions`.
     public static func loadBundled() throws -> RegionCatalog {
-        guard
-            let url = Bundle.main.url(
-                forResource: "regions", withExtension: "json", subdirectory: "Content"
-            ) ?? Bundle.main.url(forResource: "regions", withExtension: "json")
-        else {
-            // Fall back to a directory lookup.
-            if let dir = Bundle.main.url(forResource: "regions", withExtension: nil) {
-                return try load(from: dir)
+        // The app bundle flattens the resource tree, so the region files sit
+        // at the bundle root. Address them by name (robust to the flat
+        // layout); try the nested `Content/regions` and `regions`
+        // subdirectories first in case a future build preserves them.
+        let names = ["commons", "delta", "fenlands", "gorge", "meadow", "ridge"]
+        for base in bundleBaseCandidates("regions") {
+            if let regions = try? loadNamedRegions(names, from: base) {
+                return RegionCatalog(regions: regions)
             }
-            throw RegionError.missingRegions
         }
-        // `url` is a single file; load its parent directory.
-        return try load(from: url.deletingLastPathComponent())
+        throw RegionError.missingRegions
+    }
+
+    /// Load the bundled solo-objective regions from `Resources/Content/solo`
+    /// (P3.2). Solo regions are a separate content category from the main
+    /// region set: they carry a `soloTargetBirds` objective and no rival, and
+    /// are not part of the main region count. They are a small, fixed set,
+    /// addressed by name so the lookup is robust to the app bundle flattening
+    /// the resource tree.
+    public static func loadSoloBundled() throws -> RegionCatalog {
+        let names = ["first-roost", "tutorial-meadow"]
+        for base in bundleBaseCandidates("solo") {
+            if let regions = try? loadNamedRegions(names, from: base) {
+                return RegionCatalog(regions: regions)
+            }
+        }
+        throw RegionError.missingRegions
+    }
+
+    /// Candidate base directories for a resource category, in priority order:
+    /// the nested `Content/<category>` and `<category>` subdirectories first,
+    /// then the bundle root (the app bundle flattens the resource tree).
+    private static func bundleBaseCandidates(_ category: String) -> [URL] {
+        guard let root = Bundle.main.resourceURL else { return [] }
+        return [
+            root.appendingPathComponent("Content/\(category)"),
+            root.appendingPathComponent(category),
+            root,
+        ]
+    }
+
+    /// Load a set of named region JSON files from `base` (P3.2). Each file
+    /// must be at `base/<name>.json`. Addressing files by name (rather than
+    /// by subdirectory) is robust to the app bundle flattening the resource
+    /// tree.
+    static func loadNamedRegions(_ names: [String], from base: URL) throws -> [Region] {
+        var regions: [Region] = []
+        for name in names {
+            let url = base.appendingPathComponent("\(name).json")
+            guard FileManager.default.fileExists(atPath: url.path) else {
+                throw RegionError.missingRegions
+            }
+            let data = try Data(contentsOf: url)
+            regions.append(try JSONDecoder().decode(Region.self, from: data))
+        }
+        return regions
     }
 
     /// Validate a region. Returns a list of problems (empty when valid).

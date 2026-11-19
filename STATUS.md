@@ -4,18 +4,22 @@ This file is the single place to resume the program from. Keep every field below
 
 - **Current game:** Murmuration (`12-murmuration`)
 - **Phase:** P3 (Content and Systems) — on `murmur/phase/P3-content-systems`.
-- **Last done:** P3.1 content merged to main (16e01ac); G2 closed and
-  tagged. P3.2 (solo objectives) engine pushed as 42fd614 (MUCore:
-  `GameState.soloTargetBirds`, roost-counted solo victory in
-  `SoloObjectiveTests`, goldens regenerated at replayContentVersion 5)
-  — branch CI green. MUContent plumbing pushed as 1ff28ab
-  (`Region.soloTargetBirds` decode default 0, `makeGameState` carry,
-  catalog validation rules: >= 0, <= birdCount, 0 in rival regions;
-  4 new tests) — MUContent suite 20/20 locally, `make lint` 0.
-- **Next step:** CI check on 1ff28ab, then P3.2 content: solo/tutorial
-  region JSONs outside `regions/` (the shipped-6 count test and the G3
-  count stay at 6), `tutorial.json` 5 steps, tutorial UI; then MU-P3.3
-  (local versus), then G3.
+- **Last done:** P3.2 tutorial built end-to-end: `TutorialDriver` (MUAI)
+  wired into `GameModel`/HUD with a `-uitest-tutorial` launch flag;
+  tutorial + solo region content (`tutorial.json` 5 steps,
+  `tutorial-meadow.json`); two headless-diagnosed bug fixes — FEED goal
+  300→150 (flock starts at 800 under a 1000 cap) and ADR-0023 (feed
+  progress now sums positive energy deltas across R-9 growth dips; driver
+  picks the field with the most remaining food). Headless full-pipeline
+  test proves all five steps complete in one day. Third fix (ADR-0024):
+  the app bundle flattens the resource tree, so `loadBundled()` /
+  `loadSoloBundled()` now address region files by name (bundle root
+  fallback) — the app was silently playing a fallback region. Package
+  suites: MUCore 90/90, MUContent 33/33 (incl. flat-bundle regressions),
+  MUAI 26/26, MURender 12/12; `make lint` 0.
+- **Next step:** confirm `make test` (iOS suite incl. `testTutorialCompletes`)
+  green in the bundle, commit P3.2 on `murmur/phase/P3-content-systems`,
+  watch branch CI, then MU-P3.3 (local versus), then G3.
 - **Blocked on:** nothing.
 
 ## Environment Check
@@ -132,3 +136,13 @@ One line per meaningful step, newest last: date, phase or game and stage, what w
   MUContent tests (20/20 green locally), `make lint` 0. Solo/tutorial
   region content next, kept outside `regions/` so the shipped-6 count
   and the G3 content count stay 6.
+- 2026-11-19: Murmuration P3.2 tutorial built end-to-end and two bugs
+  fixed from a headless full-pipeline test: FEED goal 300→150 (flock
+  starts at 800 under a 1000 cap) and ADR-0023 — the feed predicate now
+  sums positive energy deltas (survives R-9 growth dips that made
+  total-vs-baseline unsatisfiable) and the driver steers to the field
+  with the most remaining food (was `richness > currentDepletion`, which
+  dropped the path one tick after first contact). All five tutorial
+  steps now complete within one day headlessly; package suites green
+  (MUCore 90, MUContent 31, MUAI 26, MURender 12), `make lint` 0; full
+  `make test` + commit next.

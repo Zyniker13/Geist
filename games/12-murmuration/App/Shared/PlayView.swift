@@ -16,6 +16,8 @@ struct GameLaunchConfig {
     var pauseAt: Int?
     var hashUpdates = false
     var seed: UInt64?
+    /// When true, launch the five-step tutorial (P3.2) in its solo region.
+    var tutorial = false
 
     /// Parse the effective UI-test flags (file config on macOS, else argv).
     static func resolved() -> GameLaunchConfig {
@@ -34,6 +36,7 @@ struct GameLaunchConfig {
         if let birds = value("-uitest-birds"), let n = Int(birds) { config.birdOverride = n }
         if let at = value("-uitest-pause-at"), let n = Int(at) { config.pauseAt = n }
         if args.contains("-uitest-hash") { config.hashUpdates = true }
+        if args.contains("-uitest-tutorial") { config.tutorial = true }
         if let seed = value("-uitest-seed"), let n = UInt64(seed) { config.seed = n }
         return config
     }
@@ -56,20 +59,34 @@ struct PlayView: View {
                 fields: [.init(x: 1024, y: 768, radius: 128, richness: 10)],
                 palette: .standard
             )
+        // Tutorial (P3.2): load the five-step tutorial and play it in its
+        // solo-objective region (a separate content category from the main
+        // region set). Falls back to the configured region if either load
+        // fails, so a missing tutorial degrades to normal play.
+        var tutorial: Tutorial?
+        var base = chosen
+        if config.tutorial, let t = try? Tutorial.loadBundled() {
+            tutorial = t
+            if let solo = try? RegionCatalog.loadSoloBundled(),
+               let soloRegion = solo.region(id: t.region) {
+                base = soloRegion
+            }
+        }
         let adjusted: Region
         if let birds = config.birdOverride {
-            adjusted = chosen.withBirdCount(birds)
+            adjusted = base.withBirdCount(birds)
         } else if let seed = config.seed {
-            adjusted = chosen.reseeded(seed)
+            adjusted = base.reseeded(seed)
         } else {
-            adjusted = chosen
+            adjusted = base
         }
         _model = StateObject(
             wrappedValue: GameModel(
                 region: adjusted,
                 totalDays: config.totalDays,
                 autoplay: config.autoplay,
-                ticksPerFrame: config.ticksPerFrame
+                ticksPerFrame: config.ticksPerFrame,
+                tutorial: tutorial
             ))
         // Applied after init via the view's task (published-mutable only).
         _pendingPauseAt = State(initialValue: config.pauseAt)

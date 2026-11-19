@@ -448,3 +448,70 @@ Architecture decision records. Every deviation from the roadmap is recorded here
   `EngineGoldenReplayTests` verify the new hashes.
 - **Consequences**: hash changes are expected and tracked here; the
   stale-record tripwire keeps protecting future behavior changes.
+
+## ADR-0022: Golden replay regeneration at contentVersion 5 (P3.2)
+
+- **Context**: The P3.2 solo-objective engine change (42fd614) alters tick
+  behavior when `soloTargetBirds > 0` (roost-counted solo victory reads roost
+  state during the tick), so the 20 goldens recorded at version 4 fail with
+  `staleContentVersion(4)` under the S1.4 contract. The regeneration was
+  committed in 42fd614 without its own ADR; this entry closes that gap.
+- **Decision**: Same procedure as ADR-0021: each committed record (same seed,
+  same timed actions) replayed through the current engine at
+  `replayContentVersion = 5`; stored `stateHash` values updated; no record's
+  actions edited. The harness was deleted after the run.
+- **Consequences**: expected hash churn, tracked here; the stale-record
+  tripwire still guards future behavior changes.
+
+## ADR-0023: Tutorial feed progress is cumulative gained energy; the driver steers to the field with the most remaining food
+
+- **Context**: Two headless findings while driving the tutorial end-to-end
+  (the UI test completed 4 of 5 steps and stalled on FEED):
+  1. `tutorial.json` asked for +300 total energy while the flock starts at
+     800 with a 1000 cap — unreachable. Lowered to 150 (content choice; the
+     roadmap sets no number).
+  2. Even at 150, a total-vs-baseline predicate is unsatisfiable whenever
+     R-9 growth fires mid-step: growth spends 200 energy the moment the
+     total reaches 800, so the total oscillates (600→798) and a baseline
+     captured at step activation (800) can never be beaten by +150.
+     Separately, the driver's field pick compared `richness > currentDepletion`
+     — richness 90 vs depletion 900 — so it stopped issuing feed paths one
+     tick after the flock first touched the field, and the flock wandered.
+- **Decision**: The engine's FEED predicate now sums only positive deltas of
+  the flock's total energy since the step's first sample (`feedGain`), and
+  completes at `minEnergyGain`; dips (growth spending, cap effects) never
+  subtract. The driver picks the field with the most remaining food
+  (`maxDepletion - currentDepletion`) instead of comparing richness to
+  depletion, and re-issues the feed path every tick while the step is
+  active. Both changes keep integer arithmetic (INV-3). Content wording
+  updated to "Let the flock gain 150 energy while the field lasts."
+- **Consequences**: A `testFeedStepCountsGainAcrossGrowthDips` regression
+  test pins the dip behavior in MUContent; MUAI field-selection tests now
+  express "depleted" as `currentDepletion == maxDepletion`; a headless
+  full-pipeline test (driver + engine + sim, 40 birds, tutorial-meadow
+  geometry) proves all five steps complete within one day (4800 ticks).
+
+## ADR-0024: Region loaders address files by name, not by subdirectory, because the app bundle flattens the resource tree
+
+- **Context**: The P3.2 UI test `testTutorialCompletes` failed in the
+  bundle-level `xcodebuild test` run: the app never entered the tutorial.
+  Root cause: XcodeGen emits one `PBXFileReference` per JSON file (not a
+  folder reference), so the built app bundle copies every resource flat to
+  the bundle root — there is no `Content/regions` or `Content/solo`
+  subdirectory. `RegionCatalog.loadBundled()` and `loadSoloBundled()`
+  looked up resources by subdirectory, so both missed: the app fell back to
+  a non-tutorial region and the tutorial banner never appeared.
+- **Decision**: Both loaders now address region files **by name**
+  (`<name>.json`) through a shared `loadNamedRegions(_:from:)` helper. Each
+  tries the nested `Content/<category>` and `<category>` subdirectories
+  first (in case a future build preserves them), then the bundle root. The
+  main set is `commons, delta, fenlands, gorge, meadow, ridge`; the solo set
+  is `first-roost, tutorial-meadow`. This also fixes `loadBundled()`, which
+  had the same latent bug (the app was silently playing a fallback region
+  instead of the shipped regions).
+- **Consequences**: Two regression tests in MUContent
+  (`testLoadNamedRegionsFromFlatDirectory`,
+  `testLoadNamedRegionsThrowsWhenFileMissing`) pin the flat-directory
+  behavior. The app now loads the real shipped regions and the tutorial
+  region from the bundle. The directory-based `load(from:)` is unchanged and
+  still used by the package tests against the source tree.

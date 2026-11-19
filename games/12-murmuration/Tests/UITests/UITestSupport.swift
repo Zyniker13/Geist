@@ -20,15 +20,24 @@ enum GameUITest {
         fast: Int? = nil,
         pauseAt: Int? = nil,
         birds: Int? = nil,
-        hash: Bool = false
+        hash: Bool = false,
+        tutorial: Bool = false,
+        autoplay: Bool = true
     ) {
         var args = [
             "-uitest-overlay",
             "-uitest-play",
-            "-uitest-autoplay",
-            "-uitest-region", region,
-            "-uitest-days", String(days),
         ]
+        if autoplay {
+            args += ["-uitest-autoplay"]
+        }
+        args += ["-uitest-region", region, "-uitest-days", String(days)]
+        if tutorial {
+            args += ["-uitest-tutorial"]
+        }
+        // Trace the app's own log lines ([MU] …) into the xcodebuild output so
+        // a failing tutorial run can be diagnosed after the fact.
+        args += ["-uitest-trace"]
         if let fast {
             args += ["-uitest-fast", String(fast)]
         }
@@ -84,6 +93,11 @@ enum GameUITest {
     /// container exposes as different element types on iOS and macOS).
     static func finalElement(_ app: XCUIApplication) -> XCUIElement {
         app.descendants(matching: .any).matching(identifier: "game.final").firstMatch
+    }
+
+    /// The tutorial completion banner (P3.2), queried platform-agnostically.
+    static func tutorialCompleteElement(_ app: XCUIApplication) -> XCUIElement {
+        app.descendants(matching: .any).matching(identifier: "tutorial.complete").firstMatch
     }
 
     /// Wait for the program-done card and return the final hash label.

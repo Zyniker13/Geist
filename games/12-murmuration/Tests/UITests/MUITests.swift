@@ -45,6 +45,22 @@ final class MUGateTests: XCTestCase {
         )
     }
 
+    /// P3.2: the five-step tutorial runs to completion. The tutorial driver
+    /// steers the flock (no Autoplayer); the `tutorial.complete` banner
+    /// appears only after all five steps are satisfied.
+    func testTutorialCompletes() throws {
+        let app = XCUIApplication()
+        GameUITest.launch(
+            app: app, region: "tutorial-meadow", days: 1, fast: 120,
+            tutorial: true, autoplay: false
+        )
+        let complete = GameUITest.tutorialCompleteElement(app)
+        XCTAssertTrue(
+            complete.waitForExistence(timeout: 180),
+            "the five-step tutorial never reached completion"
+        )
+    }
+
     /// A self-pause + resume at mid-day must not perturb the deterministic
     /// stream: the final hash equals an uninterrupted run's.
     func testPauseResumePreservesHash() throws {

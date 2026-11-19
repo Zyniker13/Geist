@@ -608,3 +608,51 @@ Evidence (local, 2026-11-18):
   content count stay at 6.
 - Remaining for P3.2: solo/tutorial region JSONs, `tutorial.json`
   (5 steps), tutorial UI, then MU-P3.3 (local versus), then G3.
+
+### P3.2 tutorial: driver, two bug fixes, headless proof (2026-11-19)
+
+- New `TutorialDriver` (MUAI): maps each `TutorialGoal` to `GameAction`s —
+  one-shot actions (draw, split, condense) guarded by flags, continuous
+  actions (feed, roost) re-issued every tick. Wired into `GameModel` tick
+  loop, HUD banner, `-uitest-tutorial` launch flag (tutorial regions load
+  via `RegionCatalog.loadSoloBundled()`, tutorial steps via
+  `Tutorial.loadBundled()`; no player-visible menu entry yet, so the driver
+  never fights a human).
+- Bug 1 (impossible goal): the FEED step asked for +300 total energy with
+  the flock starting at 800 under a 1000 cap. Content now asks for 150.
+- Bug 2 (predicate + field pick): a total-vs-baseline feed predicate is
+  unsatisfiable across R-9 growth dips, and the driver compared
+  `richness > currentDepletion`, dropping the feed path one tick after
+  first contact. Engine now sums positive energy deltas (cumulative gain);
+  driver picks the field with the most remaining food. Details in
+  ADR-0023.
+- Headless proof: `testDriverCompletesTheFullTutorialWithinOneDay`
+  (MUAI) — driver + engine + sim loop, 4800 ticks, all five steps
+  complete, 0 failures.
+- Package suites: MUCore 90/90, MUContent 31/31 (incl. growth-dip
+  regression), MUAI 26/26, MURender 12/12; MUAudio/MUPlatform/MUMeta
+  0 tests (unchanged). `make lint` exit 0.
+- Remaining for P3.2: full `make test` (iOS suite incl.
+  `testTutorialCompletes`) running; then commit, CI, and G3.
+
+### P3.2 tutorial: flat-bundle region loading fix (2026-11-19)
+
+- The bundle-level `xcodebuild test` run failed: `testTutorialCompletes`
+  never entered the tutorial. Root cause: XcodeGen emits one
+  `PBXFileReference` per JSON file (not a folder reference), so the built
+  app bundle copies every resource flat to the bundle root — there is no
+  `Content/regions` or `Content/solo` subdirectory. `loadBundled()` and
+  `loadSoloBundled()` looked up resources by subdirectory, so both missed;
+  the app fell back to a non-tutorial region and the banner never appeared.
+- Fix (ADR-0024): both loaders now address region files **by name**
+  (`<name>.json`) via a shared `loadNamedRegions(_:from:)` helper, trying
+  the nested `Content/<category>` / `<category>` subdirectories first, then
+  the bundle root. This also fixes `loadBundled()`, which had the same
+  latent bug (the app was silently playing a fallback region instead of the
+  shipped regions).
+- Regression tests (MUContent): `testLoadNamedRegionsFromFlatDirectory`,
+  `testLoadNamedRegionsThrowsWhenFileMissing`. MUContent suite 33/33
+  locally (`swift test`, 0 failures).
+- Remaining for P3.2: full `make test` (iOS suite incl.
+  `testTutorialCompletes`) to confirm the fix in the bundle; then commit,
+  CI, and G3.
