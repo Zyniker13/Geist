@@ -9,6 +9,7 @@ func makeState(
     falconCount: Int = 1,
     hasRival: Bool = false,
     roostCount: Int = 1,
+    soloTargetBirds: Int = 0,
     seed: UInt64 = 42
 ) -> GameState {
     let roostX = roostCount == 1
@@ -30,6 +31,7 @@ func makeState(
         roostRadius: [Int](repeating: 128, count: roostCount),
         falconCount: falconCount,
         hasRival: hasRival,
+        soloTargetBirds: soloTargetBirds,
         windSeedOffset: 0,
         seed: seed
     )

@@ -3,17 +3,27 @@
 This file is the single place to resume the program from. Keep every field below current after every meaningful step (see "Resuming After a Restart" in `ROADMAP.md`). Per-game detail (gate evidence and sign-offs) lives in each game's `docs/STATUS.md`.
 
 - **Current game:** Murmuration (`12-murmuration`)
-- **Phase:** P3 (Content and Systems) — on `murmur/phase/P3-content-systems`.
-- **Last done:** P3.1 core implemented and pushed (9a5ff4b): obstacle
-  circles + avoidance/containment in the boids kernel, three integer
-  wind patterns (`uniform` bit-identical to legacy, `shear`, `gusts`
-  1/8..8/8 with Int64-widened products), falcon `lurk` behavior (96-unit
-  orbit on the largest field, closest-edge dive). 11 new P3 tests green
-  locally (MUCore: 78 tests, 0 failures); `make lint` exit 0; the 20
-  engine goldens regenerated at replayContentVersion 4 (ADR-0021).
-  iOS sim `xcodebuild test` running locally in the background.
-- **Next step:** verify local iOS sim test + branch CI green, merge to
-  main; then MU-P3.2 (tutorial) and MU-P3.3 (local versus), then G3.
+- **Phase:** P3 complete; G3 gate pass tagged — next P4 (AI Opponents) on
+  `murmur/phase/P4-ai-opponents`.
+- **Last done:** MU-P3.3 local two-flock versus built and green (`ea3c1b7`,
+  pushed). Player-visible menu entry (`menu.versus`), nearest-flock touch
+  routing on iOS (tie-break to flock 0 at the coincident start),
+  option-drag routing on Mac, rival AI skipped in versus. Two engine bugs
+  fixed (ADR-0025): `splitFlock` now anchors the new flock's leader at its
+  centroid; versus sets `versusMergeSuppressed` so R-5 auto-merge cannot
+  collapse the day-start split (replay contentVersion 7, 20 goldens
+  regenerated). `make test` green end-to-end (MUCore 93, MUContent 33,
+  MURender 26, MUAudio 12, MUAI 15, MUPlatform 13, MUMeta 20; MUGateTests
+  5/5 incl. tutorial + versus; pause-hash + perf gate), `make lint` 0
+  violations, content-lint 9 files / 0 errors. G3 counts verified (6
+  regions, 2 falcon behaviors, rival flock, 5 tutorial steps) — evidence in
+  the game's `docs/STATUS.md`. CI on `ea3c1b7` failed only in
+  `testVersusTwoFlockRouting` (twice): a stale-position race between the
+  leaders-row parse and the touch on the slow CI runner — fixed by pausing
+  the sim around each parse+drag (`fd46dc7`, ADR-0026), local rerun green.
+- **Next step:** watch branch CI for `fd46dc7` (run in progress), then
+  merge P3 to `main`, push the `murmur/gate-G3-pass` tag, and start MU-P4.1
+  (rival AI with three difficulties, falcon tuning, balance report).
 - **Blocked on:** nothing.
 
 ## Environment Check
@@ -117,3 +127,28 @@ One line per meaningful step, newest last: date, phase or game and stage, what w
 - 2026-11-18 night: CI run 44436062343 confirmed red only in `ui-test-macos`; its always-on diagnostics (artifact 14489327481) showed the mac AX tree puts the accessibility identifier on a wrapper element with the label on a child `StaticText`, so typed queries (`staticTexts["debug.fps"]`) return empty on macOS while iOS puts the identifier on the text itself → ADR-0018: overlay rows are read by identifier across element types, label taken from the element or its child (`rowLabel`), and `Shell` marks each HUD row `.accessibilityElement(children: .combine)` so one element carries id+label on both platforms. Helpers now take app+identifier and re-resolve per sample. verify5 locally: both compile gates clean, `make test` (Debug, iPad sim) `** TEST SUCCEEDED **` with MUITests 5/5 (102 s incl. perf); mac scheme locally still hits the runner-connection wedge (issue #13) — CI is the mac XCUI executor. Pushed on `murmur/phase/P2-vertical-slice`; next CI run is the `ui-test-macos` evidence run.
 - 2026-11-18 night: run 44442704839 triage — 3/5 mac UI tests pass (menu, ⌘⇧D, 3-day autoplay), the two label-read tests fail at a new shape (identifier element: empty label, no StaticText children) → ADR-0019: overlays publish each row's text as `.accessibilityValue` on the identifier element, helpers read value-first. verify6: both Release compiles clean, `make test` green. Pushed; CI watcher queued.
 - 2026-11-18 night: run 44445425461 triage — CI artifact for the first time contains a full AX-tree dump; ground truth is that macOS exposes each `.accessibilityElement()` row as a leaf `Other` carrying ONLY the identifier (no label, no value, no children), so ADR-0019's value-first variant was falsified. Rewrote ADR-0019: rows are `Text(...).accessibilityElement(children: .ignore).accessibilityLabel(text).accessibilityIdentifier(id)` — id + text on one element, explicit on both platforms, no reliance on synthesis. Also ADR-0020: local GUI apps (game build, TextEdit, Finder) all expose zero AX windows in this session (screencapture refused too), which explains the local mac test-runner wedge (issue #13, commented); local mac UI runs recorded as impossible, mac UI validation is CI-only. verify7: iOS `make test` + `make lint` green; Release mac build compiles. Pushed c95c3c7; CI run on c95c3c7 is the `ui-test-macos` evidence run, watcher queued.
+- 2026-11-19: P3.1 merged to main (16e01ac), G2 closed and tagged
+  `murmur/gate-G2-pass`. P3.2 solo-objective engine pushed on
+  `murmur/phase/P3-content-systems` as 42fd614 (MUCore:
+  `GameState.soloTargetBirds` with roost-counted solo victory,
+  `SoloObjectiveTests`, goldens regenerated at replayContentVersion 5)
+  — CI green. MUContent plumbing pushed as 1ff28ab: `Region` decodes
+  optional `soloTargetBirds` (default 0, so the six shipped versus
+  regions stay untouched), `makeGameState` carries it into
+  `GameState`, and `RegionCatalog.validate` rejects negative targets,
+  targets above `birdCount`, and any target in a rival region; 4 new
+  MUContent tests (20/20 green locally), `make lint` 0. Solo/tutorial
+  region content next, kept outside `regions/` so the shipped-6 count
+  and the G3 content count stay 6.
+- 2026-11-19: Murmuration P3.2 tutorial built end-to-end and two bugs
+  fixed from a headless full-pipeline test: FEED goal 300→150 (flock
+  starts at 800 under a 1000 cap) and ADR-0023 — the feed predicate now
+  sums positive energy deltas (survives R-9 growth dips that made
+  total-vs-baseline unsatisfiable) and the driver steers to the field
+  with the most remaining food (was `richness > currentDepletion`, which
+  dropped the path one tick after first contact). All five tutorial
+  steps now complete within one day headlessly; package suites green
+  (MUCore 90, MUContent 31, MUAI 26, MURender 12), `make lint` 0; full
+  `make test` + commit next.
+- 2026-11-19: Murmuration P3.3 complete on `murmur/phase/P3-content-systems` (`ea3c1b7`): local two-flock versus with player-visible menu entry, nearest-flock touch routing (iOS) and option-drag (Mac); ADR-0025 records the two engine fixes — `splitFlock` seeds the new flock's leader path at its centroid, and `versusMergeSuppressed` blocks the R-5 auto-merge that collapsed the coincident versus flocks; replay contentVersion 7 with 20 regenerated goldens. `make test` green (MUCore 93, MUGateTests 5/5 incl. tutorial + versus), `make lint` 0. G3 gate checks (counts, content-lint 0, tutorial + versus UI tests) verified with output in the game's docs/STATUS.md; tag `murmur/gate-G3-pass` after merge.
+- 2026-11-19: CI red on `ea3c1b7` (`testVersusTwoFlockRouting` stale-position race on slow runner); fixed by pausing around parse+drag (`fd46dc7`, ADR-0026), local rerun green, awaiting CI.

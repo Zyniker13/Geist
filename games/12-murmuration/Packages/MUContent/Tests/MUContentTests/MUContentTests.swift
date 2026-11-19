@@ -337,4 +337,115 @@ final class MUContentTests: XCTestCase {
             "expected obstacle out-of-bounds problem"
         )
     }
+
+    // MARK: - Solo objectives (MU-P3.2, R-13)
+
+    /// A solo region (no rival, positive target) passes validation.
+    func testValidationAcceptsSoloRegion() {
+        let region = Region(
+            id: "solo", name: "Solo",
+            worldWidth: 1000, worldHeight: 1000,
+            birdCount: 400, falconCount: 1, hasRival: false,
+            soloTargetBirds: 250,
+            windSeedOffset: 0, seed: 1,
+            roosts: [Region.RoostDef(x: 200, y: 200, radius: 80)],
+            fields: [Region.FieldDef(x: 800, y: 800, radius: 80, richness: 5)],
+            palette: samplePalette()
+        )
+        XCTAssertEqual(
+            RegionCatalog.validate(region), [],
+            "a well-formed solo region must validate clean"
+        )
+    }
+
+    /// Validation rejects a negative target, a target above the flock size,
+    /// and any nonzero target in a rival region.
+    func testValidationRejectsBadSoloTarget() {
+        func region(target: Int, rival: Bool) -> Region {
+            Region(
+                id: "solo", name: "Solo",
+                worldWidth: 1000, worldHeight: 1000,
+                birdCount: 400, falconCount: 1, hasRival: rival,
+                rivalStartBirds: rival ? 150 : 0,
+                soloTargetBirds: target,
+                windSeedOffset: 0, seed: 1,
+                roosts: [Region.RoostDef(x: 200, y: 200, radius: 80)],
+                fields: [Region.FieldDef(x: 800, y: 800, radius: 80, richness: 5)],
+                palette: samplePalette()
+            )
+        }
+        let negative = RegionCatalog.validate(region(target: -1, rival: false))
+        XCTAssertTrue(
+            negative.contains { $0.contains("soloTargetBirds must be >= 0") },
+            "expected negative-target problem, got \(negative)"
+        )
+        let tooBig = RegionCatalog.validate(region(target: 401, rival: false))
+        XCTAssertTrue(
+            tooBig.contains { $0.contains("soloTargetBirds must be <= birdCount") },
+            "expected over-flock problem, got \(tooBig)"
+        )
+        let withRival = RegionCatalog.validate(region(target: 1, rival: true))
+        XCTAssertTrue(
+            withRival.contains { $0.contains("soloTargetBirds must be 0 in a rival region") },
+            "expected rival-region problem, got \(withRival)"
+        )
+    }
+
+    /// `makeGameState` carries the region's target into the simulation
+    /// (INV-3: content JSON → Region → GameState, deterministic ints).
+    func testMakeGameStateCarriesSoloTarget() throws {
+        let solo = Region(
+            id: "solo", name: "Solo",
+            worldWidth: 1000, worldHeight: 1000,
+            birdCount: 400, falconCount: 1, hasRival: false,
+            soloTargetBirds: 250,
+            windSeedOffset: 0, seed: 1,
+            roosts: [Region.RoostDef(x: 200, y: 200, radius: 80)],
+            fields: [Region.FieldDef(x: 800, y: 800, radius: 80, richness: 5)],
+            palette: samplePalette()
+        )
+        XCTAssertEqual(
+            solo.makeGameState().soloTargetBirds, 250,
+            "solo target must reach the GameState"
+        )
+        // Shipped regions are all versus regions, so they must carry 0.
+        let catalog = try RegionCatalog.load(from: regionsDir)
+        for region in catalog.regions {
+            XCTAssertEqual(
+                region.makeGameState().soloTargetBirds, 0,
+                "\(region.id): versus region must have no solo target"
+            )
+        }
+    }
+
+    /// A region JSON authored before P3.2 (no `soloTargetBirds` key) decodes
+    /// with target 0, so the six shipped versus regions stay valid.
+    func testSoloTargetDefaultsToZeroWhenKeyMissing() throws {
+        let json = """
+            {"id":"x","name":"X","worldWidth":100,"worldHeight":100,
+            "birdCount":10,"falconCount":1,"hasRival":false,
+            "windSeedOffset":0,"seed":1,
+            "roosts":[{"x":10,"y":10,"radius":5}],
+            "fields":[{"x":90,"y":90,"radius":5,"richness":5}],
+            "palette":{"skyTop":{"r":0.2,"g":0.2,"b":0.3,"a":1.0},
+            "skyHigh":{"r":0.4,"g":0.4,"b":0.5,"a":1.0},
+            "skyLow":{"r":0.8,"g":0.6,"b":0.5,"a":1.0},
+            "skyBottom":{"r":0.95,"g":0.8,"b":0.6,"a":1.0},
+            "hillFar":{"r":0.3,"g":0.3,"b":0.3,"a":1.0},
+            "hillMid":{"r":0.2,"g":0.2,"b":0.2,"a":1.0},
+            "hillNear":{"r":0.1,"g":0.1,"b":0.1,"a":1.0},
+            "birdInk":{"r":0.1,"g":0.1,"b":0.1,"a":1.0},
+            "birdHighlight":{"r":0.25,"g":0.35,"b":0.4,"a":1.0},
+            "rival":{"r":0.35,"g":0.25,"b":0.15,"a":1.0},
+            "fieldOchre":{"r":0.8,"g":0.65,"b":0.35,"a":1.0},
+            "fieldGreen":{"r":0.5,"g":0.6,"b":0.4,"a":1.0},
+            "falcon":{"r":0.13,"g":0.1,"b":0.08,"a":1.0}}}
+            """
+        let region = try JSONDecoder().decode(Region.self, from: Data(json.utf8))
+        XCTAssertEqual(region.soloTargetBirds, 0, "missing key decodes to 0")
+        XCTAssertEqual(
+            RegionCatalog.validate(region), [],
+            "a legacy region without the key must validate clean"
+        )
+    }
 }

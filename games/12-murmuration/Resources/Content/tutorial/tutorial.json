@@ -1,0 +1,48 @@
+{
+  "region": "tutorial-meadow",
+  "steps": [
+    {
+      "id": "draw",
+      "title": "Draw a path",
+      "body": "Drag your finger across the sky to draw a path. The flock follows your line. Draw a path with at least 8 points.",
+      "goal": {
+        "type": "drawPath",
+        "minPoints": 8
+      }
+    },
+    {
+      "id": "feed",
+      "title": "Feed the flock",
+      "body": "Guide the flock over the green field. The birds eat as they pass and the flock's energy grows. Let the flock gain 150 energy while the field lasts.",
+      "goal": {
+        "type": "feed",
+        "minEnergyGain": 150
+      }
+    },
+    {
+      "id": "split",
+      "title": "Split the flock",
+      "body": "Use two fingers to split the flock into two sub-flocks, each following its own path. Split into 2 sub-flocks.",
+      "goal": {
+        "type": "splitFlock",
+        "subFlocks": 2
+      }
+    },
+    {
+      "id": "condense",
+      "title": "Condense",
+      "body": "When the falcon strikes, pull the flock tight. Trigger a condense to draw the birds close together.",
+      "goal": {
+        "type": "condense"
+      }
+    },
+    {
+      "id": "roost",
+      "title": "Roost the flock",
+      "body": "At dusk, bring the flock to the roost. Settle 5 birds in the roost to finish the tutorial.",
+      "goal": {
+        "type": "roostTarget"
+      }
+    }
+  ]
+}

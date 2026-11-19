@@ -64,6 +64,9 @@ final class GameModel: ObservableObject {
     let region: Region
     let totalDays: Int
     let autoplay: Bool
+    /// Local two-flock versus (MU-P3.3): the rival flock is human-driven, so
+    /// GentleRival is disabled and each touch routes to the nearest flock.
+    let versus: Bool
     /// Ticks advanced per display frame in fast-forward (UI tests).
     let ticksPerFrame: Int
 
@@ -84,6 +87,16 @@ final class GameModel: ObservableObject {
     var pauseAtTick: Int?
     /// When true, `hashLabel` refreshes every 30 ticks and at pause/finish.
     var hashUpdates = false
+
+    /// The five-step tutorial (P3.2). When present, the model drives it:
+    /// the `tutorialDriver` issues the current step's action each tick and
+    /// the `tutorialEngine` samples the post-tick state to advance the step.
+    @Published private(set) var tutorialStep: Int = -1
+    @Published private(set) var tutorialComplete = false
+    /// The tutorial's steps (for the HUD banner). Empty when no tutorial.
+    @Published private(set) var tutorialSteps: [TutorialStep] = []
+    private var tutorialEngine: TutorialEngine?
+    private var tutorialDriver = TutorialDriver()
 
     private var rng: SeededRNG
     private var autoplayer: Autoplayer?
@@ -107,11 +120,14 @@ final class GameModel: ObservableObject {
         totalDays: Int = 1,
         autoplay: Bool = false,
         ticksPerFrame: Int = 1,
-        save: SavedGame? = nil
+        save: SavedGame? = nil,
+        tutorial: Tutorial? = nil,
+        versus: Bool = false
     ) {
         self.region = region
         self.totalDays = totalDays
         self.autoplay = autoplay
+        self.versus = versus
         self.ticksPerFrame = max(ticksPerFrame, 1)
         if let save = save, save.regionID == region.id {
             self.state = save.state
@@ -129,6 +145,12 @@ final class GameModel: ObservableObject {
         if autoplay {
             self.autoplayer = Autoplayer()
         }
+        if let tutorial {
+            self.tutorialEngine = TutorialEngine(steps: tutorial.steps)
+            self.tutorialStep = 0
+            self.tutorialSteps = tutorial.steps
+            MUTrace.log("tutorial: loaded \(tutorial.steps.count) steps region=\(tutorial.region)")
+        }
         startDayIfNeeded()
     }
 
@@ -137,9 +159,16 @@ final class GameModel: ObservableObject {
     private func startDayIfNeeded() {
         // Fresh day (not a resume): spawn the rival and seed the trace.
         if state.tick == 0 {
+            // Versus suppresses the R-5 auto-merge: the day-start split
+            // defines the two player flocks, both starting coincident, so
+            // the proximity rule would collapse them within 30 ticks.
+            state.versusMergeSuppressed = versus
             for action in RegionStarter.startingActions(for: region) {
                 apply(action)
             }
+            MUTrace.log(
+                "day-start: region=\(region.id) versus=\(versus) subFlocks=\(state.subFlockCount) paths=\(state.leaderPaths.count)"
+            )
             trace = []
             if autoplay, var ai = autoplayer {
                 if let action = ai.action(for: state) {
@@ -224,9 +253,21 @@ final class GameModel: ObservableObject {
         if autoplay, let action = autoplayer?.action(for: state) {
             apply(action)
         }
-        var gentle = rival
-        if let action = gentle.action(for: state) {
-            rival = gentle
+        // GentleRival (P2.5): the rival pilot drives the rival flock. In
+        // versus mode (MU-P3.3) the rival is human-driven, so skip it.
+        if !versus {
+            var gentle = rival
+            if let action = gentle.action(for: state) {
+                rival = gentle
+                apply(action)
+            }
+        }
+
+        // Tutorial (P3.2): issue the current step's action before the tick so
+        // it takes effect this tick; the engine samples the post-tick state.
+        if !tutorialComplete,
+           let step = tutorialEngine?.currentStep,
+           let action = tutorialDriver.action(goal: step.goal, state: state) {
             apply(action)
         }
 
@@ -236,6 +277,7 @@ final class GameModel: ObservableObject {
         for event in events {
             handle(event)
         }
+        advanceTutorial()
         if dayEnded {
             finishDay()
             playbackTrace("day end at tick \(state.tick): pause=\(dayEndPauseTicks) results=\(results.count)")
@@ -249,6 +291,24 @@ final class GameModel: ObservableObject {
             playbackTrace(
                 "day=\(day) tick=\(state.tick) birds=\(state.birds.count) fps=\(fps) dayEnded=\(dayEnded) finished=\(finished)"
             )
+        }
+    }
+
+    /// Sample the post-tick state to advance the tutorial (P3.2). Called once
+    /// per tick after the simulation step. When a step's goal is met the
+    /// engine advances; when the last step completes, `tutorialComplete` is
+    /// set and the UI shows the completion banner.
+    private func advanceTutorial() {
+        guard var engine = tutorialEngine, !tutorialComplete else { return }
+        let completed = engine.progress(state: state)
+        tutorialStep = engine.stepIndex
+        tutorialEngine = engine
+        guard completed else { return }
+        if engine.isComplete {
+            tutorialComplete = true
+            MUTrace.log("tutorial.complete")
+        } else {
+            MUTrace.log("tutorial.step \(engine.stepIndex) \(engine.currentStep?.id ?? "")")
         }
     }
 

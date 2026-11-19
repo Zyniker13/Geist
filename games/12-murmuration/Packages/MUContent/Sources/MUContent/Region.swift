@@ -124,6 +124,10 @@ public struct Region: Codable, Sendable, Equatable, Identifiable {
     /// The engine has no rival spawn, so P2 creates the rival with a day-start
     /// split (`RegionStarter`); 0 means no rival.
     public let rivalStartBirds: Int
+    /// Solo-objective target (MU-P3.2, R-13): in a no-rival region, the goal
+    /// is to roost this many birds. 0 means no solo objective (region is
+    /// versus or free-play).
+    public let soloTargetBirds: Int
     /// Wind seed offset (R-1).
     public let windSeedOffset: Int
     /// Simulation seed.
@@ -192,6 +196,7 @@ public struct Region: Codable, Sendable, Equatable, Identifiable {
         falconCount: Int,
         hasRival: Bool,
         rivalStartBirds: Int = 0,
+        soloTargetBirds: Int = 0,
         windSeedOffset: Int,
         seed: UInt64,
         roosts: [RoostDef],
@@ -209,6 +214,7 @@ public struct Region: Codable, Sendable, Equatable, Identifiable {
         self.falconCount = falconCount
         self.hasRival = hasRival
         self.rivalStartBirds = rivalStartBirds
+        self.soloTargetBirds = soloTargetBirds
         self.windSeedOffset = windSeedOffset
         self.seed = seed
         self.roosts = roosts
@@ -221,7 +227,7 @@ public struct Region: Codable, Sendable, Equatable, Identifiable {
 
     private enum CodingKeys: String, CodingKey {
         case id, name, worldWidth, worldHeight, birdCount, falconCount
-        case hasRival, rivalStartBirds, windSeedOffset, seed
+        case hasRival, rivalStartBirds, soloTargetBirds, windSeedOffset, seed
         case roosts, fields, palette, obstacles, windPattern, falconBehavior
     }
 
@@ -238,6 +244,7 @@ public struct Region: Codable, Sendable, Equatable, Identifiable {
         falconCount = try container.decode(Int.self, forKey: .falconCount)
         hasRival = try container.decode(Bool.self, forKey: .hasRival)
         rivalStartBirds = try container.decodeIfPresent(Int.self, forKey: .rivalStartBirds) ?? 0
+        soloTargetBirds = try container.decodeIfPresent(Int.self, forKey: .soloTargetBirds) ?? 0
         windSeedOffset = try container.decode(Int.self, forKey: .windSeedOffset)
         seed = try container.decode(UInt64.self, forKey: .seed)
         roosts = try container.decode([RoostDef].self, forKey: .roosts)
@@ -255,6 +262,7 @@ public struct Region: Codable, Sendable, Equatable, Identifiable {
             worldWidth: worldWidth, worldHeight: worldHeight,
             birdCount: birdCount, falconCount: falconCount,
             hasRival: hasRival, rivalStartBirds: rivalStartBirds,
+            soloTargetBirds: soloTargetBirds,
             windSeedOffset: windSeedOffset, seed: seed,
             roosts: roosts, fields: fields, palette: palette,
             obstacles: obstacles, windPattern: windPattern,
@@ -279,6 +287,7 @@ public struct Region: Codable, Sendable, Equatable, Identifiable {
             roostRadius: roosts.map(\.radius),
             falconCount: falconCount,
             hasRival: hasRival,
+            soloTargetBirds: soloTargetBirds,
             windSeedOffset: windSeedOffset,
             seed: seed,
             windPattern: windPattern,
@@ -297,6 +306,7 @@ public struct Region: Codable, Sendable, Equatable, Identifiable {
             worldWidth: worldWidth, worldHeight: worldHeight,
             birdCount: count, falconCount: falconCount,
             hasRival: false, rivalStartBirds: 0,
+            soloTargetBirds: 0,
             windSeedOffset: windSeedOffset, seed: seed,
             roosts: roosts, fields: fields, palette: palette,
             obstacles: obstacles, windPattern: windPattern,
@@ -311,6 +321,7 @@ public struct Region: Codable, Sendable, Equatable, Identifiable {
             worldWidth: worldWidth, worldHeight: worldHeight,
             birdCount: birdCount, falconCount: falconCount,
             hasRival: hasRival, rivalStartBirds: rivalStartBirds,
+            soloTargetBirds: soloTargetBirds,
             windSeedOffset: windSeedOffset, seed: newSeed,
             roosts: roosts, fields: fields, palette: palette,
             obstacles: obstacles, windPattern: windPattern,

@@ -20,15 +20,28 @@ enum GameUITest {
         fast: Int? = nil,
         pauseAt: Int? = nil,
         birds: Int? = nil,
-        hash: Bool = false
+        hash: Bool = false,
+        tutorial: Bool = false,
+        versus: Bool = false,
+        autoplay: Bool = true
     ) {
         var args = [
             "-uitest-overlay",
             "-uitest-play",
-            "-uitest-autoplay",
-            "-uitest-region", region,
-            "-uitest-days", String(days),
         ]
+        if autoplay {
+            args += ["-uitest-autoplay"]
+        }
+        args += ["-uitest-region", region, "-uitest-days", String(days)]
+        if tutorial {
+            args += ["-uitest-tutorial"]
+        }
+        if versus {
+            args += ["-uitest-versus"]
+        }
+        // Trace the app's own log lines ([MU] …) into the xcodebuild output so
+        // a failing tutorial run can be diagnosed after the fact.
+        args += ["-uitest-trace"]
         if let fast {
             args += ["-uitest-fast", String(fast)]
         }
@@ -84,6 +97,11 @@ enum GameUITest {
     /// container exposes as different element types on iOS and macOS).
     static func finalElement(_ app: XCUIApplication) -> XCUIElement {
         app.descendants(matching: .any).matching(identifier: "game.final").firstMatch
+    }
+
+    /// The tutorial completion banner (P3.2), queried platform-agnostically.
+    static func tutorialCompleteElement(_ app: XCUIApplication) -> XCUIElement {
+        app.descendants(matching: .any).matching(identifier: "tutorial.complete").firstMatch
     }
 
     /// Wait for the program-done card and return the final hash label.
@@ -148,6 +166,48 @@ enum GameUITest {
         guard label.hasPrefix(prefix) else { return nil }
         let rest = label.dropFirst(prefix.count).trimmingCharacters(in: .whitespaces)
         return Int(rest.split(separator: " ").first.map(String.init) ?? "")
+    }
+
+    /// Normalized (0–1) position in the app frame for a world point, inverting
+    /// the render transform (`FlockRenderer.worldPoint`). The MTKView fills the
+    /// frame, so the normalized position is independent of the screen scale:
+    /// it depends only on the frame's aspect ratio and the world size.
+    static func normalizedPoint(
+        forWorld world: (x: Double, y: Double),
+        worldSize: (w: Double, h: Double),
+        app: XCUIApplication
+    ) -> CGPoint {
+        let frame = app.windows.firstMatch.frame
+        let viewW = frame.width
+        let viewH = frame.height
+        let worldW = worldSize.w
+        let worldH = worldSize.h
+        let s = min(viewW / worldW, viewH / worldH)
+        let sx = 2 * s / viewW
+        let sy = 2 * s / viewH
+        let nx = (world.x - worldW / 2) * sx
+        let ny = (worldH / 2 - world.y) * sy
+        return CGPoint(x: (nx + 1) / 2, y: (1 - ny) / 2)
+    }
+
+    /// Parse "L0 x,y L1 x,y" leader labels into per-flock world positions.
+    /// The label alternates id and position tokens.
+    static func parseLeaders(_ text: String) -> [(x: Double, y: Double)] {
+        var result: [(x: Double, y: Double)] = []
+        let tokens = text.split(separator: " ")
+        var index = 0
+        while index + 1 < tokens.count {
+            let id = tokens[index]
+            let position = tokens[index + 1]
+            if id.hasPrefix("L"), id.count > 1, Int(id.dropFirst()) != nil {
+                let parts = position.split(separator: ",")
+                if parts.count == 2, let x = Double(parts[0]), let y = Double(parts[1]) {
+                    result.append((x, y))
+                }
+            }
+            index += 2
+        }
+        return result
     }
 
     /// Peak FPS over independent ~2 s overlay windows: CI runners dip under

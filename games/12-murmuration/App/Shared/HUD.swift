@@ -2,6 +2,7 @@
 
 import SwiftUI
 import MUCore
+import MUContent
 
 /// Live status bar: day, flock size, flock energy, pause, restart.
 struct HUD: View {
@@ -38,8 +39,45 @@ struct HUD: View {
             .padding(.horizontal, 16)
             .padding(.vertical, 10)
             .background(.ultraThinMaterial)
+            tutorialBanner
             Spacer()
         }
+    }
+
+    /// The five-step tutorial banner (P3.2). Shows the current step's copy
+    /// while active and a completion line when the tutorial is done. The
+    /// `tutorial.complete` identifier is what the tutorial UI test waits on.
+    @ViewBuilder
+    private var tutorialBanner: some View {
+        if model.tutorialComplete {
+            Text("Murmuration mastered — the flock is yours")
+                .font(.headline)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                .background(.ultraThinMaterial)
+                .accessibilityIdentifier("tutorial.complete")
+        } else if model.tutorialStep >= 0,
+                  let step = model.tutorialSteps[safe: model.tutorialStep] {
+            VStack(spacing: 2) {
+                Text(step.title)
+                    .font(.subheadline.weight(.semibold))
+                Text(step.body)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 8)
+            .background(.ultraThinMaterial)
+            .accessibilityElement(children: .combine)
+            .accessibilityIdentifier("tutorial.step")
+        }
+    }
+}
+
+private extension Array where Element: Equatable {
+    /// Bounds-checked element (nil when the index is out of range).
+    subscript(safe index: Int) -> Element? {
+        indices.contains(index) ? self[index] : nil
     }
 }
 

@@ -45,6 +45,22 @@ final class MUGateTests: XCTestCase {
         )
     }
 
+    /// P3.2: the five-step tutorial runs to completion. The tutorial driver
+    /// steers the flock (no Autoplayer); the `tutorial.complete` banner
+    /// appears only after all five steps are satisfied.
+    func testTutorialCompletes() throws {
+        let app = XCUIApplication()
+        GameUITest.launch(
+            app: app, region: "tutorial-meadow", days: 1, fast: 120,
+            tutorial: true, autoplay: false
+        )
+        let complete = GameUITest.tutorialCompleteElement(app)
+        XCTAssertTrue(
+            complete.waitForExistence(timeout: 180),
+            "the five-step tutorial never reached completion"
+        )
+    }
+
     /// A self-pause + resume at mid-day must not perturb the deterministic
     /// stream: the final hash equals an uninterrupted run's.
     func testPauseResumePreservesHash() throws {
@@ -93,6 +109,110 @@ final class MUGateTests: XCTestCase {
         XCTAssertLessThanOrEqual(
             frameMs, 16.0,
             "frame build \(frameMs)ms exceeds the 16.0 ms (60 Hz) budget (ADR-0017: CI display runs at 60 Hz; the 120 Hz budget is checked on hardware, issue #11)"
+        )
+    }
+
+    /// MU-P3.3: local two-flock versus on one iPad. Each player owns the
+    /// touches nearest their flock's color. This test verifies (1) the
+    /// day-start split creates two flocks, and (2) a touch near flock 0
+    /// steers flock 0 while a touch near flock 1 steers flock 1.
+    func testVersusTwoFlockRouting() throws {
+        let app = XCUIApplication()
+        GameUITest.launch(
+            app: app,
+            region: "meadow",
+            days: 1,
+            versus: true,
+            autoplay: false
+        )
+
+        let leadersRow = GameUITest.overlayRow(app: app, identifier: "debug.leaders")
+        XCTAssertTrue(
+            leadersRow.waitForExistence(timeout: 30),
+            "leaders row never appeared (versus split did not happen)"
+        )
+
+        // Wait until the row shows both flocks.
+        var leaders = ""
+        for _ in 0..<30 {
+            leaders = GameUITest.rowText(of: leadersRow)
+            if leaders.contains("L0 ") && leaders.contains("L1 ") { break }
+            Thread.sleep(forTimeInterval: 1)
+        }
+        XCTAssertTrue(
+            leaders.contains("L0 ") && leaders.contains("L1 "),
+            "both flocks not present after day-start split: \(leaders)"
+        )
+
+        let worldSize = (w: 2048.0, h: 1536.0)  // meadow
+        let pause = app.buttons["game.pause"]
+        XCTAssertTrue(pause.waitForExistence(timeout: 10), "pause button missing")
+
+        // Pause while parsing and routing: on a slow runner the flocks keep
+        // orbiting between the row read and the touch, so a touch aimed at
+        // one flock can land nearest the other. Paused, leader positions are
+        // frozen and nearest-flock routing is deterministic; the drag applies
+        // its leader path to the paused state and the flock follows it after
+        // resume (ADR-0026).
+        pause.tap()
+        let positions = GameUITest.parseLeaders(leaders)
+        XCTAssertEqual(positions.count, 2, "expected two leaders, got \(positions.count): \(leaders)")
+
+        // Touch at flock 0's frozen leader position routes to flock 0 by
+        // nearest distance. Flock 0's leader should follow the path right
+        // after resume; flock 1, untouched, should barely drift.
+        let start0 = GameUITest.normalizedPoint(
+            forWorld: (x: positions[0].x, y: positions[0].y),
+            worldSize: worldSize,
+            app: app
+        )
+        app.coordinate(withNormalizedOffset: .init(dx: start0.x, dy: start0.y))
+            .press(
+                forDuration: 0.1,
+                thenDragTo: app.coordinate(
+                    withNormalizedOffset: .init(dx: start0.x + 0.2, dy: start0.y)
+                )
+            )
+        pause.tap()  // resume
+        Thread.sleep(forTimeInterval: 3)
+
+        leaders = GameUITest.rowText(of: leadersRow)
+        let after0 = GameUITest.parseLeaders(leaders)
+        XCTAssertEqual(after0.count, 2, "expected two leaders after drag 0: \(leaders)")
+        XCTAssertGreaterThan(
+            after0[0].x, positions[0].x + 50,
+            "flock 0 leader did not move right: \(leaders)"
+        )
+        XCTAssertLessThan(
+            abs(after0[1].x - positions[1].x), 50,
+            "flock 1 leader moved unexpectedly: \(leaders)"
+        )
+
+        // Drag rightward near flock 1: pause, touch at flock 1's frozen
+        // leader position (nearest → flock 1), resume. Flock 1's leader
+        // should follow the path right; flock 0 was untouched by this drag.
+        pause.tap()
+        let start1 = GameUITest.normalizedPoint(
+            forWorld: (x: after0[1].x, y: after0[1].y),
+            worldSize: worldSize,
+            app: app
+        )
+        app.coordinate(withNormalizedOffset: .init(dx: start1.x, dy: start1.y))
+            .press(
+                forDuration: 0.1,
+                thenDragTo: app.coordinate(
+                    withNormalizedOffset: .init(dx: start1.x + 0.15, dy: start1.y)
+                )
+            )
+        pause.tap()  // resume
+        Thread.sleep(forTimeInterval: 3)
+
+        leaders = GameUITest.rowText(of: leadersRow)
+        let after1 = GameUITest.parseLeaders(leaders)
+        XCTAssertEqual(after1.count, 2, "expected two leaders after drag 1: \(leaders)")
+        XCTAssertGreaterThan(
+            after1[1].x, after0[1].x + 50,
+            "flock 1 leader did not move right: \(leaders)"
         )
     }
 }
