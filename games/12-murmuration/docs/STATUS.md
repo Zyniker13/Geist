@@ -586,3 +586,25 @@ Evidence (local, 2026-11-18):
 - `make lint` → exit 0.
 - Branch CI: run 44458722736 (9a5ff4b) completed **success**.
 - Merged to main as 9a3f260.
+
+### P3.2 solo objectives: engine + content plumbing (2026-11-19)
+
+- MUCore engine (42fd614, CI green): `GameState.soloTargetBirds`
+  (default 0) with roost-counted solo victory, `SoloObjectiveTests`
+  RED→GREEN, goldens regenerated at replayContentVersion 5.
+- MUContent plumbing (1ff28ab): `Region` decodes optional
+  `soloTargetBirds` (default 0 — the six shipped versus regions keep
+  decoding unchanged); `makeGameState` carries it into `GameState`;
+  `RegionCatalog.validate` adds three rules — target >= 0, target <=
+  birdCount, target 0 in any rival region.
+- Tests: MUContent suite 20/20 locally (`swift test`, 0 failures),
+  including 4 new solo tests (accept valid solo region; reject
+  negative / over-flock / rival-region targets; `makeGameState` carry
+  for a solo region and 0 for all six shipped regions; legacy JSON
+  without the key decodes to 0 and validates clean).
+- `make lint` exit 0 (content-lint 6 files, 0 errors; check-imports OK).
+- Design note: solo/tutorial regions will live outside
+  `Resources/Content/regions/` so the shipped-6 count test and the G3
+  content count stay at 6.
+- Remaining for P3.2: solo/tutorial region JSONs, `tutorial.json`
+  (5 steps), tutorial UI, then MU-P3.3 (local versus), then G3.

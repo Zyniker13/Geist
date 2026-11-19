@@ -4,16 +4,18 @@ This file is the single place to resume the program from. Keep every field below
 
 - **Current game:** Murmuration (`12-murmuration`)
 - **Phase:** P3 (Content and Systems) — on `murmur/phase/P3-content-systems`.
-- **Last done:** P3.1 core implemented and pushed (9a5ff4b): obstacle
-  circles + avoidance/containment in the boids kernel, three integer
-  wind patterns (`uniform` bit-identical to legacy, `shear`, `gusts`
-  1/8..8/8 with Int64-widened products), falcon `lurk` behavior (96-unit
-  orbit on the largest field, closest-edge dive). 11 new P3 tests green
-  locally (MUCore: 78 tests, 0 failures); `make lint` exit 0; the 20
-  engine goldens regenerated at replayContentVersion 4 (ADR-0021).
-  iOS sim `xcodebuild test` running locally in the background.
-- **Next step:** verify local iOS sim test + branch CI green, merge to
-  main; then MU-P3.2 (tutorial) and MU-P3.3 (local versus), then G3.
+- **Last done:** P3.1 content merged to main (16e01ac); G2 closed and
+  tagged. P3.2 (solo objectives) engine pushed as 42fd614 (MUCore:
+  `GameState.soloTargetBirds`, roost-counted solo victory in
+  `SoloObjectiveTests`, goldens regenerated at replayContentVersion 5)
+  — branch CI green. MUContent plumbing pushed as 1ff28ab
+  (`Region.soloTargetBirds` decode default 0, `makeGameState` carry,
+  catalog validation rules: >= 0, <= birdCount, 0 in rival regions;
+  4 new tests) — MUContent suite 20/20 locally, `make lint` 0.
+- **Next step:** CI check on 1ff28ab, then P3.2 content: solo/tutorial
+  region JSONs outside `regions/` (the shipped-6 count test and the G3
+  count stay at 6), `tutorial.json` 5 steps, tutorial UI; then MU-P3.3
+  (local versus), then G3.
 - **Blocked on:** nothing.
 
 ## Environment Check
@@ -117,3 +119,16 @@ One line per meaningful step, newest last: date, phase or game and stage, what w
 - 2026-11-18 night: CI run 44436062343 confirmed red only in `ui-test-macos`; its always-on diagnostics (artifact 14489327481) showed the mac AX tree puts the accessibility identifier on a wrapper element with the label on a child `StaticText`, so typed queries (`staticTexts["debug.fps"]`) return empty on macOS while iOS puts the identifier on the text itself → ADR-0018: overlay rows are read by identifier across element types, label taken from the element or its child (`rowLabel`), and `Shell` marks each HUD row `.accessibilityElement(children: .combine)` so one element carries id+label on both platforms. Helpers now take app+identifier and re-resolve per sample. verify5 locally: both compile gates clean, `make test` (Debug, iPad sim) `** TEST SUCCEEDED **` with MUITests 5/5 (102 s incl. perf); mac scheme locally still hits the runner-connection wedge (issue #13) — CI is the mac XCUI executor. Pushed on `murmur/phase/P2-vertical-slice`; next CI run is the `ui-test-macos` evidence run.
 - 2026-11-18 night: run 44442704839 triage — 3/5 mac UI tests pass (menu, ⌘⇧D, 3-day autoplay), the two label-read tests fail at a new shape (identifier element: empty label, no StaticText children) → ADR-0019: overlays publish each row's text as `.accessibilityValue` on the identifier element, helpers read value-first. verify6: both Release compiles clean, `make test` green. Pushed; CI watcher queued.
 - 2026-11-18 night: run 44445425461 triage — CI artifact for the first time contains a full AX-tree dump; ground truth is that macOS exposes each `.accessibilityElement()` row as a leaf `Other` carrying ONLY the identifier (no label, no value, no children), so ADR-0019's value-first variant was falsified. Rewrote ADR-0019: rows are `Text(...).accessibilityElement(children: .ignore).accessibilityLabel(text).accessibilityIdentifier(id)` — id + text on one element, explicit on both platforms, no reliance on synthesis. Also ADR-0020: local GUI apps (game build, TextEdit, Finder) all expose zero AX windows in this session (screencapture refused too), which explains the local mac test-runner wedge (issue #13, commented); local mac UI runs recorded as impossible, mac UI validation is CI-only. verify7: iOS `make test` + `make lint` green; Release mac build compiles. Pushed c95c3c7; CI run on c95c3c7 is the `ui-test-macos` evidence run, watcher queued.
+- 2026-11-19: P3.1 merged to main (16e01ac), G2 closed and tagged
+  `murmur/gate-G2-pass`. P3.2 solo-objective engine pushed on
+  `murmur/phase/P3-content-systems` as 42fd614 (MUCore:
+  `GameState.soloTargetBirds` with roost-counted solo victory,
+  `SoloObjectiveTests`, goldens regenerated at replayContentVersion 5)
+  — CI green. MUContent plumbing pushed as 1ff28ab: `Region` decodes
+  optional `soloTargetBirds` (default 0, so the six shipped versus
+  regions stay untouched), `makeGameState` carries it into
+  `GameState`, and `RegionCatalog.validate` rejects negative targets,
+  targets above `birdCount`, and any target in a rival region; 4 new
+  MUContent tests (20/20 green locally), `make lint` 0. Solo/tutorial
+  region content next, kept outside `regions/` so the shipped-6 count
+  and the G3 content count stay 6.
