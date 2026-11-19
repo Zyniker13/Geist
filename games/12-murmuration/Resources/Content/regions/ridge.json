@@ -35,6 +35,20 @@
       "richness": 80
     }
   ],
+  "obstacles": [
+    {
+      "x": 1024,
+      "y": 300,
+      "radius": 110
+    },
+    {
+      "x": 300,
+      "y": 1100,
+      "radius": 80
+    }
+  ],
+  "windPattern": "gusts",
+  "falconBehavior": "lurk",
   "palette": {
     "skyTop": {
       "r": 0.18,

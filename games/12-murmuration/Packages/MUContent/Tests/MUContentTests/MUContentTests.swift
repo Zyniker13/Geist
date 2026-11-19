@@ -19,12 +19,12 @@ final class MUContentTests: XCTestCase {
 
     // MARK: - Shipped content
 
-    func testCatalogLoadsThreeRegions() throws {
+    func testCatalogLoadsSixRegions() throws {
         let catalog = try RegionCatalog.load(from: regionsDir)
-        XCTAssertEqual(catalog.regions.count, 3, "expected three shipped regions")
+        XCTAssertEqual(catalog.regions.count, 6, "expected six shipped regions")
         XCTAssertEqual(
             Set(catalog.ids),
-            ["meadow", "ridge", "delta"],
+            ["meadow", "ridge", "delta", "fenlands", "gorge", "commons"],
             "unexpected region ids: \(catalog.ids)"
         )
     }
@@ -40,6 +40,9 @@ final class MUContentTests: XCTestCase {
         XCTAssertNotNil(catalog.region(id: "meadow"))
         XCTAssertNotNil(catalog.region(id: "ridge"))
         XCTAssertNotNil(catalog.region(id: "delta"))
+        XCTAssertNotNil(catalog.region(id: "fenlands"))
+        XCTAssertNotNil(catalog.region(id: "gorge"))
+        XCTAssertNotNil(catalog.region(id: "commons"))
         XCTAssertNil(catalog.region(id: "nope"))
     }
 
@@ -175,5 +178,163 @@ final class MUContentTests: XCTestCase {
         let data = try JSONEncoder().encode(original)
         let decoded = try JSONDecoder().decode(Region.self, from: data)
         XCTAssertEqual(decoded, original)
+    }
+
+    // MARK: - P3 world features (MU-P3.1)
+
+    /// A region authored before P3 (no `obstacles`, `windPattern`, or
+    /// `falconBehavior` keys) decodes with the engine defaults: no
+    /// obstacles, uniform wind, patrol falcons.
+    func testLegacyRegionJSONDecodesWithDefaults() throws {
+        let legacyJSON = """
+            {
+              "id": "legacy",
+              "name": "Legacy",
+              "worldWidth": 1024,
+              "worldHeight": 1024,
+              "birdCount": 100,
+              "falconCount": 1,
+              "hasRival": false,
+              "rivalStartBirds": 0,
+              "windSeedOffset": 0,
+              "seed": 1,
+              "roosts": [
+                { "x": 512, "y": 512, "radius": 64 }
+              ],
+              "fields": [
+                { "x": 512, "y": 512, "radius": 64, "richness": 50 }
+              ],
+              "palette": {
+                "skyTop": { "r": 0.2, "g": 0.2, "b": 0.3, "a": 1.0 },
+                "skyHigh": { "r": 0.4, "g": 0.4, "b": 0.5, "a": 1.0 },
+                "skyLow": { "r": 0.8, "g": 0.6, "b": 0.5, "a": 1.0 },
+                "skyBottom": { "r": 0.95, "g": 0.8, "b": 0.6, "a": 1.0 },
+                "hillFar": { "r": 0.3, "g": 0.3, "b": 0.3, "a": 1.0 },
+                "hillMid": { "r": 0.2, "g": 0.2, "b": 0.2, "a": 1.0 },
+                "hillNear": { "r": 0.1, "g": 0.1, "b": 0.1, "a": 1.0 },
+                "birdInk": { "r": 0.1, "g": 0.1, "b": 0.1, "a": 1.0 },
+                "birdHighlight": { "r": 0.25, "g": 0.35, "b": 0.4, "a": 1.0 },
+                "rival": { "r": 0.35, "g": 0.25, "b": 0.15, "a": 1.0 },
+                "fieldOchre": { "r": 0.8, "g": 0.65, "b": 0.35, "a": 1.0 },
+                "fieldGreen": { "r": 0.5, "g": 0.6, "b": 0.4, "a": 1.0 },
+                "falcon": { "r": 0.13, "g": 0.1, "b": 0.08, "a": 1.0 }
+              }
+            }
+            """
+        let region = try JSONDecoder().decode(
+            Region.self, from: legacyJSON.data(using: .utf8)!
+        )
+        XCTAssertEqual(region.obstacles.count, 0, "legacy regions have no obstacles")
+        XCTAssertEqual(region.windPattern, .uniform, "legacy wind pattern")
+        XCTAssertEqual(region.falconBehavior, .patrol, "legacy falcon behavior")
+    }
+
+    /// A region round-trips through JSON with obstacles, wind pattern, and
+    /// falcon behavior intact.
+    func testRegionJSONRoundTripsWorldFeatures() throws {
+        let region = Region(
+            id: "featureful", name: "Featureful",
+            worldWidth: 1024, worldHeight: 1024,
+            birdCount: 100, falconCount: 1, hasRival: false,
+            windSeedOffset: 7, seed: 7,
+            roosts: [Region.RoostDef(x: 200, y: 200, radius: 80)],
+            fields: [Region.FieldDef(x: 800, y: 800, radius: 80, richness: 5)],
+            palette: samplePalette(),
+            obstacles: [
+                Region.ObstacleDef(x: 512, y: 512, radius: 96),
+                Region.ObstacleDef(x: 200, y: 800, radius: 64),
+            ],
+            windPattern: .shear,
+            falconBehavior: .lurk
+        )
+        let data = try JSONEncoder().encode(region)
+        let decoded = try JSONDecoder().decode(Region.self, from: data)
+        XCTAssertEqual(decoded, region)
+    }
+
+    /// An unknown wind pattern or falcon behavior string fails to load.
+    func testUnknownFeatureStringFailsToDecode() {
+        for (key, bad) in [("windPattern", "mystery"), ("falconBehavior", "stoop")] {
+            let json = """
+                {"id":"x","name":"X","worldWidth":100,"worldHeight":100,
+                "birdCount":10,"falconCount":1,"hasRival":false,
+                "windSeedOffset":0,"seed":1,
+                "roosts":[{"x":10,"y":10,"radius":5}],
+                "fields":[{"x":90,"y":90,"radius":5,"richness":5}],
+                "palette":{},"\(key)":"\(bad)"}
+                """
+            let data = Data(json.utf8)
+            XCTAssertThrowsError(
+                try JSONDecoder().decode(Region.self, from: data),
+                "\(key): expected decode failure for \(bad)"
+            )
+        }
+    }
+
+    /// makeGameState() carries the region's world features into the sim.
+    func testMakeGameStateCarriesWorldFeatures() {
+        let region = Region(
+            id: "featureful", name: "Featureful",
+            worldWidth: 1024, worldHeight: 1024,
+            birdCount: 100, falconCount: 1, hasRival: false,
+            windSeedOffset: 7, seed: 7,
+            roosts: [Region.RoostDef(x: 200, y: 200, radius: 80)],
+            fields: [Region.FieldDef(x: 800, y: 800, radius: 80, richness: 5)],
+            palette: samplePalette(),
+            obstacles: [
+                Region.ObstacleDef(x: 512, y: 512, radius: 96),
+                Region.ObstacleDef(x: 200, y: 800, radius: 64),
+            ],
+            windPattern: .shear,
+            falconBehavior: .lurk
+        )
+        let state = region.makeGameState()
+        XCTAssertEqual(state.windPattern, .shear)
+        XCTAssertEqual(state.falconBehavior, .lurk)
+        XCTAssertEqual(state.obstacleCount, 2)
+        XCTAssertEqual(state.obstacleCenterX, [Int32(512), Int32(200)])
+        XCTAssertEqual(state.obstacleCenterY, [Int32(512), Int32(800)])
+        XCTAssertEqual(state.obstacleRadius, [Int32(96), Int32(64)])
+    }
+
+    /// Every shipped region carries at least one obstacle; across the
+    /// catalog both falcon behaviors and all three wind patterns are in use
+    /// (G3 counts: 6 regions, 2 falcon behaviors).
+    func testShippedRegionsUseWorldFeatures() throws {
+        let catalog = try RegionCatalog.load(from: regionsDir)
+        for region in catalog.regions {
+            XCTAssertGreaterThanOrEqual(
+                region.obstacles.count, 1,
+                "\(region.id): expected at least one obstacle"
+            )
+        }
+        let behaviors = Set(catalog.regions.map(\.falconBehavior))
+        XCTAssertEqual(behaviors, [.patrol, .lurk], "expected both falcon behaviors in use")
+        let patterns = Set(catalog.regions.map(\.windPattern))
+        XCTAssertEqual(patterns, [.uniform, .shear, .gusts], "expected all wind patterns in use")
+    }
+
+    /// Validation rejects degenerate obstacles: non-positive radius or a
+    /// center outside the world.
+    func testValidationRejectsBadObstacle() {
+        let base = Region(
+            id: "obst", name: "Obst",
+            worldWidth: 1000, worldHeight: 1000,
+            birdCount: 100, falconCount: 1, hasRival: false,
+            windSeedOffset: 0, seed: 1,
+            roosts: [Region.RoostDef(x: 200, y: 200, radius: 80)],
+            fields: [Region.FieldDef(x: 800, y: 800, radius: 80, richness: 5)],
+            palette: samplePalette()
+        )
+        let zeroRadius = base.copy(obstacles: [Region.ObstacleDef(x: 500, y: 500, radius: 0)])
+        XCTAssertTrue(
+            RegionCatalog.validate(zeroRadius).contains { $0.contains("obstacle[0] radius") },
+            "expected obstacle radius problem"
+        )
+        let outOfBounds = base.copy(obstacles: [Region.ObstacleDef(x: 1500, y: 500, radius: 64)])
+        XCTAssertTrue(
+            RegionCatalog.validate(outOfBounds).contains { $0.contains("obstacle[0]") && $0.contains("out of bounds") },
+            "expected obstacle out-of-bounds problem"
+        )
     }
 }
