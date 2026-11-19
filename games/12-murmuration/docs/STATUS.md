@@ -656,3 +656,17 @@ Evidence (local, 2026-11-18):
 - Remaining for P3.2: full `make test` (iOS suite incl.
   `testTutorialCompletes`) to confirm the fix in the bundle; then commit,
   CI, and G3.
+
+### P3.2 complete (2026-11-19)
+
+- Full `make test` (iOS suite on `zGeist_bot-iPad-Pro-13`) green: 6 tests,
+  0 failures — `testTutorialCompletes` passed (5.4s, `tutorial.complete`
+  identifier found at t=5.10s), plus `testThreeDayAutoplay`,
+  `testPerfFrameBudgetWithThreeThousandBirds`, `testPauseResumePreservesHash`,
+  `testMenuLaunchesWithoutOverlay`, `testMenuLaunchesWithOverlay`. The
+  flat-bundle fix is confirmed in the bundle.
+- Split the two flat-bundle regression tests into `RegionCatalogTests.swift`
+  (new class) to keep `MUContentTests` under the 400-line body limit;
+  `make lint` now 0 violations (79 files).
+- Committed `40ea4f9` and pushed `murmur/phase/P3-content-systems`.
+- Next: MU-P3.3 (local versus) and G3.

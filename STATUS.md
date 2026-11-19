@@ -4,22 +4,22 @@ This file is the single place to resume the program from. Keep every field below
 
 - **Current game:** Murmuration (`12-murmuration`)
 - **Phase:** P3 (Content and Systems) — on `murmur/phase/P3-content-systems`.
-- **Last done:** P3.2 tutorial built end-to-end: `TutorialDriver` (MUAI)
-  wired into `GameModel`/HUD with a `-uitest-tutorial` launch flag;
-  tutorial + solo region content (`tutorial.json` 5 steps,
-  `tutorial-meadow.json`); two headless-diagnosed bug fixes — FEED goal
-  300→150 (flock starts at 800 under a 1000 cap) and ADR-0023 (feed
-  progress now sums positive energy deltas across R-9 growth dips; driver
-  picks the field with the most remaining food). Headless full-pipeline
-  test proves all five steps complete in one day. Third fix (ADR-0024):
-  the app bundle flattens the resource tree, so `loadBundled()` /
-  `loadSoloBundled()` now address region files by name (bundle root
-  fallback) — the app was silently playing a fallback region. Package
-  suites: MUCore 90/90, MUContent 33/33 (incl. flat-bundle regressions),
-  MUAI 26/26, MURender 12/12; `make lint` 0.
-- **Next step:** confirm `make test` (iOS suite incl. `testTutorialCompletes`)
-  green in the bundle, commit P3.2 on `murmur/phase/P3-content-systems`,
-  watch branch CI, then MU-P3.3 (local versus), then G3.
+- **Last done:** P3.2 complete and committed (`40ea4f9`, pushed to
+  `murmur/phase/P3-content-systems`). Tutorial built end-to-end:
+  `TutorialDriver` (MUAI) wired into `GameModel`/HUD with a
+  `-uitest-tutorial` launch flag; tutorial + solo region content
+  (`tutorial.json` 5 steps, `tutorial-meadow.json`); three headless-
+  diagnosed bug fixes — FEED goal 300→150 (flock starts at 800 under a
+  1000 cap), ADR-0023 (feed progress sums positive energy deltas across
+  R-9 growth dips; driver picks the field with the most remaining food),
+  and ADR-0024 (the app bundle flattens the resource tree, so
+  `loadBundled()` / `loadSoloBundled()` now address region files by name).
+  Full `make test` green in the bundle (6 iOS tests, 0 failures, incl.
+  `testTutorialCompletes`); content-lint 9 files / 0 errors; `make lint`
+  0 violations. Package suites: MUCore 90/90, MUContent 33/33, MUAI 26/26,
+  MURender 12/12.
+- **Next step:** watch branch CI for `40ea4f9`, then MU-P3.3 (local
+  versus), then G3.
 - **Blocked on:** nothing.
 
 ## Environment Check
