@@ -545,3 +545,21 @@ Architecture decision records. Every deviation from the roadmap is recorded here
   (`testSplitFlockAnchorsNewFlockLeaderAtItsCentroid`). The new state field
   grows the replay encoding, so `replayContentVersion` bumped to 7 and the
   twenty committed goldens were regenerated with the sim tool.
+
+## ADR-0026: Versus UI test routes touches against a paused sim (2026-11-19)
+- **Context:** `testVersusTwoFlockRouting` passed locally but failed twice on
+  CI's slower Release runner. The test read the leaders row, then dragged at
+  the just-parsed leader position; in the seconds between, the flocks kept
+  orbiting, so on CI the touch landed nearest flock 1 and both assertions
+  failed (flock 0 stationary, flock 1 steered +406 world units). The race is
+  environmental, not a routing bug: nearest-flock routing is exact, but the
+  aimed position is stale by touch time.
+- **Decision:** The test pauses (`game.pause`), parses the frozen leaders
+  row, performs the drag while paused (touch routing and `apply` work on
+  paused state), then resumes and lets the routed flock follow the applied
+  path. Two pauses bracket each drag. No game behavior changes; the pause
+  button interaction is also exercised. The old "both flocks start at the
+  same position" tie-break comment was stale after the split anchor change.
+- **Consequences:** Routing assertions no longer depend on runner speed.
+  The test verifies steer targeting on frozen state plus follow-through on
+  resume, which the un-paused flow only implied.

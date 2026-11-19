@@ -145,14 +145,22 @@ final class MUGateTests: XCTestCase {
         )
 
         let worldSize = (w: 2048.0, h: 1536.0)  // meadow
-        var positions = GameUITest.parseLeaders(leaders)
+        let pause = app.buttons["game.pause"]
+        XCTAssertTrue(pause.waitForExistence(timeout: 10), "pause button missing")
+
+        // Pause while parsing and routing: on a slow runner the flocks keep
+        // orbiting between the row read and the touch, so a touch aimed at
+        // one flock can land nearest the other. Paused, leader positions are
+        // frozen and nearest-flock routing is deterministic; the drag applies
+        // its leader path to the paused state and the flock follows it after
+        // resume (ADR-0026).
+        pause.tap()
+        let positions = GameUITest.parseLeaders(leaders)
         XCTAssertEqual(positions.count, 2, "expected two leaders, got \(positions.count): \(leaders)")
 
-        // Drag rightward near flock 0. Both flocks start at the same position,
-        // so a touch there routes to flock 0 (tie-break). Flock 0's leader
-        // should move right; flock 1's should stay. 0.2 of the window is
-        // ~410 world units, well past flock 1's idle orbit (~100–180 units),
-        // so the second touch cannot misroute to flock 0.
+        // Touch at flock 0's frozen leader position routes to flock 0 by
+        // nearest distance. Flock 0's leader should follow the path right
+        // after resume; flock 1, untouched, should barely drift.
         let start0 = GameUITest.normalizedPoint(
             forWorld: (x: positions[0].x, y: positions[0].y),
             worldSize: worldSize,
@@ -165,6 +173,7 @@ final class MUGateTests: XCTestCase {
                     withNormalizedOffset: .init(dx: start0.x + 0.2, dy: start0.y)
                 )
             )
+        pause.tap()  // resume
         Thread.sleep(forTimeInterval: 3)
 
         leaders = GameUITest.rowText(of: leadersRow)
@@ -179,9 +188,10 @@ final class MUGateTests: XCTestCase {
             "flock 1 leader moved unexpectedly: \(leaders)"
         )
 
-        // Drag rightward near flock 1. Flock 0 moved right, so a touch at
-        // flock 1's position is now closer to flock 1. Flock 1's leader
-        // should move right.
+        // Drag rightward near flock 1: pause, touch at flock 1's frozen
+        // leader position (nearest → flock 1), resume. Flock 1's leader
+        // should follow the path right; flock 0 was untouched by this drag.
+        pause.tap()
         let start1 = GameUITest.normalizedPoint(
             forWorld: (x: after0[1].x, y: after0[1].y),
             worldSize: worldSize,
@@ -194,6 +204,7 @@ final class MUGateTests: XCTestCase {
                     withNormalizedOffset: .init(dx: start1.x + 0.15, dy: start1.y)
                 )
             )
+        pause.tap()  // resume
         Thread.sleep(forTimeInterval: 3)
 
         leaders = GameUITest.rowText(of: leadersRow)
