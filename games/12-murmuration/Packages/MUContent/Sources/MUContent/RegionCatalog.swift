@@ -86,6 +86,15 @@ public struct RegionCatalog: Sendable {
         if region.hasRival != (region.rivalStartBirds > 0) {
             problems.append("hasRival must match rivalStartBirds > 0")
         }
+        if region.soloTargetBirds < 0 {
+            problems.append("soloTargetBirds must be >= 0")
+        }
+        if region.soloTargetBirds > region.birdCount {
+            problems.append("soloTargetBirds must be <= birdCount")
+        }
+        if region.hasRival && region.soloTargetBirds > 0 {
+            problems.append("soloTargetBirds must be 0 in a rival region")
+        }
         if region.roosts.isEmpty {
             problems.append("region needs at least one roost")
         }
