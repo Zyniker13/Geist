@@ -45,9 +45,14 @@ public enum FalconEvent: Codable, Sendable, Equatable, Hashable {
 /// Radius (world units) at which a falcon engages a flock's edge (R-10).
 public let falconEngageRadius = 600
 
+/// Orbit radius (world units) of a lurking falcon around the largest field
+/// anchor (P3).
+public let falconLurkOrbitRadius = 96
+
 /// Compute falcon behavior for this tick.
 public func computeFalcons(state: inout GameState, rng: inout SeededRNG) -> [FalconEvent] {
     var events: [FalconEvent] = []
+    let lurk = state.falconBehavior == .lurk
 
     for falconIdx in state.falcons.indices {
         var falcon = state.falcons[falconIdx]
@@ -59,7 +64,8 @@ public func computeFalcons(state: inout GameState, rng: inout SeededRNG) -> [Fal
         if falcon.cooldown <= 0 {
             // R-10 target selection: for each sub-flock, its edge bird is the
             // member nearest the falcon; local density there is the count of
-            // same-flock birds within diveRadius. Dive at the lowest density.
+            // same-flock birds within diveRadius. A patroller dives at the
+            // lowest density (P3 R-10); a lurker dives at the closest edge.
             var bestSF = -1
             var bestEdgeIdx = -1
             var bestDensity = Int.max
@@ -86,7 +92,12 @@ public func computeFalcons(state: inout GameState, rng: inout SeededRNG) -> [Fal
                     let dy = Int64(state.birds.posY[j]) - ey
                     if dx * dx + dy * dy <= r2 { density += 1 }
                 }
-                if density < bestDensity || (density == bestDensity && edgeDist2 < bestEdgeDist2) {
+                let better = lurk
+                    ? edgeDist2 < bestEdgeDist2
+                        || (edgeDist2 == bestEdgeDist2 && density < bestDensity)
+                    : density < bestDensity
+                        || (density == bestDensity && edgeDist2 < bestEdgeDist2)
+                if better {
                     bestDensity = density
                     bestSF = sf
                     bestEdgeIdx = edgeIdx
@@ -157,12 +168,30 @@ public func computeFalcons(state: inout GameState, rng: inout SeededRNG) -> [Fal
             }
         }
 
-        // Patrol movement: circle the world center with integer trig.
+        // Movement: a patroller circles the world center at
+        // min(width, height) / 3; a lurker circles the largest field anchor
+        // at a tight 96-unit orbit (P3 R-10). Integer trig for both.
         falcon.patrolAngle = (falcon.patrolAngle &+ 6) & Int32(IntTrig.turns - 1)
         let unit = unitVectorQ16(falcon.patrolAngle)
-        let radius = Int32(min(state.worldWidth, state.worldHeight)) / 3
-        falcon.currentX = state.worldWidth / 2 + Int32((Int64(unit.x) * Int64(radius)) >> 16)
-        falcon.currentY = state.worldHeight / 2 + Int32((Int64(unit.y) * Int64(radius)) >> 16)
+        if lurk {
+            // Lurk anchor: the center of the field with the largest radius.
+            var anchorX = state.worldWidth / 2
+            var anchorY = state.worldHeight / 2
+            var bestRadius: Int32 = -1
+            for field in state.fields where field.radius > bestRadius {
+                bestRadius = field.radius
+                anchorX = field.centerX
+                anchorY = field.centerY
+            }
+            falcon.currentX = anchorX
+                + Int32((Int64(unit.x) * Int64(falconLurkOrbitRadius)) >> 16)
+            falcon.currentY = anchorY
+                + Int32((Int64(unit.y) * Int64(falconLurkOrbitRadius)) >> 16)
+        } else {
+            let radius = Int32(min(state.worldWidth, state.worldHeight)) / 3
+            falcon.currentX = state.worldWidth / 2 + Int32((Int64(unit.x) * Int64(radius)) >> 16)
+            falcon.currentY = state.worldHeight / 2 + Int32((Int64(unit.y) * Int64(radius)) >> 16)
+        }
 
         state.falcons[falconIdx] = falcon
     }

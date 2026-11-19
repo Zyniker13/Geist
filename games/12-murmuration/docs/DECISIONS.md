@@ -433,3 +433,18 @@ Architecture decision records. Every deviation from the roadmap is recorded here
 - **Consequences**: no further local mac runner attempts; the wedge is
   documented instead of chased. CI remains the single mac UI evidence
   source for gates.
+
+## ADR-0021: Golden replay regeneration at contentVersion 4 (P3.1)
+
+- **Context**: P3.1 changes tick behavior (obstacles in the kernel,
+  wind pattern plumbing, falcon target selection), so all 20 committed
+  engine goldens recorded at version 3 fail with
+  `staleContentVersion(3)` per the S1.4 contract.
+- **Decision**: Regenerated the goldens mechanically by replaying each
+  committed record (same seed, same timed actions) through the current
+  engine at `replayContentVersion = 4` and storing the resulting
+  `stateHash`. No record's actions were edited. The scratch regeneration
+  harness was deleted after the run; the committed
+  `EngineGoldenReplayTests` verify the new hashes.
+- **Consequences**: hash changes are expected and tracked here; the
+  stale-record tripwire keeps protecting future behavior changes.

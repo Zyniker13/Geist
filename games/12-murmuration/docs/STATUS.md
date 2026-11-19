@@ -532,3 +532,45 @@ directly with the exact UI-test launch arguments plus `-uitest-trace`
 - Sign-off: GLM-SELF. Tag: `murmur/gate-G2-pass`.
 - Next: P3 Content and Systems (MU-P3.1 regions + falcon behaviors,
   MU-P3.2 tutorial, MU-P3.3 local versus).
+
+### P3.1 in progress (2026-11-18): obstacles, wind patterns, falcon lurk
+
+Source changes (Packages/MUCore/Sources/MUCore/Sim/):
+
+- `GameState`: `obstacleCenterX/Y` + `obstacleRadius` arrays on the state
+  and the init; `windField(_:seed:windSeedOffset:worldWidth:worldHeight:pattern:)`
+  with three integer-only patterns (`uniform` reproduces the pre-P3 field
+  bit-for-bit; `shear` one angle per row; `gusts` one direction per
+  generation with per-cell 1/8..8/8 magnitude); `rebuildWindField()`.
+- `Boids.swift`: `obstacleForce(at:_:)` (nearest circle wins, weighted by
+  inverse Q16.16 distance, influence radius = obstacle radius + 240, same
+  margin as the walls), integrated into the boids kernel force sum, plus
+  post-integration containment so no bird ends a tick inside a rock
+  (INV-2 anti-tunneling).
+- `Falcon.swift`: `falconBehavior` (`.patrol` legacy, `.lurk` new).
+  Patrol keeps the legacy center orbit (min(w,h)/3); lurk orbits the
+  largest field anchor at 96 units and dives on the CLOSEST edge bird
+  (patrol keeps lowest-density). `falconEngageRadius = 600`,
+  `falconLurkOrbitRadius = 96`, integer trig throughout.
+- `Reducer.swift`: wind regeneration and init pass `windPattern`; both
+  boids kernel call sites pass the obstacle arrays.
+
+Tests (Packages/MUCore/Tests/MUCoreTests/P3WorldFeaturesTests.swift,
+11 tests): 300-tick containment sweep (no bird inside any rock), 60-tick
+max-speed tunneling probe against a SpatialHash-driven kernel, obstacle
+non-interference for the 12-tick pre-approach window (probe showed the
+flock first reaches the (1700,170) rock at tick 18; divergence after that
+is real obstacle behavior, not pipeline coupling), uniform==legacy bit
+comparison, shear one-vector-per-row, gusts single-direction + 1/8..8/8
+magnitude bounds, pattern determinism, patrol orbit radius 512±1,
+lurk orbit radius 96±1, lurk dives a lone bait bird by the field,
+patrol never targets that bait.
+
+Evidence (local, 2026-11-18):
+
+- `swift test --package-path Packages/MUCore` → Executed 78 tests,
+  0 failures (includes the 11 new P3 tests and 20 regenerated goldens).
+- `make lint` → exit 0 (SwiftLint strict, swift-format, content-lint
+  0 errors, check-imports OK).
+- Remaining for this step: iOS simulator `xcodebuild test` (running),
+  then commit on `murmur/phase/P3-content-systems` and CI.

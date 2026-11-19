@@ -17,6 +17,7 @@ public struct BoidsParams: Sendable, Codable {
     public var maxSpeed: Int32 = 2_621_440    // 40 units/tick in Q16.16
     public var edgeMargin: Int32 = 64         // steer inward within this band
     public var edgeWeight: Int32 = 65_536     // 1.0
+    public var obstacleWeight: Int32 = 98_304 // 1.5 — P3: rock beats flock
 
     public init() {}
 }
@@ -40,6 +41,11 @@ public struct BoidsFrame: Sendable, Codable {
     public var windGridCols: Int32
     public var windGridRows: Int32
     public var windCellSize: Int32
+    /// Static obstacle circles (P3): parallel center/radius arrays in world
+    /// units; empty = no obstacles.
+    public var obstacleCenterX: [Int32]
+    public var obstacleCenterY: [Int32]
+    public var obstacleRadius: [Int32]
 
     public init(
         leaderX: Int32, leaderY: Int32,
@@ -51,7 +57,10 @@ public struct BoidsFrame: Sendable, Codable {
         windCellsY: [Int32] = [],
         windGridCols: Int32 = 0,
         windGridRows: Int32 = 0,
-        windCellSize: Int32 = 256
+        windCellSize: Int32 = 256,
+        obstacleCenterX: [Int32] = [],
+        obstacleCenterY: [Int32] = [],
+        obstacleRadius: [Int32] = []
     ) {
         self.leaderX = leaderX
         self.leaderY = leaderY
@@ -66,6 +75,9 @@ public struct BoidsFrame: Sendable, Codable {
         self.windGridCols = windGridCols
         self.windGridRows = windGridRows
         self.windCellSize = windCellSize
+        self.obstacleCenterX = obstacleCenterX
+        self.obstacleCenterY = obstacleCenterY
+        self.obstacleRadius = obstacleRadius
     }
 
     /// The leader point acting on a bird of sub-flock `sf`.
@@ -87,6 +99,67 @@ public struct BoidsFrame: Sendable, Codable {
         let cell = row * Int(windGridCols) + col
         guard cell < windCellsX.count, cell < windCellsY.count else { return (windXQ, windYQ) }
         return (windCellsX[cell], windCellsY[cell])
+    }
+
+    /// The strongest obstacle push (Q16.16 magnitude) acting on a bird at
+    /// `(px, py)`: the nearest circle wins, weighted by inverse distance
+    /// (P3). Returns zeros when the bird is clear of every circle.
+    @inline(__always)
+    public func obstacleForce(at px: Int32, _ py: Int32) -> (x: Int32, y: Int32) {
+        var bestD2 = Int64.max
+        var fx: Int32 = 0
+        var fy: Int32 = 0
+        var bestRadius: Int32 = 0
+        for i in 0..<obstacleRadius.count {
+            let dx = px - obstacleCenterX[i]
+            let dy = py - obstacleCenterY[i]
+            let d2 = Int64(dx) * Int64(dx) + Int64(dy) * Int64(dy)
+            if d2 < bestD2 {
+                bestD2 = d2
+                fx = dx
+                fy = dy
+                bestRadius = obstacleRadius[i]
+            }
+        }
+        guard bestD2 < Int64.max else { return (0, 0) }
+        // Inside influence = radius + 240 (same margin logic as the edges).
+        let reach = Int64(bestRadius) + 240
+        guard bestD2 < reach * reach else { return (0, 0) }
+        let d = isqrt64(UInt64(max(bestD2, 1)))
+        if d == 0 { return (0, 1) } // exactly on center: push down
+        let n = 65_536 / d // Q16.16 inverse distance
+        return (Int32((Int64(fx) * n) >> 16), Int32((Int64(fy) * n) >> 16))
+    }
+
+    /// Project a world point to the nearest position at least `minDist`
+    /// outside every obstacle circle (P3 INV-2 containment). Pure integer.
+    @inline(__always)
+    public func containOutsideObstacles(_ px: Int32, _ py: Int32, minDist: Int32 = 2) -> (x: Int32, y: Int32) {
+        var x = px
+        var y = py
+        for i in 0..<obstacleRadius.count {
+            let cx = obstacleCenterX[i]
+            let cy = obstacleCenterY[i]
+            let dx = x - cx
+            let dy = y - cy
+            let d2 = Int64(dx) * Int64(dx) + Int64(dy) * Int64(dy)
+            let limit = Int64(obstacleRadius[i]) + Int64(minDist)
+            guard d2 < limit * limit else { continue }
+            let d = isqrt64(UInt64(max(d2, 1)))
+            var ux: Int64
+            var uy: Int64
+            if d == 0 {
+                // Exactly on center: shove east along +x to the rim (Q16 unit).
+                ux = Int64(limit) << 16
+                uy = 0
+            } else {
+                ux = (Int64(dx) << 16) / d
+                uy = (Int64(dy) << 16) / d
+            }
+            x = cx + Int32((Int64(ux) * limit) >> 16)
+            y = cy + Int32((Int64(uy) * limit) >> 16)
+        }
+        return (x, y)
     }
 }
 
@@ -206,6 +279,15 @@ public func stepBirds(
             forceY += windF.y
         }
 
+        // Obstacle avoidance (P3): the nearest circle pushes outward with
+        // strength proportional to inverse distance.
+        let (obsX, obsY) = frame.obstacleForce(at: birds.posX[i], birds.posY[i])
+        if obsX != 0 || obsY != 0 {
+            let obsF = normalizedScaled(Int64(obsX), Int64(obsY), params.obstacleWeight)
+            forceX += obsF.x
+            forceY += obsF.y
+        }
+
         // World-edge avoidance (the R-6 obstacle-avoidance force against the
         // world border). Without it birds pin to the walls and stream along
         // the perimeter, so the flock can never be steered to a leader point.
@@ -253,6 +335,15 @@ public func stepBirds(
         var ny = py + Int32(vy >> 16)
         nx = max(0, min(frame.worldWidth - 1, nx))
         ny = max(0, min(frame.worldHeight - 1, ny))
+        // Obstacle containment (P3 INV-2): no bird may end a tick inside a
+        // rock, whatever the steering forces decided this tick.
+        if !frame.obstacleRadius.isEmpty {
+            let c = frame.containOutsideObstacles(nx, ny)
+            nx = c.x
+            ny = c.y
+            nx = max(0, min(frame.worldWidth - 1, nx))
+            ny = max(0, min(frame.worldHeight - 1, ny))
+        }
         birds.posX[i] = nx
         birds.posY[i] = ny
     }
