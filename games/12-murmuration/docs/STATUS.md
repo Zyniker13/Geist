@@ -670,3 +670,71 @@ Evidence (local, 2026-11-18):
   `make lint` now 0 violations (79 files).
 - Committed `40ea4f9` and pushed `murmur/phase/P3-content-systems`.
 - Next: MU-P3.3 (local versus) and G3.
+
+### P3.3 complete (2026-11-19)
+
+- **Local two-flock versus on one iPad (MU-P3.3):** the day-start rival
+  carve-out now defines the second *player* flock. The iOS surface routes
+  touches to the flock whose centroid is nearest (`flockColorNearest`, with a
+  tie-break to flock 0 for the coincident start); the Mac surface routes
+  option-drags to flock 1. The menu gains a player-visible entry
+  "Versus — two flocks, one screen" (`menu.versus`) alongside the launch-flag
+  path used by tests. The rival AI driver is skipped in versus so both flocks
+  are human-steered.
+- **Two engine bugs fixed on the way** (ADR-0025):
+  1. `splitFlock` never seeded a leader path for the new flock; its birds
+     steered toward the world origin through the `leader(for:)` fallback
+     (masked in solo/tutorial by drivers that steer immediately). Now the
+     reducer anchors the new flock's leader at its birds' centroid.
+  2. R-5 auto-merge collapsed the versus flocks back into one within 30
+     ticks (both start coincident at the world center). `GameState` gains
+     `versusMergeSuppressed` (default false); `computeMerge` no-ops while it
+     is set; `GameModel` sets it once per fresh versus day. Solo, tutorial,
+     and rival play are unchanged. Replay content version bumped to 7; the
+     twenty committed goldens were regenerated with the sim tool.
+- **Regression tests:** `testSplitFlockAnchorsNewFlockLeaderAtItsCentroid`,
+  `testVersusMergeSuppressionBlocksR5`,
+  `testR5AutoMergeStillFiresWithoutSuppression` (MUCore);
+  `testVersusTwoFlockRouting` (MUGateTests) drives both flocks on one iPad
+  screen and asserts each drag moved the nearest flock's leader.
+- **Verification:**
+  - `swift test --package-path Packages/MUCore`: **Executed 93 tests, with
+    0 failures** (including the 20 regenerated goldens).
+  - `make test` (iOS suite on `zGeist_bot-iPad-Pro-13`, via sim-lock):
+    `** TEST SUCCEEDED **` — MUGateTests **Executed 5 tests, with 0 failures
+    (139.2s)** (incl. `testTutorialCompletes`, `testVersusTwoFlockRouting`),
+    plus `testPauseResumePreservesHash` and the perf gate; all package
+    suites green (MUContent 33, MURender 26, MUAudio 12, MUAI 15, MUPlatform
+    2+11, MUMeta 20).
+  - `make lint`: 0 violations — SwiftLint strict clean; swift-format clean
+    on changed lines; `content-lint: 9 files, 0 errors`; `check-imports: OK`.
+  - Versus UI test standalone pre-merge run:
+    `Test Suite 'MUGateTests' passed at 2026-11-19 16:06:01` (post-fix).
+
+### GATE G3 — Content and Systems: PASS (2026-11-19)
+
+- **Counts (ROADMAP §"Content counts — G3"):**
+  - 6 regions shipped: `commons.json, delta.json, fenlands.json, gorge.json,
+    meadow.json, ridge.json` (`ls Resources/Content/regions/*.json | wc -l`
+    → 6).
+  - 2 falcon behaviors: `FalconBehavior` cases `patrol` and `lurk`
+    (WorldFeatures.swift; CaseIterable, both exercised in MUCore tests).
+  - Rival flock present: `meadow.json` `hasRival: true`,
+    `rivalStartBirds: 50`; day-start trace:
+    `day-start: region=meadow versus=false subFlocks=2 paths=2`.
+  - Tutorial (5 steps): `TutorialDriver` step cases `drawPath, feed,
+    splitFlock, condense, roostTarget`; `testTutorialCompletes` passes
+    (5.4s, `tutorial.complete` identifier at t=5.10s).
+- **content-lint 0 errors:** `./Tools/content-lint` →
+  `content-lint: 9 files, 0 errors` (exit 0).
+- **Tutorial UI test:** `testTutorialCompletes` — in the full `make test`
+  suite above, 0 failures.
+- **Versus mode UI test:** `testVersusTwoFlockRouting` — passed standalone
+  (16:06) and inside the full suite (MUGateTests 5/5).
+- **make test:** `** TEST SUCCEEDED **` (full output excerpt above).
+- **make lint:** 0 violations (SwiftLint strict + swift-format +
+  content-lint + check-imports).
+- All §8.1 checks pass or are covered by the §8.2 substitutes already filed
+  (App Store Connect / TestFlight items remain maintainer issues; G3 has no
+  owner-only steps). Gate tagged `murmur/gate-G3-pass`.
+- Next: P4 AI opponents (MU-P4.1).

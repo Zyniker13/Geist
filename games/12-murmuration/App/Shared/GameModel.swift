@@ -64,6 +64,9 @@ final class GameModel: ObservableObject {
     let region: Region
     let totalDays: Int
     let autoplay: Bool
+    /// Local two-flock versus (MU-P3.3): the rival flock is human-driven, so
+    /// GentleRival is disabled and each touch routes to the nearest flock.
+    let versus: Bool
     /// Ticks advanced per display frame in fast-forward (UI tests).
     let ticksPerFrame: Int
 
@@ -118,11 +121,13 @@ final class GameModel: ObservableObject {
         autoplay: Bool = false,
         ticksPerFrame: Int = 1,
         save: SavedGame? = nil,
-        tutorial: Tutorial? = nil
+        tutorial: Tutorial? = nil,
+        versus: Bool = false
     ) {
         self.region = region
         self.totalDays = totalDays
         self.autoplay = autoplay
+        self.versus = versus
         self.ticksPerFrame = max(ticksPerFrame, 1)
         if let save = save, save.regionID == region.id {
             self.state = save.state
@@ -154,9 +159,16 @@ final class GameModel: ObservableObject {
     private func startDayIfNeeded() {
         // Fresh day (not a resume): spawn the rival and seed the trace.
         if state.tick == 0 {
+            // Versus suppresses the R-5 auto-merge: the day-start split
+            // defines the two player flocks, both starting coincident, so
+            // the proximity rule would collapse them within 30 ticks.
+            state.versusMergeSuppressed = versus
             for action in RegionStarter.startingActions(for: region) {
                 apply(action)
             }
+            MUTrace.log(
+                "day-start: region=\(region.id) versus=\(versus) subFlocks=\(state.subFlockCount) paths=\(state.leaderPaths.count)"
+            )
             trace = []
             if autoplay, var ai = autoplayer {
                 if let action = ai.action(for: state) {
@@ -241,10 +253,14 @@ final class GameModel: ObservableObject {
         if autoplay, let action = autoplayer?.action(for: state) {
             apply(action)
         }
-        var gentle = rival
-        if let action = gentle.action(for: state) {
-            rival = gentle
-            apply(action)
+        // GentleRival (P2.5): the rival pilot drives the rival flock. In
+        // versus mode (MU-P3.3) the rival is human-driven, so skip it.
+        if !versus {
+            var gentle = rival
+            if let action = gentle.action(for: state) {
+                rival = gentle
+                apply(action)
+            }
         }
 
         // Tutorial (P3.2): issue the current step's action before the tick so

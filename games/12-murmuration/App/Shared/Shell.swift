@@ -52,6 +52,7 @@ struct GameDebugOverlay: View, Equatable {
         var tick = 0
         var hash = ""
         var frameMs = 0.0
+        var leaders = ""
     }
 
     /// All parent-created instances are equal: the body reads only the
@@ -79,6 +80,12 @@ struct GameDebugOverlay: View, Equatable {
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel("frame \(sample.frameMs, specifier: "%.2f")ms")
                 .accessibilityIdentifier("debug.frame")
+            if !sample.leaders.isEmpty {
+                Text(sample.leaders)
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel(sample.leaders)
+                    .accessibilityIdentifier("debug.leaders")
+            }
         }
         .font(.system(size: 11, weight: .semibold, design: .monospaced))
         .foregroundStyle(.white)
@@ -97,10 +104,21 @@ struct GameDebugOverlay: View, Equatable {
                 fps: model.fps,
                 tick: model.state.tick,
                 hash: model.hashLabel,
-                frameMs: model.frameMs
+                frameMs: model.frameMs,
+                leaders: Self.leaderLabel(model.state)
             )
             try? await Task.sleep(nanoseconds: 500_000_000)
         }
+    }
+
+    /// "L0 x,y L1 x,y" for each flock's leader (MU-P3.3 evidence).
+    nonisolated static func leaderLabel(_ state: GameState) -> String {
+        var parts: [String] = []
+        for flock in 0..<state.subFlockCount where flock < state.leaderPaths.count {
+            let p = state.leaderPaths[flock]
+            parts.append("L\(flock) \(p.currentX),\(p.currentY)")
+        }
+        return parts.joined(separator: " ")
     }
 }
 
@@ -145,6 +163,7 @@ struct MenuView: View {
     // provably did (menu tests passed), so flag-driven state must not
     // wait for them (docs/STATUS.md, run 44286953243).
     @State private var playing: Bool
+    @State private var versusMode = false
     @State private var catalog: RegionCatalog
 
     init() {
@@ -162,7 +181,7 @@ struct MenuView: View {
     var body: some View {
         ZStack {
             if playing {
-                PlayView(config: GameLaunchConfig.resolved(), catalog: catalog)
+                PlayView(config: launchConfig, catalog: catalog)
             } else {
                 menu
             }
@@ -177,6 +196,14 @@ struct MenuView: View {
                 }
             }
         }
+    }
+
+    /// The launch config with the menu's versus choice applied (the flag
+    /// channel still wins for UI-test launches).
+    private var launchConfig: GameLaunchConfig {
+        var config = GameLaunchConfig.resolved()
+        if versusMode { config.versus = true }
+        return config
     }
 
     private var menu: some View {
@@ -205,6 +232,15 @@ struct MenuView: View {
                 }
                 .buttonStyle(.borderedProminent)
                 .accessibilityIdentifier("menu.play")
+                // Local two-flock versus (MU-P3.3): two human pilots on one
+                // screen; each touch steers the flock nearest it. On the Mac
+                // the second flock is the option-drag.
+                Button("Versus — two flocks, one screen") {
+                    versusMode = true
+                    playing = true
+                }
+                .buttonStyle(.bordered)
+                .accessibilityIdentifier("menu.versus")
                 Spacer()
             }
             .padding(24)

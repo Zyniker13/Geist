@@ -111,4 +111,97 @@ final class MUGateTests: XCTestCase {
             "frame build \(frameMs)ms exceeds the 16.0 ms (60 Hz) budget (ADR-0017: CI display runs at 60 Hz; the 120 Hz budget is checked on hardware, issue #11)"
         )
     }
+
+    /// MU-P3.3: local two-flock versus on one iPad. Each player owns the
+    /// touches nearest their flock's color. This test verifies (1) the
+    /// day-start split creates two flocks, and (2) a touch near flock 0
+    /// steers flock 0 while a touch near flock 1 steers flock 1.
+    func testVersusTwoFlockRouting() throws {
+        let app = XCUIApplication()
+        GameUITest.launch(
+            app: app,
+            region: "meadow",
+            days: 1,
+            versus: true,
+            autoplay: false
+        )
+
+        let leadersRow = GameUITest.overlayRow(app: app, identifier: "debug.leaders")
+        XCTAssertTrue(
+            leadersRow.waitForExistence(timeout: 30),
+            "leaders row never appeared (versus split did not happen)"
+        )
+
+        // Wait until the row shows both flocks.
+        var leaders = ""
+        for _ in 0..<30 {
+            leaders = GameUITest.rowText(of: leadersRow)
+            if leaders.contains("L0 ") && leaders.contains("L1 ") { break }
+            Thread.sleep(forTimeInterval: 1)
+        }
+        XCTAssertTrue(
+            leaders.contains("L0 ") && leaders.contains("L1 "),
+            "both flocks not present after day-start split: \(leaders)"
+        )
+
+        let worldSize = (w: 2048.0, h: 1536.0)  // meadow
+        var positions = GameUITest.parseLeaders(leaders)
+        XCTAssertEqual(positions.count, 2, "expected two leaders, got \(positions.count): \(leaders)")
+
+        // Drag rightward near flock 0. Both flocks start at the same position,
+        // so a touch there routes to flock 0 (tie-break). Flock 0's leader
+        // should move right; flock 1's should stay. 0.2 of the window is
+        // ~410 world units, well past flock 1's idle orbit (~100–180 units),
+        // so the second touch cannot misroute to flock 0.
+        let start0 = GameUITest.normalizedPoint(
+            forWorld: (x: positions[0].x, y: positions[0].y),
+            worldSize: worldSize,
+            app: app
+        )
+        app.coordinate(withNormalizedOffset: .init(dx: start0.x, dy: start0.y))
+            .press(
+                forDuration: 0.1,
+                thenDragTo: app.coordinate(
+                    withNormalizedOffset: .init(dx: start0.x + 0.2, dy: start0.y)
+                )
+            )
+        Thread.sleep(forTimeInterval: 3)
+
+        leaders = GameUITest.rowText(of: leadersRow)
+        let after0 = GameUITest.parseLeaders(leaders)
+        XCTAssertEqual(after0.count, 2, "expected two leaders after drag 0: \(leaders)")
+        XCTAssertGreaterThan(
+            after0[0].x, positions[0].x + 50,
+            "flock 0 leader did not move right: \(leaders)"
+        )
+        XCTAssertLessThan(
+            abs(after0[1].x - positions[1].x), 50,
+            "flock 1 leader moved unexpectedly: \(leaders)"
+        )
+
+        // Drag rightward near flock 1. Flock 0 moved right, so a touch at
+        // flock 1's position is now closer to flock 1. Flock 1's leader
+        // should move right.
+        let start1 = GameUITest.normalizedPoint(
+            forWorld: (x: after0[1].x, y: after0[1].y),
+            worldSize: worldSize,
+            app: app
+        )
+        app.coordinate(withNormalizedOffset: .init(dx: start1.x, dy: start1.y))
+            .press(
+                forDuration: 0.1,
+                thenDragTo: app.coordinate(
+                    withNormalizedOffset: .init(dx: start1.x + 0.15, dy: start1.y)
+                )
+            )
+        Thread.sleep(forTimeInterval: 3)
+
+        leaders = GameUITest.rowText(of: leadersRow)
+        let after1 = GameUITest.parseLeaders(leaders)
+        XCTAssertEqual(after1.count, 2, "expected two leaders after drag 1: \(leaders)")
+        XCTAssertGreaterThan(
+            after1[1].x, after0[1].x + 50,
+            "flock 1 leader did not move right: \(leaders)"
+        )
+    }
 }

@@ -18,6 +18,10 @@ struct GameLaunchConfig {
     var seed: UInt64?
     /// When true, launch the five-step tutorial (P3.2) in its solo region.
     var tutorial = false
+    /// When true, run the local two-flock versus (MU-P3.3): the rival flock
+    /// is human-driven (no GentleRival) and each touch routes to the nearest
+    /// flock.
+    var versus = false
 
     /// Parse the effective UI-test flags (file config on macOS, else argv).
     static func resolved() -> GameLaunchConfig {
@@ -37,6 +41,7 @@ struct GameLaunchConfig {
         if let at = value("-uitest-pause-at"), let n = Int(at) { config.pauseAt = n }
         if args.contains("-uitest-hash") { config.hashUpdates = true }
         if args.contains("-uitest-tutorial") { config.tutorial = true }
+        if args.contains("-uitest-versus") { config.versus = true }
         if let seed = value("-uitest-seed"), let n = UInt64(seed) { config.seed = n }
         return config
     }
@@ -86,7 +91,8 @@ struct PlayView: View {
                 totalDays: config.totalDays,
                 autoplay: config.autoplay,
                 ticksPerFrame: config.ticksPerFrame,
-                tutorial: tutorial
+                tutorial: tutorial,
+                versus: config.versus
             ))
         // Applied after init via the view's task (published-mutable only).
         _pendingPauseAt = State(initialValue: config.pauseAt)
