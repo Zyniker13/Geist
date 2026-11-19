@@ -64,12 +64,16 @@ struct GameDebugOverlay: View, Equatable {
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
             Text("FPS \(sample.fps)")
+                .accessibilityElement()
                 .accessibilityIdentifier("debug.fps")
             Text("tick \(sample.tick)")
+                .accessibilityElement()
                 .accessibilityIdentifier("debug.tick")
             Text("hash \(sample.hash)")
+                .accessibilityElement()
                 .accessibilityIdentifier("debug.hash")
             Text("frame \(sample.frameMs, specifier: "%.2f")ms")
+                .accessibilityElement()
                 .accessibilityIdentifier("debug.frame")
         }
         .font(.system(size: 11, weight: .semibold, design: .monospaced))
@@ -103,12 +107,16 @@ struct MenuDebugOverlay: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
             Text("FPS 0")
+                .accessibilityElement()
                 .accessibilityIdentifier("debug.fps")
             Text("tick 0")
+                .accessibilityElement()
                 .accessibilityIdentifier("debug.tick")
             Text("seed \(seed)")
+                .accessibilityElement()
                 .accessibilityIdentifier("debug.seed")
             Text("hash \(String(format: "%016llx", stateHash(TrivialState(seed: seed))))")
+                .accessibilityElement()
                 .accessibilityIdentifier("debug.hash")
         }
         .font(.system(size: 11, weight: .semibold, design: .monospaced))

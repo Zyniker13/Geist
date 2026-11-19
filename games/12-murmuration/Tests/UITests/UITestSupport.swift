@@ -98,12 +98,12 @@ enum GameUITest {
         // before the final card appeared can serve a stale snapshot whose
         // label is empty even though a fresh query sees the value (the
         // runner log of run 44403531737 shows both behaviors minutes apart).
-        let hashRow = app.staticTexts["debug.hash"].firstMatch
+        let hashRow = overlayRow(app: app, identifier: "debug.hash")
         guard hashRow.waitForExistence(timeout: 10) else {
             dumpTree(app)
             return ""
         }
-        let label = hashRow.label
+        let label = rowLabel(of: hashRow)
         // "hash <16 hex>" — strip the prefix.
         if let space = label.firstIndex(of: " ") {
             return String(label[label.index(after: space)...])
@@ -111,10 +111,31 @@ enum GameUITest {
         return label
     }
 
+    /// Overlay rows expose their identifier and label on different elements
+    /// per platform: on iOS the identifier and label both sit on the
+    /// StaticText; on macOS — and wherever SwiftUI inserts an explicit
+    /// accessibility element — the identifier lands on a wrapper and the
+    /// readable label stays on a child StaticText ("FPS 56"), so a
+    /// StaticText-typed query misses the row entirely (the app's own AX
+    /// snapshot in the run 44436062343 triage shows exactly this shape).
+    /// Find by identifier across element types and read the label from the
+    /// element or its first StaticText child.
+    static func overlayRow(app: XCUIApplication, identifier: String) -> XCUIElement {
+        app.descendants(matching: .any).matching(identifier: identifier).firstMatch
+    }
+
+    /// The overlay row's readable label regardless of which element in the
+    /// row carries it (see overlayRow).
+    static func rowLabel(of row: XCUIElement) -> String {
+        let label = row.label
+        if !label.isEmpty { return label }
+        return row.staticTexts.firstMatch.label
+    }
+
     /// Read an integer from an overlay row labelled "<prefix> <value>".
     static func intValue(of row: XCUIElement, prefix: String) -> Int? {
         guard row.exists else { return nil }
-        let label = row.label
+        let label = rowLabel(of: row)
         guard label.hasPrefix(prefix) else { return nil }
         let rest = label.dropFirst(prefix.count).trimmingCharacters(in: .whitespaces)
         return Int(rest.split(separator: " ").first.map(String.init) ?? "")
@@ -170,13 +191,13 @@ enum GameUITest {
     /// overlay re-renders, because the cached AX snapshot can serve an empty
     /// label for a row that a new query reads correctly.
     private static func resolvedRow(app: XCUIApplication, identifier: String) -> XCUIElement? {
-        let row = app.staticTexts[identifier].firstMatch
+        let row = overlayRow(app: app, identifier: identifier)
         return row.exists ? row : nil
     }
 
     /// Parse "frame 3.21ms" → 3.21.
     private static func frameMs(of row: XCUIElement) -> Double? {
-        let label = row.label
+        let label = rowLabel(of: row)
         guard let start = label.range(of: "frame ") else { return nil }
         let rest = label[start.upperBound...]
         guard let end = rest.range(of: "ms") else { return nil }

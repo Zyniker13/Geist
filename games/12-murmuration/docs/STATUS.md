@@ -447,3 +447,18 @@ directly with the exact UI-test launch arguments plus `-uitest-trace`
   trace file stays empty. System Events cannot read the SwiftUI labels
   of this process (windows invisible to AX), so label reads stay with
   XCUI on CI.
+
+- **Helper rewrite verified on iOS (2026-11-18 night, verify5):** after
+  ADR-0018 (overlay rows read by identifier across element types), the
+  compile gates for both schemes are clean; `make test` (Debug, iPad
+  sim) ended `** TEST SUCCEEDED **` with `MUITests.xctest` 5/5 in
+  102 s (perf test included; `testMenuLaunchesWithOverlay`/
+  `testMenuLaunchesWithoutOverlay` pass with the new
+  `overlayRow`/`rowLabel`/`sampleFpsPeak`/`sampleFrameMedian`/`finalHash`
+  helpers). The stray `xcrun: error: unable to find utility "simctl"`
+  in the log is the diagnostics collector failing after success
+  (exit still 0). The mac scheme locally still stops at the runner
+  connection (fourth identical `The test runner hung before establishing
+  connection`, now also under sim-lock); mac UI evidence for this phase
+  comes from CI, which gets past connection and executes the suite.
+- **Next:** push the ADR-0018 helpers; watch the `ui-test-macos` CI job.

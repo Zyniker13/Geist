@@ -23,7 +23,7 @@ final class MUITestsMac: XCTestCase {
         app.typeKey("d", modifierFlags: [.command, .shift])
 
         let overlay = app.otherElements["debug.overlay"]
-        let seedRow = app.staticTexts["debug.seed"]
+        let seedRow = GameUITest.overlayRow(app: app, identifier: "debug.seed")
         XCTAssertTrue(
             overlay.waitForExistence(timeout: 5) || seedRow.waitForExistence(timeout: 5),
             "⌘⇧D did not reveal the debug overlay"
@@ -74,7 +74,7 @@ final class MUGateTestsMac: XCTestCase {
         // The FPS row only exists in the live game overlay; waiting on it is
         // platform-agnostic and, if the session never started, the fps
         // assertion below still fails on the 0 from the menu overlay.
-        let fpsRow = app.staticTexts["debug.fps"]
+        let fpsRow = GameUITest.overlayRow(app: app, identifier: "debug.fps")
         guard fpsRow.waitForExistence(timeout: 15) else {
             GameUITest.dumpTrace()
             GameUITest.dumpTree(app)

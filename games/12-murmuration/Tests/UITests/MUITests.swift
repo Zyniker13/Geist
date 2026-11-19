@@ -9,7 +9,7 @@ final class MUITests: XCTestCase {
         app.launch()
 
         let overlay = app.otherElements["debug.overlay"]
-        let seedRow = app.staticTexts["debug.seed"]
+        let seedRow = GameUITest.overlayRow(app: app, identifier: "debug.seed")
         XCTAssertTrue(
             overlay.waitForExistence(timeout: 10) || seedRow.waitForExistence(timeout: 5),
             "debug overlay did not appear with -uitest-overlay"
@@ -72,22 +72,22 @@ final class MUGateTests: XCTestCase {
         // The FPS row only exists in the live game overlay; waiting on it is
         // platform-agnostic and, if the session never started, the fps
         // assertion below still fails on the 0 from the menu overlay.
-        let fpsRow = app.staticTexts["debug.fps"]
+        let fpsRow = GameUITest.overlayRow(app: app, identifier: "debug.fps")
         XCTAssertTrue(fpsRow.waitForExistence(timeout: 15), "overlay missing in perf run")
 
         // Sample several independent ~2 s FPS windows and take the peak:
         // a single-window read flakes on loaded CI runners.
         Thread.sleep(forTimeInterval: 2)
         let fps = GameUITest.sampleFpsPeak(app: app, identifier: "debug.fps")
-        XCTAssertNotNil(fps, "no FPS reading: \(fpsRow.label)")
+        XCTAssertNotNil(fps, "no FPS reading: \(GameUITest.rowLabel(of: fpsRow))")
         XCTAssertGreaterThanOrEqual(fps ?? 0, 55, "fps below the 60 Hz display cap")
 
-        let frameRow = app.staticTexts["debug.frame"]
+        let frameRow = GameUITest.overlayRow(app: app, identifier: "debug.frame")
         // Median over independent ~2 s windows: a single sample spikes under
         // co-tenant load (ADR-0014).
         let frameMs = GameUITest.sampleFrameMedian(app: app, identifier: "debug.frame")
         guard let frameMs else {
-            XCTFail("no frame-cost reading: \(frameRow.label)")
+            XCTFail("no frame-cost reading: \(GameUITest.rowLabel(of: frameRow))")
             return
         }
         XCTAssertLessThanOrEqual(
