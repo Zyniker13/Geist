@@ -3,14 +3,23 @@
 This file is the single place to resume the program from. Keep every field below current after every meaningful step (see "Resuming After a Restart" in `ROADMAP.md`). Per-game detail (gate evidence and sign-offs) lives in each game's `docs/STATUS.md`.
 
 - **Current game:** Murmuration (`12-murmuration`)
-- **Phase:** P2 (Vertical Slice) — in progress on `murmur/phase/P2-vertical-slice`.
-- **Last done:** P2 vertical slice built: Metal `FlockRenderer` (instanced disks, trace ribbons, hills), app shell (iOS + macOS), HUD, Autoplayer, G2 UI tests. Kernel bug fixed: `birds.subFlock` desync on split/merge (INV-3; both arrays now updated in the Reducer), goldens regenerated at contentVersion 3. Package suites green (MUCore 67/67, MUAI 15/15, MURender green), lint 0.
-- **Next step:** G2 CI green on `murmur/phase/P2-vertical-slice`: macOS gate
-  tests fail on the runner because the app's startup callbacks never ran
-  there (ADR-0015 moved startup resolution to view-init time + a defaults
-  channel); iOS perf gate is load-flaky (ADR-0014 median + peak). Next push
-  carries ADR-0015; then merge, tag `murmur/gate-G2-pass`.
-- **Blocked on:** nothing (UI-test evidence moved to CI per ADR-0009; local simulator work resumes when no foreign campaign is active).
+- **Phase:** P3 (Content and Systems) — starting on `murmur/phase/P3-content-systems`.
+- **Last done:** G2 PASSED. Run 44449181682 (c95c3c7) green on all six
+  jobs; the CI artifact's first AX-tree dump gave ground truth for the
+  overlay rows (macOS `.accessibilityElement()` yields a leaf `Other`
+  with only the identifier — no label/value/children), so ADR-0019 was
+  rewritten: rows are `Text(...).accessibilityElement(children:
+  .ignore).accessibilityLabel(text).accessibilityIdentifier(id)`.
+  ADR-0020 records that local GUI apps expose zero AX windows in this
+  session (game build, TextEdit, Finder alike; screencapture refused) —
+  local mac UI runs are impossible; mac UI evidence is CI-only (issue
+  #13 commented). Tag `murmur/gate-G2-pass` pushed; merged to main.
+- **Next step:** P3 on a fresh branch: MU-P3.1 six regions with
+  obstacles + wind patterns and two falcon behaviors, MU-P3.2 five-step
+  tutorial + solo-objective regions, MU-P3.3 local two-flock versus on
+  one iPad. Then G3 (counts; content-lint 0 errors; tutorial + versus
+  UI tests).
+- **Blocked on:** nothing.
 
 ## Environment Check
 
@@ -37,7 +46,7 @@ If Xcode 27.2 or an iOS 26-or-later runtime is missing and cannot be installed w
 | Order | No. | Folder | Game | State | Last Gate | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | 04 | [`04-night-market`](games/04-night-market/ROADMAP.md) | Night Market | Done | `night-market/gate-G10-pass` | All gates G0–G10 tagged; TestFlight/App Store steps owner-only in #12 |
-| 2 | 12 | [`12-murmuration`](games/12-murmuration/ROADMAP.md) | Murmuration | In Progress (P2) | `murmur/gate-G1-pass` | P2 vertical slice built; autoplay stall fixed; ADR-0014 robust perf sampling; ADR-0015 view-init startup resolution + defaults flag channel (macOS CI startup callbacks never ran); G2 CI run pending on the ADR-0015 push |
+| 2 | 12 | [`12-murmuration`](games/12-murmuration/ROADMAP.md) | Murmuration | In Progress (P3) | `murmur/gate-G2-pass` | G2 pass: 6/6 CI jobs green (run 44449181682); autoplay, perf (ADR-0017 display-slot budget), pause/resume hash all green; ADR-0019 rewritten from the CI AX-tree dump (rows = `children: .ignore` leaves with explicit labels); ADR-0020 mac UI evidence CI-only |
 | 3 | 02 | [`02-orrery`](games/02-orrery/ROADMAP.md) | Orrery | Not Started | — | — |
 | 4 | 14 | [`14-beacon-coast`](games/14-beacon-coast/ROADMAP.md) | Beacon Coast | Not Started | — | — |
 | 5 | 13 | [`13-terrace`](games/13-terrace/ROADMAP.md) | Terrace | Not Started | — | — |
@@ -103,6 +112,7 @@ One line per meaningful step, newest last: date, phase or game and stage, what w
 - 2026-11-17: Night Market P10 complete — simulator stack recovered (host rebooted overnight + issue #10 ladder), four release screenshots + 65.29 s preview video captured and frame-verified (launcher shot needed a script fix: -uitest-* args suppress the NewNightMenu), make test TEST SUCCEEDED (UI 5/5 in 64.5 s) + make lint 0 on the final tree. Merged to main (2a5b968), tag `night-market/gate-G10-pass` pushed, issue #10 closed, release steps filed as #12. Night Market is Done.
 - 2026-11-17: Murmuration P1 rules pass: headless sim day rewritten to full `applyTick` (crash bisected to an Int64 overflow in `normalizedScaled` at ultra density — down-shift guard + regression test; neighbor-visit cap 48 fixed the 33 s day → 3.8 s, ADR-0006). R-1…R-13 implemented (IntTrig 1024-step sine table per ADR-0002, LeaderPath/Falcon/Roost/Energy rewrites, wind grid, `effectiveParams`); two INV-3 regressions found and fixed with tests (falcon kill-loop index order; feeding `Set` iteration order → ADR-0007). S1.2 rule-ID suite 67/67 with INV-1…INV-4 (INV-4 at 1,000 configs); S1.4 twenty golden replays committed (contentVersion 2) replaying to stored hashes.
 - 2026-11-17: Murmuration P1 merged to main (5d877f2) and tagged `murmur/gate-G1-pass`; CI green on main.
+- 2026-11-18: Murmuration G2 PASSED: run 44449181682 (c95c3c7) green on all six jobs (three-day Autoplayer on iPad+Mac, 3,000-bird budgets, pause/resume checkpoint hashes, lint). ADR-0019 rewritten from the first CI AX-tree dump: on macOS `.accessibilityElement()` rows are leaves carrying only the identifier, so rows are now `children: .ignore` leaves with explicit labels. ADR-0020: local GUI apps expose zero AX windows in this session — mac UI validation is CI-only; issue #13 commented with the diagnosis. Merged to main (f11023b), tag `murmur/gate-G2-pass` pushed. P3 (content and systems) next.
 - 2026-11-17: Murmuration P2 vertical slice built on `murmur/phase/P2-vertical-slice`: Metal `FlockRenderer` (instanced disks, per-bird trace ribbons, layered hills; `PipelineSpec` + extension statics for lint limits), iOS + macOS app shell (`GameModel`, `GameSurface`/`GameSurfaceMac`, `PlayView`, `HUD`, `Shell`), `Autoplayer` gesture source, and the three G2 UI tests per platform. Kernel defect fixed with regressions: `birds.subFlock` desync on split/merge (boids kernel read stale assignments → re-merge; Reducer now updates both arrays), plus a deterministic AI standoff for near-coincident centroids. `replayContentVersion` 2→3, all 20 goldens regenerated. Package suites green (MUCore 67/67, MUAI 15/15, MURender green), `make lint` 0. G2 UI-test evidence in progress (chained around a foreign xcodebuild).
 - 2026-11-18: G2 evidence wired to CI (ADR-0009 branch triggers, ADR-0010 embedded shader source, ADR-0011 phase-branch triggers, ADR-0012 Release UI tests after measuring Debug ~70 ms vs Release ~0.9 ms per 3,000-bird tick). Runs 44252337217/44256328140/44261637143 escalated: menu stuck → Debug starvation → autoplay stalling after day 1 on both platforms while menu+perf passed. Root-caused with a local headless macOS run (`-uitest-trace` playback trace): `advanceFrame` skipped `runOneTick` while `dayEnded`, so autoplay never advanced past the results card (no finger to tap Continue). Fixed in c4f85f0, verified locally (`finished: 3 days recorded`); CI run 44267447119 is the G2 evidence run.
 - 2026-11-18: G2 gate failures diagnosed from CI logs (runs 44261637143/44267447119/44267847600): iOS now green except a single-window FPS flake (45 < 55 under runner load); macOS menu test passes but the play overlay never appears under XCTest (autoplay/perf fail on the missing overlay) — suspected app-activation/window-keying under XCTest, to be confirmed by the new trace. Pushed 7ff557a: file-backed lifecycle trace mirror (`/tmp/mu-uitest-trace.log`: shell launch, playview ready, first draw, day ticks), `NSApp.activate` before the UI-test window, failure dumps of the mirror, and peak-over-window FPS sampling in both perf tests. CI run 44275135778 is the G2 evidence run.
