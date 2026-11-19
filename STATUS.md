@@ -3,23 +3,24 @@
 This file is the single place to resume the program from. Keep every field below current after every meaningful step (see "Resuming After a Restart" in `ROADMAP.md`). Per-game detail (gate evidence and sign-offs) lives in each game's `docs/STATUS.md`.
 
 - **Current game:** Murmuration (`12-murmuration`)
-- **Phase:** P3 (Content and Systems) — on `murmur/phase/P3-content-systems`.
-- **Last done:** P3.2 complete and committed (`40ea4f9`, pushed to
-  `murmur/phase/P3-content-systems`). Tutorial built end-to-end:
-  `TutorialDriver` (MUAI) wired into `GameModel`/HUD with a
-  `-uitest-tutorial` launch flag; tutorial + solo region content
-  (`tutorial.json` 5 steps, `tutorial-meadow.json`); three headless-
-  diagnosed bug fixes — FEED goal 300→150 (flock starts at 800 under a
-  1000 cap), ADR-0023 (feed progress sums positive energy deltas across
-  R-9 growth dips; driver picks the field with the most remaining food),
-  and ADR-0024 (the app bundle flattens the resource tree, so
-  `loadBundled()` / `loadSoloBundled()` now address region files by name).
-  Full `make test` green in the bundle (6 iOS tests, 0 failures, incl.
-  `testTutorialCompletes`); content-lint 9 files / 0 errors; `make lint`
-  0 violations. Package suites: MUCore 90/90, MUContent 33/33, MUAI 26/26,
-  MURender 12/12.
-- **Next step:** watch branch CI for `40ea4f9`, then MU-P3.3 (local
-  versus), then G3.
+- **Phase:** P3 complete; G3 gate pass tagged — next P4 (AI Opponents) on
+  `murmur/phase/P4-ai-opponents`.
+- **Last done:** MU-P3.3 local two-flock versus built and green (`ea3c1b7`,
+  pushed). Player-visible menu entry (`menu.versus`), nearest-flock touch
+  routing on iOS (tie-break to flock 0 at the coincident start),
+  option-drag routing on Mac, rival AI skipped in versus. Two engine bugs
+  fixed (ADR-0025): `splitFlock` now anchors the new flock's leader at its
+  centroid; versus sets `versusMergeSuppressed` so R-5 auto-merge cannot
+  collapse the day-start split (replay contentVersion 7, 20 goldens
+  regenerated). `make test` green end-to-end (MUCore 93, MUContent 33,
+  MURender 26, MUAudio 12, MUAI 15, MUPlatform 13, MUMeta 20; MUGateTests
+  5/5 incl. tutorial + versus; pause-hash + perf gate), `make lint` 0
+  violations, content-lint 9 files / 0 errors. G3 counts verified (6
+  regions, 2 falcon behaviors, rival flock, 5 tutorial steps) — evidence in
+  the game's `docs/STATUS.md`.
+- **Next step:** watch branch CI for `ea3c1b7`, then merge P3 to `main`,
+  push the `murmur/gate-G3-pass` tag, and start MU-P4.1 (rival AI with
+  three difficulties, falcon tuning, balance report).
 - **Blocked on:** nothing.
 
 ## Environment Check
@@ -146,3 +147,4 @@ One line per meaningful step, newest last: date, phase or game and stage, what w
   steps now complete within one day headlessly; package suites green
   (MUCore 90, MUContent 31, MUAI 26, MURender 12), `make lint` 0; full
   `make test` + commit next.
+- 2026-11-19: Murmuration P3.3 complete on `murmur/phase/P3-content-systems` (`ea3c1b7`): local two-flock versus with player-visible menu entry, nearest-flock touch routing (iOS) and option-drag (Mac); ADR-0025 records the two engine fixes — `splitFlock` seeds the new flock's leader path at its centroid, and `versusMergeSuppressed` blocks the R-5 auto-merge that collapsed the coincident versus flocks; replay contentVersion 7 with 20 regenerated goldens. `make test` green (MUCore 93, MUGateTests 5/5 incl. tutorial + versus), `make lint` 0. G3 gate checks (counts, content-lint 0, tutorial + versus UI tests) verified with output in the game's docs/STATUS.md; tag `murmur/gate-G3-pass` after merge.
