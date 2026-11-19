@@ -574,3 +574,15 @@ Evidence (local, 2026-11-18):
   0 errors, check-imports OK).
 - Remaining for this step: iOS simulator `xcodebuild test` (running),
   then commit on `murmur/phase/P3-content-systems` and CI.
+
+### P3.1 core evidence complete (2026-11-19)
+
+- Package suites: `swift test --package-path Packages/MUCore` → Executed
+  78 tests, 0 failures (11 new P3 + 20 regenerated goldens).
+- iOS simulator (zGeist_bot-iPad-Pro-13, iPad Pro 13-inch M5, iOS 27.2):
+  `~/.hermes/bin/sim-lock xcodebuild test -scheme MU ...` → **TEST
+  SUCCEEDED**, Executed 5 tests, 0 failures, 694s
+  (Test-MU-2026.11.18_23-51-29--0500.xcresult).
+- `make lint` → exit 0.
+- Branch CI: run 44458722736 (9a5ff4b) completed **success**.
+- Merged to main as 9a3f260.
