@@ -139,8 +139,11 @@ jobs:
         if: always()
         run: |
           mkdir -p _mu-g2-diag
-          find /tmp -maxdepth 1 -name 'mu-uitest-*' -exec cp -R {} _mu-g2-diag/ \; || true
-          find /tmp -maxdepth 1 -name 'mu-g2-ios-*.xcresult' -exec cp -R {} _mu-g2-diag/ \; || true
+          # /tmp is a symlink to /private/tmp on macOS and BSD find does not
+          # follow start-point symlinks, so plain `find /tmp` matches nothing;
+          # -L follows it (the first diagnostics run uploaded zero files).
+          find -L /tmp -maxdepth 1 -name 'mu-uitest-*' -exec cp -R {} _mu-g2-diag/ \; || true
+          find -L /tmp -maxdepth 1 -name 'mu-g2-ios-*.xcresult' -exec cp -R {} _mu-g2-diag/ \; || true
           ls -la _mu-g2-diag || true
 
       - name: Upload UI-test diagnostics
@@ -188,8 +191,11 @@ jobs:
         if: always()
         run: |
           mkdir -p _mu-g2-diag
-          find /tmp -maxdepth 1 -name 'mu-uitest-*' -exec cp -R {} _mu-g2-diag/ \; || true
-          find /tmp -maxdepth 1 -name 'mu-g2-mac-*.xcresult' -exec cp -R {} _mu-g2-diag/ \; || true
+          # /tmp is a symlink to /private/tmp on macOS and BSD find does not
+          # follow start-point symlinks, so plain `find /tmp` matches nothing;
+          # -L follows it (the first diagnostics run uploaded zero files).
+          find -L /tmp -maxdepth 1 -name 'mu-uitest-*' -exec cp -R {} _mu-g2-diag/ \; || true
+          find -L /tmp -maxdepth 1 -name 'mu-g2-mac-*.xcresult' -exec cp -R {} _mu-g2-diag/ \; || true
           ls -la _mu-g2-diag || true
 
       - name: Upload UI-test diagnostics

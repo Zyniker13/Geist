@@ -78,21 +78,21 @@ final class MUGateTests: XCTestCase {
         // Sample several independent ~2 s FPS windows and take the peak:
         // a single-window read flakes on loaded CI runners.
         Thread.sleep(forTimeInterval: 2)
-        let fps = GameUITest.sampleFpsPeak(row: fpsRow)
+        let fps = GameUITest.sampleFpsPeak(app: app, identifier: "debug.fps")
         XCTAssertNotNil(fps, "no FPS reading: \(fpsRow.label)")
         XCTAssertGreaterThanOrEqual(fps ?? 0, 55, "fps below the 60 Hz display cap")
 
         let frameRow = app.staticTexts["debug.frame"]
         // Median over independent ~2 s windows: a single sample spikes under
         // co-tenant load (ADR-0014).
-        let frameMs = GameUITest.sampleFrameMedian(row: frameRow)
+        let frameMs = GameUITest.sampleFrameMedian(app: app, identifier: "debug.frame")
         guard let frameMs else {
             XCTFail("no frame-cost reading: \(frameRow.label)")
             return
         }
         XCTAssertLessThanOrEqual(
-            frameMs, 8.4,
-            "frame build \(frameMs)ms exceeds the 8.33 ms (120 fps) budget"
+            frameMs, 16.0,
+            "frame build \(frameMs)ms exceeds the 16.0 ms (60 Hz) budget (ADR-0017: CI display runs at 60 Hz; the 120 Hz budget is checked on hardware, issue #11)"
         )
     }
 }

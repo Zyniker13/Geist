@@ -312,8 +312,12 @@ final class GameModel: ObservableObject {
             return
         }
         guard day < totalDays else {
-            playbackTrace("finished: \(results.count) days recorded")
             finished = true
+            // The final hash must be readable the moment the final card
+            // appears: the test reads debug.hash right after game.final,
+            // and the next advanceFrame may not run before it does.
+            refreshHashIfNeeded(force: true)
+            playbackTrace("finished: \(results.count) days recorded hash=\(hashLabel)")
             return
         }
         day += 1

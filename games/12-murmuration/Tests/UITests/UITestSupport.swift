@@ -94,7 +94,11 @@ enum GameUITest {
             XCTFail("the game never reached program done")
             return ""
         }
-        let hashRow = app.staticTexts["debug.hash"]
+        // Re-resolve the row on every read: an element reference captured
+        // before the final card appeared can serve a stale snapshot whose
+        // label is empty even though a fresh query sees the value (the
+        // runner log of run 44403531737 shows both behaviors minutes apart).
+        let hashRow = app.staticTexts["debug.hash"].firstMatch
         guard hashRow.waitForExistence(timeout: 10) else {
             dumpTree(app)
             return ""
@@ -118,13 +122,18 @@ enum GameUITest {
 
     /// Peak FPS over independent ~2 s overlay windows: CI runners dip under
     /// co-tenant load, so a single-window read flakes; the peak shows what
-    /// the machine sustains in at least one quiet window.
+    /// the machine sustains in at least one quiet window. Each read
+    /// re-resolves the row by identifier: a captured reference goes stale
+    /// while the sampled overlay re-renders (2 Hz) and its label reads back
+    /// empty even though a fresh query sees the value.
     static func sampleFpsPeak(
-        row: XCUIElement, reads: Int = 6, spacing: TimeInterval = 2
+        app: XCUIApplication, identifier: String, reads: Int = 6, spacing: TimeInterval = 2
     ) -> Int? {
         var peak: Int?
         for _ in 0..<reads {
-            if let value = intValue(of: row, prefix: "FPS") {
+            if let row = resolvedRow(app: app, identifier: identifier),
+                let value = intValue(of: row, prefix: "FPS")
+            {
                 peak = max(peak ?? 0, value)
             }
             Thread.sleep(forTimeInterval: spacing)
@@ -135,13 +144,16 @@ enum GameUITest {
     /// Median frame-build ms over independent ~2 s overlay windows: a single
     /// sample spikes under co-tenant load, so the median (robust to transient
     /// spikes) is the gate metric; it still fails if the typical frame build
-    /// exceeds budget (ADR-0014).
+    /// exceeds budget (ADR-0014). Re-resolves the row per read (see
+    /// sampleFpsPeak).
     static func sampleFrameMedian(
-        row: XCUIElement, reads: Int = 6, spacing: TimeInterval = 2
+        app: XCUIApplication, identifier: String, reads: Int = 6, spacing: TimeInterval = 2
     ) -> Double? {
         var samples: [Double] = []
         for _ in 0..<reads {
-            if row.exists, let value = frameMs(of: row) {
+            if let row = resolvedRow(app: app, identifier: identifier),
+                let value = frameMs(of: row)
+            {
                 samples.append(value)
             }
             Thread.sleep(forTimeInterval: spacing)
@@ -152,6 +164,14 @@ enum GameUITest {
         return samples.count.isMultiple(of: 2)
             ? (samples[mid - 1] + samples[mid]) / 2
             : samples[mid]
+    }
+
+    /// A fresh element query: the caller must not reuse a reference across
+    /// overlay re-renders, because the cached AX snapshot can serve an empty
+    /// label for a row that a new query reads correctly.
+    private static func resolvedRow(app: XCUIApplication, identifier: String) -> XCUIElement? {
+        let row = app.staticTexts[identifier].firstMatch
+        return row.exists ? row : nil
     }
 
     /// Parse "frame 3.21ms" → 3.21.
