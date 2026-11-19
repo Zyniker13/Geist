@@ -111,23 +111,25 @@ enum GameUITest {
         return label
     }
 
-    /// Overlay rows expose their identifier and text on different elements
-    /// per platform: on iOS the identifier and text both sit on the
-    /// StaticText; on macOS the identifier lands on an element whose label
-    /// is empty and which has no StaticText children, while its
-    /// accessibilityValue carries the rendered string (the app-side AX
-    /// snapshots in the run 44436062343 and 44442704839 triages show the
-    /// two shapes). Find by identifier across element types and read the
+    /// Overlay rows expose their identifier and text on one element per
+    /// platform (ADR-0019, final): the app publishes each row as a
+    /// `.accessibilityElement(children: .ignore)` leaf with an explicit
+    /// `.accessibilityLabel`, so the identifier and the text land on the
+    /// same element on both platforms (iOS StaticText, macOS Other). The
+    /// earlier shapes (identifier on a wrapper, or text only as value) came
+    /// from relying on SwiftUI synthesis; the CI AX-tree dump in run
+    /// 44445425461 shows the macOS leaf previously carried only the
+    /// identifier. Find by identifier across element types and read the
     /// text through rowText: value first, then label, then the first
     /// StaticText child.
     static func overlayRow(app: XCUIApplication, identifier: String) -> XCUIElement {
         app.descendants(matching: .any).matching(identifier: identifier).firstMatch
     }
 
-    /// The overlay row's readable text. The app sets accessibilityValue to
-    /// the row's rendered string (ADR-0019), so the value attribute is the
-    /// primary read; label and the first StaticText child remain as
-    /// fallbacks for elements that surface only those.
+    /// The overlay row's readable text. The app sets an explicit
+    /// accessibilityLabel on each row (ADR-0019), so label is the primary
+    /// read after value; the first StaticText child remains a fallback for
+    /// any element that still surfaces a synthesized text child.
     static func rowText(of row: XCUIElement) -> String {
         if let value = row.value as? String, !value.isEmpty {
             return value

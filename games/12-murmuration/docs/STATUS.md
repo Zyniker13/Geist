@@ -479,3 +479,29 @@ directly with the exact UI-test launch arguments plus `-uitest-trace`
   value is the row's own text).
 - verify6 locally: IOS_COMPILE=0, MAC_COMPILE=0 (Release),
   `make test` ** TEST SUCCEEDED ** (Debug, iPad sim), IOS_TEST=0.
+
+### 2026-11-18, run 44445425461 triage: CI AX-tree dump, ADR-0019 rewritten, ADR-0020
+- Pulled the mac xcresult from CI run 44445425461 (push b9405b0) and
+  exported its attachments: for the first time the bundle contains the
+  full accessibility-tree dump captured at failure time. Ground truth:
+  on macOS each overlay row is a leaf `Other` element carrying ONLY
+  its identifier — `Other {{80,545},{34,14}} identifier: 'debug.hash'`
+  — no label, no value, no children. ADR-0019's value-first variant
+  was falsified: `.accessibilityValue` never reached that element, and
+  `.accessibilityElement()` on macOS replaces the Text's synthesized
+  accessibility (dropping its text), unlike iOS where the same code
+  yields a StaticText with the text as its label.
+- ADR-0019 rewritten (same ADR, decision replaced): rows are now
+  `Text(...).accessibilityElement(children: .ignore)
+  .accessibilityLabel(text).accessibilityIdentifier(id)` — identifier
+  and text on one element, explicit on both platforms, no reliance on
+  SwiftUI synthesis. Helper comments updated to match.
+- ADR-0020: local mac GUI apps expose zero AX windows in this session
+  (the game's own Release build, TextEdit, and Finder all report
+  `count of windows = 0` via System Events; screencapture is refused),
+  which also explains the persistent local mac test-runner wedge.
+  Local mac UI runs are recorded as impossible in this environment;
+  mac UI validation runs on CI only. Compiling the mac app locally
+  still works (Release build green with the new rows).
+- verify7: `make test` (iOS, iPad sim) and `make lint` green; CI run
+  for the children:.ignore push: see the run table above.

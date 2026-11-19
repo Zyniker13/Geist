@@ -377,34 +377,59 @@ Architecture decision records. Every deviation from the roadmap is recorded here
   value text out of a StaticText child breaks the fallback and fails
   loudly rather than silently misreading.
 
-## ADR-0019: Overlay rows carry their text as accessibilityValue
+## ADR-0019: Overlay rows are `children: .ignore` leaves with explicit labels
 
 - **Date**: 2026-11-18
 - **Status**: Accepted
 - **Context**: After ADR-0018 the mac UI suite still failed the two
   label-reading tests (`testPauseResumePreservesHash`,
-  `testPerfFrameBudgetWithThreeThousandBirds`), and the failure moved:
-  the element matched by identifier on macOS exposes an empty `label`
-  and no StaticText children, so `rowLabel`'s two reads both came up
-  empty and the staticTexts fallback threw
-  ("No matches found for `Descendants matching type StaticText`") at
-  UITestSupport.swift:132 (CI run 44442704839, 3 of 5 mac tests now
-  pass). The AX snapshot across runs shows the label/value landing on
-  different elements of the row per platform and per modifier order;
-  a helper that guesses which element carries the text keeps losing.
-- **Decision**: The app publishes the row's rendered string twice per
-  row: as its `Text` and as an explicit `.accessibilityValue` on the
-  same element that carries the identifier
+  `testPerfFrameBudgetWithThreeThousandBirds`). A value-first variant
   (`.accessibilityElement().accessibilityIdentifier(id)
-  .accessibilityValue(text)`) in both overlays. The helper
-  (`rowText`) reads `value` first, then `label`, then the first
-  StaticText child.
-- **Why stable**: the value attribute is set explicitly and attaches to
-  the same element as the identifier on both platforms, so the read
-  no longer depends on where SwiftUI put the synthesized label. The
-  fallbacks keep working for menu rows and any element shape that
-  surfaces label only.
-- **Consequences**: two more tests went green in CI (menu launch and
-  ⌘⇧D already passed this run); the two remaining failures were the
-  last block on G2. No behavior change for VoiceOver (the value is the
-  row's own text).
+  .accessibilityValue(text)`, CI run 44445425461) also failed, and for
+  the first time the CI artifact contained a full AX-tree dump captured
+  at failure time. The dump shows the ground truth: on macOS each row
+  is a leaf `Other` element carrying ONLY the identifier — no label, no
+  value, no children — while the same code on iOS yields a `StaticText`
+  with the text as its label. `.accessibilityElement()` on macOS
+  replaces the Text's synthesized accessibility and drops its text
+  entirely; `.accessibilityValue` did not attach to that element either.
+  Guessing which attribute SwiftUI synthesizes keeps losing.
+- **Decision**: Each row stops relying on synthesis altogether:
+  `Text(...).accessibilityElement(children: .ignore)
+  .accessibilityLabel(text).accessibilityIdentifier(id)` in both
+  overlays. `children: .ignore` makes the view itself the accessibility
+  element, and the explicit label then lands on the same element as the
+  identifier on both platforms. The helper (`rowText`) reads `value`
+  first, then `label`, then the first StaticText child; `overlayRow`
+  matches the identifier across all element types.
+- **Why stable**: both the identifier and the text are explicit and sit
+  on one element on both platforms — nothing depends on where SwiftUI
+  would synthesize a label or value. The container keeps
+  `children: .contain` so rows stay descendants of the overlay group.
+- **Consequences**: replaces the value-only variant of this ADR, which
+  CI run 44445425461 falsified (value never reached the leaf). No
+  behavior change for VoiceOver (the label is the row's own text). If a
+  future row shape ever needs both label and child text, revisit with
+  a fresh tree dump rather than another blind patch.
+
+## ADR-0020: Mac UI tests run only on CI
+
+- **Date**: 2026-11-18
+- **Status**: Accepted
+- **Context**: Every attempt to run the mac UI suite locally
+  (sim-lock, clean DerivedData, retries) wedged the same way: the test
+  runner never established its connection. Direct diagnosis of the
+  environment shows the session is the cause: applications launched
+  locally (the game's own Release build, and stock TextEdit and Finder)
+  all run but expose ZERO windows through the Accessibility API
+  (System Events reports `count of windows = 0` for each, including
+  Finder), and screen capture is unavailable in this session. A GUI
+  app with no AX windows cannot support a UI test runner.
+- **Decision**: Local mac UI runs are treated as impossible in this
+  environment rather than retried blind; mac UI validation happens on
+  CI (whose runner session opens windows normally, as its screenshots
+  and AX dumps prove). Local mac work is limited to compiling and
+  running the app's logic suites; iOS UI tests keep running locally.
+- **Consequences**: no further local mac runner attempts; the wedge is
+  documented instead of chased. CI remains the single mac UI evidence
+  source for gates.
