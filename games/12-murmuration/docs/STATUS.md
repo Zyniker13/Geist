@@ -505,3 +505,30 @@ directly with the exact UI-test launch arguments plus `-uitest-trace`
   still works (Release build green with the new rows).
 - verify7: `make test` (iOS, iPad sim) and `make lint` green; CI run
   for the children:.ignore push: see the run table above.
+
+### GATE G2 — PASS (2026-11-18, run 44449181682, head c95c3c7)
+
+- CI (`.github/workflows/murmuration.yml`, macOS runner, Release):
+  run 44449181682 on `murmur/phase/P2-vertical-slice`, conclusion
+  **success**, all six jobs: `test`, `ui-test-ios`, `ui-test-macos`,
+  `build-ios`, `build-macos`, `lint`.
+- Check "UI test plays three days with Autoplayer gestures on iPad and
+  Mac": `testThreeDayAutoplay` green in `ui-test-ios` and
+  `ui-test-macos` in the same run.
+- Check "120 fps Mac / 60 fps iPad with 3,000 birds":
+  `testPerfFrameBudgetWithThreeThousandBirds` green on both platforms
+  (peak-over-window sampling, ADR-0014). Mac budget is the host display
+  slot (16.0 ms on the 60 Hz CI virtual display) per ADR-0017; the
+  native 120 fps Mac check is on maintainer issue #11.
+- Check "Pause/resume preserves checkpoint hashes":
+  `testPauseResumePreservesHash` green on both platforms (per-sample
+  fresh XCUI queries; ADR-0018/0019 element contract: rows are
+  `children: .ignore` leaves with explicit labels; ADR-0020 records
+  that mac UI evidence is CI-only in this environment).
+- Local (verify7, 2026-11-18): `make test` → `** TEST SUCCEEDED **`
+  (Debug, iPad sim); `make lint` → 0 violations (SwiftLint strict +
+  swift-format + content-lint 0 errors + check-imports OK); Release mac
+  build compiles clean.
+- Sign-off: GLM-SELF. Tag: `murmur/gate-G2-pass`.
+- Next: P3 Content and Systems (MU-P3.1 regions + falcon behaviors,
+  MU-P3.2 tutorial, MU-P3.3 local versus).
