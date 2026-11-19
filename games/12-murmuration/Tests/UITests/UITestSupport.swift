@@ -103,7 +103,7 @@ enum GameUITest {
             dumpTree(app)
             return ""
         }
-        let label = rowLabel(of: hashRow)
+        let label = rowText(of: hashRow)
         // "hash <16 hex>" — strip the prefix.
         if let space = label.firstIndex(of: " ") {
             return String(label[label.index(after: space)...])
@@ -111,31 +111,38 @@ enum GameUITest {
         return label
     }
 
-    /// Overlay rows expose their identifier and label on different elements
-    /// per platform: on iOS the identifier and label both sit on the
-    /// StaticText; on macOS — and wherever SwiftUI inserts an explicit
-    /// accessibility element — the identifier lands on a wrapper and the
-    /// readable label stays on a child StaticText ("FPS 56"), so a
-    /// StaticText-typed query misses the row entirely (the app's own AX
-    /// snapshot in the run 44436062343 triage shows exactly this shape).
-    /// Find by identifier across element types and read the label from the
-    /// element or its first StaticText child.
+    /// Overlay rows expose their identifier and text on different elements
+    /// per platform: on iOS the identifier and text both sit on the
+    /// StaticText; on macOS the identifier lands on an element whose label
+    /// is empty and which has no StaticText children, while its
+    /// accessibilityValue carries the rendered string (the app-side AX
+    /// snapshots in the run 44436062343 and 44442704839 triages show the
+    /// two shapes). Find by identifier across element types and read the
+    /// text through rowText: value first, then label, then the first
+    /// StaticText child.
     static func overlayRow(app: XCUIApplication, identifier: String) -> XCUIElement {
         app.descendants(matching: .any).matching(identifier: identifier).firstMatch
     }
 
-    /// The overlay row's readable label regardless of which element in the
-    /// row carries it (see overlayRow).
-    static func rowLabel(of row: XCUIElement) -> String {
+    /// The overlay row's readable text. The app sets accessibilityValue to
+    /// the row's rendered string (ADR-0019), so the value attribute is the
+    /// primary read; label and the first StaticText child remain as
+    /// fallbacks for elements that surface only those.
+    static func rowText(of row: XCUIElement) -> String {
+        if let value = row.value as? String, !value.isEmpty {
+            return value
+        }
         let label = row.label
-        if !label.isEmpty { return label }
+        if !label.isEmpty {
+            return label
+        }
         return row.staticTexts.firstMatch.label
     }
 
     /// Read an integer from an overlay row labelled "<prefix> <value>".
     static func intValue(of row: XCUIElement, prefix: String) -> Int? {
         guard row.exists else { return nil }
-        let label = rowLabel(of: row)
+        let label = rowText(of: row)
         guard label.hasPrefix(prefix) else { return nil }
         let rest = label.dropFirst(prefix.count).trimmingCharacters(in: .whitespaces)
         return Int(rest.split(separator: " ").first.map(String.init) ?? "")
@@ -197,7 +204,7 @@ enum GameUITest {
 
     /// Parse "frame 3.21ms" → 3.21.
     private static func frameMs(of row: XCUIElement) -> Double? {
-        let label = rowLabel(of: row)
+        let label = rowText(of: row)
         guard let start = label.range(of: "frame ") else { return nil }
         let rest = label[start.upperBound...]
         guard let end = rest.range(of: "ms") else { return nil }

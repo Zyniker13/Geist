@@ -79,7 +79,7 @@ final class MUGateTests: XCTestCase {
         // a single-window read flakes on loaded CI runners.
         Thread.sleep(forTimeInterval: 2)
         let fps = GameUITest.sampleFpsPeak(app: app, identifier: "debug.fps")
-        XCTAssertNotNil(fps, "no FPS reading: \(GameUITest.rowLabel(of: fpsRow))")
+        XCTAssertNotNil(fps, "no FPS reading: \(GameUITest.rowText(of: fpsRow))")
         XCTAssertGreaterThanOrEqual(fps ?? 0, 55, "fps below the 60 Hz display cap")
 
         let frameRow = GameUITest.overlayRow(app: app, identifier: "debug.frame")
@@ -87,7 +87,7 @@ final class MUGateTests: XCTestCase {
         // co-tenant load (ADR-0014).
         let frameMs = GameUITest.sampleFrameMedian(app: app, identifier: "debug.frame")
         guard let frameMs else {
-            XCTFail("no frame-cost reading: \(GameUITest.rowLabel(of: frameRow))")
+            XCTFail("no frame-cost reading: \(GameUITest.rowText(of: frameRow))")
             return
         }
         XCTAssertLessThanOrEqual(

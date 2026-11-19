@@ -376,3 +376,35 @@ Architecture decision records. Every deviation from the roadmap is recorded here
   element's label or a StaticText child. A layout change that moves the
   value text out of a StaticText child breaks the fallback and fails
   loudly rather than silently misreading.
+
+## ADR-0019: Overlay rows carry their text as accessibilityValue
+
+- **Date**: 2026-11-18
+- **Status**: Accepted
+- **Context**: After ADR-0018 the mac UI suite still failed the two
+  label-reading tests (`testPauseResumePreservesHash`,
+  `testPerfFrameBudgetWithThreeThousandBirds`), and the failure moved:
+  the element matched by identifier on macOS exposes an empty `label`
+  and no StaticText children, so `rowLabel`'s two reads both came up
+  empty and the staticTexts fallback threw
+  ("No matches found for `Descendants matching type StaticText`") at
+  UITestSupport.swift:132 (CI run 44442704839, 3 of 5 mac tests now
+  pass). The AX snapshot across runs shows the label/value landing on
+  different elements of the row per platform and per modifier order;
+  a helper that guesses which element carries the text keeps losing.
+- **Decision**: The app publishes the row's rendered string twice per
+  row: as its `Text` and as an explicit `.accessibilityValue` on the
+  same element that carries the identifier
+  (`.accessibilityElement().accessibilityIdentifier(id)
+  .accessibilityValue(text)`) in both overlays. The helper
+  (`rowText`) reads `value` first, then `label`, then the first
+  StaticText child.
+- **Why stable**: the value attribute is set explicitly and attaches to
+  the same element as the identifier on both platforms, so the read
+  no longer depends on where SwiftUI put the synthesized label. The
+  fallbacks keep working for menu rows and any element shape that
+  surfaces label only.
+- **Consequences**: two more tests went green in CI (menu launch and
+  ⌘⇧D already passed this run); the two remaining failures were the
+  last block on G2. No behavior change for VoiceOver (the value is the
+  row's own text).

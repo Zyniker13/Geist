@@ -462,3 +462,20 @@ directly with the exact UI-test launch arguments plus `-uitest-trace`
   connection`, now also under sim-lock); mac UI evidence for this phase
   comes from CI, which gets past connection and executes the suite.
 - **Next:** push the ADR-0018 helpers; watch the `ui-test-macos` CI job.
+
+### 2026-11-18, run 44442704839 triage and ADR-0019 (value-first reads)
+- CI run 44442704839 (push e2a60bd): 3 of 5 mac UI tests pass now
+  (menu launch, ⌘⇧D, 3-day autoplay — the trace confirms the app
+  autoplayed 3 days and recorded the same hash the iOS run records).
+  `testPauseResumePreservesHash` and `testPerfFrameBudgetWith-
+  ThreeThousandBirds` still failed, at the new shape: the element
+  matched by identifier on macOS has an empty `label` and no
+  StaticText children, so ADR-0018's reads came up empty and the
+  fallback threw at UITestSupport.swift:132.
+- ADR-0019: both overlays publish each row's rendered string as an
+  explicit `.accessibilityValue` on the element that carries the
+  identifier; helpers read `value` first (`rowText`), then label,
+  then the first StaticText child. No VoiceOver-visible change (the
+  value is the row's own text).
+- verify6 locally: IOS_COMPILE=0, MAC_COMPILE=0 (Release),
+  `make test` ** TEST SUCCEEDED ** (Debug, iPad sim), IOS_TEST=0.
