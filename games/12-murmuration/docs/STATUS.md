@@ -378,11 +378,72 @@ directly with the exact UI-test launch arguments plus `-uitest-trace`
 - 44311488195 (dc21d70): same shape — only `ui-test-macos` red.
 - 44318232496 (f134f08): same shape — only `ui-test-macos` red.
 - 44332054817 (54995b7): same shape — only `ui-test-macos` red.
-- Evidence caveat for the four runs above: the job logs are not readable
-  with the available token (issues-only; the logs REST endpoint returns
-  403, and the job's web page requires sign-in), so their failure
-  signatures are unrecorded. To make the next red run diagnosable, commit
-  10b7f9d uploads the `/tmp/mu-uitest-*` diagnostics and the per-attempt
-  xcresult bundle as a workflow artifact on any outcome
-  (`mu-g2-diag-macos-<run>-<attempt>` / `mu-g2-diag-ios-…`), readable
-  anonymously on this public repository.
+- Correction (2026-11-18, later): the earlier note that job logs are
+  unreadable was wrong — the job-log REST endpoint works with the
+  issues-scoped token (`GET /actions/jobs/{id}/logs` → 200). The four runs
+  above were never re-fetched; the two newest runs below were, and they
+  carry the full diagnosis.
+- 10b7f9d / 44402854084: diagnostics-artifact workflow; `ui-test-macos` red.
+- 7440f89 / 44403531737 (log fetched in full): `ui-test-macos` red in 5 min
+  — both attempts fail the same three gate checks, menu tests green, and
+  the diagnostics upload found nothing (collect bug, below). The log
+  settles every open question from the four unlogged runs:
+  - The flags DO reach the app on the runner: the note log shows
+    `launch: using file config (11|13|10 flags)` per launch and the trace
+    shows `shell: launching play session …`. The ADR-0013/0015 launch-flag
+    channels are working; nothing is "dropped".
+  - The gate sessions run healthily on the runner: fps 54–60, ticks
+    advancing, birds declining; `threeDayAutoplay` PASSED (the final card
+    appears); the perf session rendered `FPS 57` / `frame 14.23ms`.
+  - Failure 1 (pause/resume): run A completed, `game.final` appeared, the
+    test FOUND `debug.hash`, but its label read `"hash "` — empty value —
+    while a fresh full-tree snapshot taken minutes later (perf run) read
+    every label correctly (`FPS 57`, `tick 858`, `frame 14.23ms`). The
+    captured XCUI element reference goes stale against the 2 Hz-sampled
+    overlay; fresh queries see the value.
+  - Failure 2 (perf): same stale reads — "no FPS reading" over six windows
+    whose labels the tree snapshot shows populated — plus a real
+    threshold bug: the 8.4 ms budget is the 120 Hz slot, but the runner's
+    virtual display is 60 Hz, so the gate could never pass there
+    (14.23 ms is inside the 16.67 ms slot the display offers). ADR-0017.
+  - Workflow bug: the collect step's `find /tmp …` matches nothing on macOS
+    (`/tmp` is a symlink; BSD find does not follow start-point symlinks),
+    so the "Upload diagnostics" step uploaded zero files. Fixed with
+    `find -L`.
+- **Local-evidence caveat (2026-11-18 evening):** the scratch volume
+  (`/Volumes/BITS-m02-e01`, which backs `~/.hermes/profiles/geist/cache/scratch`)
+  became unresponsive mid-session — every app bundle and DerivedData tree
+  used for the local bisection lived there, so the bisect "stalls"
+  (1a0f9a0/dc21d70/54995b7/HEAD app binaries idling without a scene) are
+  void; they reflect the hung volume, not the code. The repo itself is on
+  the healthy system disk. Until the volume returns, builds and test
+  DerivedData go to `/tmp` only.
+- **Fixes for the two red causes:** gate reads re-resolve the element by
+  identifier on every sample (`sampleFpsPeak`/`sampleFrameMedian` take
+  app+identifier; `finalHash` re-resolves `debug.hash`); `GameModel` forces
+  a hash refresh the moment `finished` is set so the final hash is readable
+  immediately; the perf budget is the host display slot (16.0 ms on the
+  60 Hz runner) with the 120 fps hardware check on maintainer issue #11
+  (comment, ADR-0017); the workflow collect step uses `find -L`.
+- **Headless re-verification (2026-11-18 evening, after the volume
+  recovered):** the XCTest runner on this machine still cannot connect to
+  the test service (three identical `The test runner hung before
+  establishing connection` exits, each leaving an orphaned
+  `MUITestsMac-Runner`; a foreign profile's `xcodebuild test` on
+  `Rosette.xcodeproj` was running concurrently — shared-service
+  contention, not the code). The app-level path was re-verified headless
+  instead: the built `MU-macOS.app` launched directly with the UI-test
+  file-config channel (`/tmp/mu-uitest-config.txt`, 11 flags incl.
+  `-uitest-trace`), played day 1 at fast 60 on the frontmost window,
+  ended with
+  `day end at tick 4800: pause=1 results=1` then
+  `finished: 1 days recorded hash=ca7e1ff0d1385cd2` — the finish path
+  computes and publishes the hash in the same step (`finished` set →
+  `refreshHashIfNeeded(force: true)` → trace records it). The trace line
+  at finish now carries the hash (test instrumentation, also extra CI
+  diagnostics). Note: bare-exec launches (not via `open`) get no window
+  activation and the MTKView display link never ticks — launch via
+  `open` + System Events frontmost, and include `-uitest-trace` or the
+  trace file stays empty. System Events cannot read the SwiftUI labels
+  of this process (windows invisible to AX), so label reads stay with
+  XCUI on CI.
