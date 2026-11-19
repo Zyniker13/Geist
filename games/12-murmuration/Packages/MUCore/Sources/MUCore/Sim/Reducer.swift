@@ -84,12 +84,13 @@ public func applyTick(to state: GameState, rng: inout SeededRNG) -> (GameState, 
     var events: [GameEvent] = []
 
     // 0. Regenerate the wind field every 600 ticks (R-1: per-256-cell seeded
-    // vectors, changing every 20 seconds at 30 Hz).
+    // vectors, changing every 20 seconds at 30 Hz; pattern branches in P3).
     if state.tick % GameState.windRegenTicks == 0 {
         let generation = state.tick / GameState.windRegenTicks
         let (wx, wy) = GameState.windField(
             generation: generation, seed: state.seed, windSeedOffset: state.windSeedOffset,
-            worldWidth: state.worldWidth, worldHeight: state.worldHeight
+            worldWidth: state.worldWidth, worldHeight: state.worldHeight,
+            pattern: state.windPattern
         )
         state.windCellsX = wx
         state.windCellsY = wy
@@ -107,8 +108,11 @@ public func applyTick(to state: GameState, rng: inout SeededRNG) -> (GameState, 
         windCellsY: state.windCellsY,
         windGridCols: Int32(max(1, Int(state.worldWidth) / GameState.windCellSize)),
         windGridRows: Int32(max(1, Int(state.worldHeight) / GameState.windCellSize)),
-        windCellSize: Int32(GameState.windCellSize)
-    )
+        windCellSize: Int32(GameState.windCellSize),
+        obstacleCenterX: state.obstacleCenterX,
+        obstacleCenterY: state.obstacleCenterY,
+        obstacleRadius: state.obstacleRadius
+        )
 
     // Rebuild spatial hash.
     let tRebuild = TickProfiler.start()

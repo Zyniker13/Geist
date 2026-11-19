@@ -97,10 +97,10 @@ public struct GameState: Codable, Sendable, Equatable {
 
     /// Content version for golden replays. Bump whenever an engine change
     /// alters replay outcomes, then regenerate the committed goldens.
-    /// v3: splitFlock/merge now sync `birds.subFlock` (the boids kernel's
-    /// view) with `subFlockAssignments`, so a split sub-flock steers to its
-    /// own leader point instead of the old one.
-    public static let replayContentVersion = 3
+    /// v4: P3 world features — obstacle circles, wind patterns, and falcon
+    /// behavior modes joined the state (all with defaults that reproduce the
+    /// v3 legacy field, but the JSON encoding grew, so hashes change).
+    public static let replayContentVersion = 4
 
     /// Content version for golden replays.
     public let contentVersion: Int
@@ -123,6 +123,23 @@ public struct GameState: Codable, Sendable, Equatable {
 
     /// Rival flock flag.
     public let hasRival: Bool
+
+    /// Wind-field pattern for this region (P3 R-1). Defaults to the legacy
+    /// `uniform` field.
+    public let windPattern: WindPattern
+
+    /// Falcon behavior mode for this region (P3 R-10). Defaults to the
+    /// legacy `patrol` behavior.
+    public let falconBehavior: FalconBehavior
+
+    /// Static obstacle circles, center coordinates in world units (P3).
+    /// Immutable for the life of the state; the kernel only reads them.
+    public let obstacleCenterX: [Int32]
+    public let obstacleCenterY: [Int32]
+    public let obstacleRadius: [Int32]
+
+    /// Number of static obstacles (P3).
+    public var obstacleCount: Int { obstacleCenterX.count }
 
     /// Energy drain per 100 birds per tick (R-8).
     public static let energyDrainPer100 = 1
@@ -174,6 +191,11 @@ public struct GameState: Codable, Sendable, Equatable {
         hasRival: Bool,
         windSeedOffset: Int,
         seed: UInt64,
+        windPattern: WindPattern = .uniform,
+        falconBehavior: FalconBehavior = .patrol,
+        obstacleCenterX: [Int32] = [],
+        obstacleCenterY: [Int32] = [],
+        obstacleRadius: [Int32] = [],
         contentVersion: Int = GameState.replayContentVersion
     ) {
         self.seed = seed
@@ -184,6 +206,11 @@ public struct GameState: Codable, Sendable, Equatable {
         self.falconCount = falconCount
         self.hasRival = hasRival
         self.windSeedOffset = windSeedOffset
+        self.windPattern = windPattern
+        self.falconBehavior = falconBehavior
+        self.obstacleCenterX = obstacleCenterX
+        self.obstacleCenterY = obstacleCenterY
+        self.obstacleRadius = obstacleRadius
 
         // Initialize birds: spread in a cluster near center.
         var rng = SeededRNG(seed: seed)
@@ -262,7 +289,8 @@ public struct GameState: Codable, Sendable, Equatable {
         // Seed the wind field (R-1): one vector per 256-unit cell.
         let (wx, wy) = GameState.windField(
             generation: 0, seed: seed, windSeedOffset: windSeedOffset,
-            worldWidth: worldWidth, worldHeight: worldHeight
+            worldWidth: worldWidth, worldHeight: worldHeight,
+            pattern: windPattern
         )
         self.windCellsX = wx
         self.windCellsY = wy
@@ -307,6 +335,11 @@ public struct GameState: Codable, Sendable, Equatable {
         && lhs.falcons == rhs.falcons
         && lhs.condenseCooldown == rhs.condenseCooldown
         && lhs.condenseActive == rhs.condenseActive
+        && lhs.windPattern == rhs.windPattern
+        && lhs.falconBehavior == rhs.falconBehavior
+        && lhs.obstacleCenterX == rhs.obstacleCenterX
+        && lhs.obstacleCenterY == rhs.obstacleCenterY
+        && lhs.obstacleRadius == rhs.obstacleRadius
     }
 }
 
@@ -328,10 +361,12 @@ extension GameState {
     }
 
     /// Regenerate the per-256-cell wind field (R-1) for `generation` = tick / 600.
-    /// Magnitude is 0.3 in Q16.16 (19661).
+    /// The base magnitude is 0.3 in Q16.16 (19661); `pattern` selects the
+    /// spatial structure (all integer math, INV-3).
     static func windField(
         generation: Int, seed: UInt64, windSeedOffset: Int,
-        worldWidth: Int32, worldHeight: Int32
+        worldWidth: Int32, worldHeight: Int32,
+        pattern: WindPattern = .uniform
     ) -> (x: [Int32], y: [Int32]) {
         let cols = max(1, Int(worldWidth) / GameState.windCellSize)
         let rows = max(1, Int(worldHeight) / GameState.windCellSize)
@@ -339,12 +374,58 @@ extension GameState {
         var xs = [Int32](repeating: 0, count: count)
         var ys = [Int32](repeating: 0, count: count)
         let magnitudeQ16: Int32 = 19_661 // 0.3 units/tick
-        for cell in 0..<count {
-            let angle = windCellAngle(cellIndex: cell, generation: generation, seed: seed, windSeedOffset: windSeedOffset)
-            let unit = unitVectorQ16(angle)
-            xs[cell] = (Int32(unit.x) * magnitudeQ16) >> 16
-            ys[cell] = (Int32(unit.y) * magnitudeQ16) >> 16
+        // Disjoint angle/magnitude hash slots so the patterns cannot alias
+        // the legacy per-cell uniform space.
+        let shearAngleSalt = 0x5EED_0000
+        let gustDirectionSalt = 0x6A57_0000
+        let gustMagnitudeSalt = 0x6A57_0001
+
+        switch pattern {
+        case .uniform:
+            for cell in 0..<count {
+                let angle = windCellAngle(cellIndex: cell, generation: generation, seed: seed, windSeedOffset: windSeedOffset)
+                let unit = unitVectorQ16(angle)
+                xs[cell] = (Int32(unit.x) * magnitudeQ16) >> 16
+                ys[cell] = (Int32(unit.y) * magnitudeQ16) >> 16
+            }
+        case .shear:
+            // One shared angle per row (P3 R-1): every cell in a row carries
+            // the identical vector, so the field forms horizontal bands.
+            for cell in 0..<count {
+                let row = cell / cols
+                let angle = windCellAngle(cellIndex: shearAngleSalt + row, generation: generation, seed: seed, windSeedOffset: windSeedOffset)
+                let unit = unitVectorQ16(angle)
+                xs[cell] = (Int32(unit.x) * magnitudeQ16) >> 16
+                ys[cell] = (Int32(unit.y) * magnitudeQ16) >> 16
+            }
+        case .gusts:
+            // One shared direction per generation; per-cell magnitude from
+            // 1/8 to 8/8 of the base strength (P3 R-1). All products widen
+            // to Int64: 65535 * 19661 fits Int64, not Int32.
+            let gustAngle = windCellAngle(cellIndex: gustDirectionSalt, generation: generation, seed: seed, windSeedOffset: windSeedOffset)
+            let unit = unitVectorQ16(gustAngle)
+            for cell in 0..<count {
+                let magSlot = windCellAngle(cellIndex: gustMagnitudeSalt + cell, generation: generation, seed: seed, windSeedOffset: windSeedOffset)
+                let scale = Int32(1 + (magSlot & 7)) // 1...8 eighths
+                let magnitude = Int32((Int64(magnitudeQ16) * Int64(scale)) >> 3)
+                xs[cell] = Int32((Int64(unit.x) * Int64(magnitude)) >> 16)
+                ys[cell] = Int32((Int64(unit.y) * Int64(magnitude)) >> 16)
+            }
         }
         return (xs, ys)
+    }
+
+    /// Recompute the wind cells for the generation the state's tick sits in
+    /// (P3). Used by the reducer on the regeneration boundary and by callers
+    /// that change `windPattern` on a live state.
+    public mutating func rebuildWindField() {
+        let (wx, wy) = GameState.windField(
+            generation: tick / GameState.windRegenTicks,
+            seed: seed, windSeedOffset: windSeedOffset,
+            worldWidth: worldWidth, worldHeight: worldHeight,
+            pattern: windPattern
+        )
+        windCellsX = wx
+        windCellsY = wy
     }
 }
