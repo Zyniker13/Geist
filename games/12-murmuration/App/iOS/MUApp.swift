@@ -9,7 +9,6 @@ struct MUApp: App {
             MenuView()
                 .environmentObject(debug)
                 .overlay(DebugGestureCatcher(onThreeFingerDoubleTap: { debug.toggle() }))
-                .task { debug.loadFromLaunchArguments() }
         }
     }
 }

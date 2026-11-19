@@ -226,7 +226,7 @@ final class RulesEngineTests: XCTestCase {
         }
         var rng = SeededRNG(seed: 5)
         let events = computeFalcons(state: &state, rng: &rng)
-        let dive = events.first { if case .diveStart(_, let sf) = $0 { return true }; return false }
+        let dive = events.first { if case .diveStart = $0 { return true }; return false }
         guard case .diveStart(_, let sf)? = dive else {
             return XCTFail("falcon should dive when an edge is in reach")
         }

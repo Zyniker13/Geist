@@ -1,52 +1,130 @@
 import SwiftUI
 import MUCore
+import MUContent
 
-/// Debug overlay state (S0.7): FPS, tick, seed, and state hash.
-///
-/// Values come from the running simulation once the core loop lands (P2); the seed and
-/// hash are live from P0 via the trivial-state harness.
+/// Debug overlay visibility state (S0.7), launched by `-uitest-overlay`,
+/// the three-finger double tap (iOS), or ⌘⇧D (macOS).
 @MainActor
 final class DebugState: ObservableObject {
     @Published var visible = false
-    @Published var fps = 0
-    @Published var tick = 0
     @Published var seed: UInt64 = 1
-    @Published var hash = ""
 
-    func loadFromLaunchArguments() {
-        let arguments = ProcessInfo.processInfo.arguments
+    init() {
+        applyLaunchFlags()
+    }
+
+    /// -uitest-overlay and -uitest-seed, applied at construction so the
+    /// overlay state does not wait for .task/.onAppear callbacks (which
+    /// never fired on the CI runner while body evaluation provably did).
+    private func applyLaunchFlags() {
+        let arguments = MULaunch.arguments()
         if arguments.contains("-uitest-overlay") {
             visible = true
         }
+        MULaunch.note(
+            "debugstate: overlayFlag=\(arguments.contains("-uitest-overlay")) visible=\(visible)"
+        )
         if let index = arguments.firstIndex(of: "-uitest-seed"), index + 1 < arguments.count,
-           let value = UInt64(arguments[index + 1]) {
+            let value = UInt64(arguments[index + 1])
+        {
             seed = value
         }
-        refreshHash()
     }
 
     func toggle() {
         visible.toggle()
     }
-
-    func refreshHash() {
-        hash = String(format: "%016llx", stateHash(TrivialState(seed: seed)))
-    }
 }
 
-/// The overlay itself: four monospaced rows over the scene, bottom-left.
-struct DebugOverlay: View {
-    @ObservedObject var debug: DebugState
+/// The live in-game overlay: FPS, tick, state hash, frame cost.
+///
+/// The model changes published state every frame, which re-evaluates any
+/// observing view every frame. On macOS that per-frame churn destabilized
+/// the accessibility tree on the CI runner (rows observed with empty
+/// labels, siblings dropping out). The overlay therefore holds no model
+/// observation: it samples the model on a 2 Hz task into local state, and
+/// its Equatable conformance keeps parent-driven re-evaluations from
+/// re-rendering the body. A sampled overlay still satisfies the gate
+/// cadence: FPS windows refresh at ~1 Hz and frame cost updates per frame.
+struct GameDebugOverlay: View, Equatable {
+    private struct Sample {
+        var fps = 0
+        var tick = 0
+        var hash = ""
+        var frameMs = 0.0
+    }
+
+    /// All parent-created instances are equal: the body reads only the
+    /// sampled state, so parent churn must not re-render it.
+    nonisolated static func == (lhs: Self, rhs: Self) -> Bool { true }
+
+    let model: GameModel
+    @State private var sample = Sample()
 
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text("FPS \(debug.fps)")
+            Text("FPS \(sample.fps)")
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel("FPS \(sample.fps)")
                 .accessibilityIdentifier("debug.fps")
-            Text("tick \(debug.tick)")
+            Text("tick \(sample.tick)")
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel("tick \(sample.tick)")
                 .accessibilityIdentifier("debug.tick")
-            Text("seed \(debug.seed)")
+            Text("hash \(sample.hash)")
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel("hash \(sample.hash)")
+                .accessibilityIdentifier("debug.hash")
+            Text("frame \(sample.frameMs, specifier: "%.2f")ms")
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel("frame \(sample.frameMs, specifier: "%.2f")ms")
+                .accessibilityIdentifier("debug.frame")
+        }
+        .font(.system(size: 11, weight: .semibold, design: .monospaced))
+        .foregroundStyle(.white)
+        .padding(6)
+        .background(Color.black.opacity(0.55))
+        .cornerRadius(6)
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("debug.overlay")
+        .task { await pollModel() }
+    }
+
+    /// Samples the model every 0.5 s until the overlay leaves the tree.
+    private func pollModel() async {
+        while !Task.isCancelled {
+            sample = Sample(
+                fps: model.fps,
+                tick: model.state.tick,
+                hash: model.hashLabel,
+                frameMs: model.frameMs
+            )
+            try? await Task.sleep(nanoseconds: 500_000_000)
+        }
+    }
+}
+
+/// The menu overlay (S0.7, P0 harness): trivial-state tick/seed/hash.
+struct MenuDebugOverlay: View {
+    var seed: UInt64
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text("FPS 0")
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel("FPS 0")
+                .accessibilityIdentifier("debug.fps")
+            Text("tick 0")
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel("tick 0")
+                .accessibilityIdentifier("debug.tick")
+            Text("seed \(seed)")
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel("seed \(seed)")
                 .accessibilityIdentifier("debug.seed")
-            Text("hash \(debug.hash)")
+            Text("hash \(String(format: "%016llx", stateHash(TrivialState(seed: seed))))")
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel("hash \(String(format: "%016llx", stateHash(TrivialState(seed: seed))))")
                 .accessibilityIdentifier("debug.hash")
         }
         .font(.system(size: 11, weight: .semibold, design: .monospaced))
@@ -59,11 +137,49 @@ struct DebugOverlay: View {
     }
 }
 
-/// P0 placeholder menu (S0.4): the app launches here until the core-loop slice in P2.
+/// The menu (S0.4): Play enters the P2 vertical slice.
 struct MenuView: View {
     @EnvironmentObject var debug: DebugState
+    // Startup state resolves at view-init time, not in .task/.onAppear:
+    // on the CI runner those callbacks never fired while body evaluation
+    // provably did (menu tests passed), so flag-driven state must not
+    // wait for them (docs/STATUS.md, run 44286953243).
+    @State private var playing: Bool
+    @State private var catalog: RegionCatalog
+
+    init() {
+        let arguments = MULaunch.arguments()
+        let autoPlay = arguments.contains("-uitest-play")
+        _playing = State(initialValue: autoPlay)
+        _catalog = State(
+            initialValue: (try? RegionCatalog.loadBundled()) ?? RegionCatalog(regions: [])
+        )
+        if autoPlay {
+            MUTrace.log("shell: launching play session args=\(arguments.joined(separator: " "))")
+        }
+    }
 
     var body: some View {
+        ZStack {
+            if playing {
+                PlayView(config: GameLaunchConfig.resolved(), catalog: catalog)
+            } else {
+                menu
+            }
+            if debug.visible && !playing {
+                VStack {
+                    Spacer()
+                    HStack {
+                        MenuDebugOverlay(seed: debug.seed)
+                        Spacer()
+                    }
+                    .padding(12)
+                }
+            }
+        }
+    }
+
+    private var menu: some View {
         ZStack {
             LinearGradient(
                 colors: [
@@ -85,27 +201,13 @@ struct MenuView: View {
                 Text("Steer a flock of thousands with sweeping gestures.")
                     .foregroundStyle(.white.opacity(0.85))
                 Button("Play") {
-                    // The playable slice arrives with P2.
+                    playing = true
                 }
                 .buttonStyle(.borderedProminent)
                 .accessibilityIdentifier("menu.play")
                 Spacer()
-                Text("Placeholder menu — core loop lands in P2")
-                    .font(.caption)
-                    .foregroundStyle(.white.opacity(0.65))
             }
             .padding(24)
-
-            VStack {
-                Spacer()
-                HStack {
-                    if debug.visible {
-                        DebugOverlay(debug: debug)
-                    }
-                    Spacer()
-                }
-                .padding(12)
-            }
         }
     }
 }
