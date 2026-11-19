@@ -100,7 +100,10 @@ public struct GameState: Codable, Sendable, Equatable {
     /// v4: P3 world features — obstacle circles, wind patterns, and falcon
     /// behavior modes joined the state (all with defaults that reproduce the
     /// v3 legacy field, but the JSON encoding grew, so hashes change).
-    public static let replayContentVersion = 4
+    /// v5: P3.2 solo objective — `soloTargetBirds` joined the state (default
+    /// 0 reproduces versus behavior, but the JSON encoding grew, so hashes
+    /// change).
+    public static let replayContentVersion = 5
 
     /// Content version for golden replays.
     public let contentVersion: Int
@@ -123,6 +126,11 @@ public struct GameState: Codable, Sendable, Equatable {
 
     /// Rival flock flag.
     public let hasRival: Bool
+
+    /// Solo objective target (R-13 / P3.2): the number of birds that must
+    /// settle inside a roost radius for the day to be won. `0` means a
+    /// versus region (roost tally rules).
+    public let soloTargetBirds: Int
 
     /// Wind-field pattern for this region (P3 R-1). Defaults to the legacy
     /// `uniform` field.
@@ -189,6 +197,7 @@ public struct GameState: Codable, Sendable, Equatable {
         roostRadius: [Int],
         falconCount: Int,
         hasRival: Bool,
+        soloTargetBirds: Int = 0,
         windSeedOffset: Int,
         seed: UInt64,
         windPattern: WindPattern = .uniform,
@@ -205,6 +214,7 @@ public struct GameState: Codable, Sendable, Equatable {
         self.boidsParams = boidsParams
         self.falconCount = falconCount
         self.hasRival = hasRival
+        self.soloTargetBirds = soloTargetBirds
         self.windSeedOffset = windSeedOffset
         self.windPattern = windPattern
         self.falconBehavior = falconBehavior
@@ -329,6 +339,7 @@ public struct GameState: Codable, Sendable, Equatable {
         && lhs.fields == rhs.fields
         && lhs.roosts == rhs.roosts
         && lhs.roostClaims == rhs.roostClaims
+        && lhs.soloTargetBirds == rhs.soloTargetBirds
         && lhs.mergeProximityStreak == rhs.mergeProximityStreak
         && lhs.windCellsX == rhs.windCellsX
         && lhs.windCellsY == rhs.windCellsY
