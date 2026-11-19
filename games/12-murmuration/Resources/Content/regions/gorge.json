@@ -1,0 +1,137 @@
+{
+  "id": "gorge",
+  "name": "Gorge",
+  "worldWidth": 2048,
+  "worldHeight": 1536,
+  "birdCount": 1400,
+  "falconCount": 1,
+  "hasRival": true,
+  "rivalStartBirds": 600,
+  "windSeedOffset": 68,
+  "seed": 55,
+  "roosts": [
+    {
+      "x": 500,
+      "y": 700,
+      "radius": 115
+    },
+    {
+      "x": 1550,
+      "y": 850,
+      "radius": 115
+    }
+  ],
+  "fields": [
+    {
+      "x": 1024,
+      "y": 450,
+      "radius": 125,
+      "richness": 70
+    },
+    {
+      "x": 1024,
+      "y": 1150,
+      "radius": 125,
+      "richness": 70
+    }
+  ],
+  "obstacles": [
+    {
+      "x": 700,
+      "y": 768,
+      "radius": 130
+    },
+    {
+      "x": 1350,
+      "y": 768,
+      "radius": 130
+    },
+    {
+      "x": 1024,
+      "y": 1350,
+      "radius": 85
+    }
+  ],
+  "windPattern": "gusts",
+  "falconBehavior": "patrol",
+  "palette": {
+    "skyTop": {
+      "r": 0.15,
+      "g": 0.14,
+      "b": 0.26,
+      "a": 1.0
+    },
+    "skyHigh": {
+      "r": 0.36,
+      "g": 0.33,
+      "b": 0.52,
+      "a": 1.0
+    },
+    "skyLow": {
+      "r": 0.7,
+      "g": 0.55,
+      "b": 0.62,
+      "a": 1.0
+    },
+    "skyBottom": {
+      "r": 0.92,
+      "g": 0.72,
+      "b": 0.55,
+      "a": 1.0
+    },
+    "hillFar": {
+      "r": 0.3,
+      "g": 0.28,
+      "b": 0.36,
+      "a": 1.0
+    },
+    "hillMid": {
+      "r": 0.2,
+      "g": 0.18,
+      "b": 0.26,
+      "a": 1.0
+    },
+    "hillNear": {
+      "r": 0.11,
+      "g": 0.1,
+      "b": 0.16,
+      "a": 1.0
+    },
+    "birdInk": {
+      "r": 0.106,
+      "g": 0.102,
+      "b": 0.133,
+      "a": 1.0
+    },
+    "birdHighlight": {
+      "r": 0.243,
+      "g": 0.361,
+      "b": 0.42,
+      "a": 1.0
+    },
+    "rival": {
+      "r": 0.353,
+      "g": 0.231,
+      "b": 0.165,
+      "a": 1.0
+    },
+    "fieldOchre": {
+      "r": 0.788,
+      "g": 0.639,
+      "b": 0.357,
+      "a": 1.0
+    },
+    "fieldGreen": {
+      "r": 0.494,
+      "g": 0.612,
+      "b": 0.416,
+      "a": 1.0
+    },
+    "falcon": {
+      "r": 0.13,
+      "g": 0.1,
+      "b": 0.08,
+      "a": 1.0
+    }
+  }
+}

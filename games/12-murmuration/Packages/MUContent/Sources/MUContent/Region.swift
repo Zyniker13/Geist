@@ -97,9 +97,11 @@ public struct RegionPalette: Codable, Sendable, Equatable {
 
     /// True when every color is valid.
     public var isValid: Bool {
-        [skyTop, skyHigh, skyLow, skyBottom, hillFar, hillMid, hillNear,
-         birdInk, birdHighlight, rival, fieldOchre, fieldGreen, falcon]
-            .allSatisfy(\.isValid)
+        [
+            skyTop, skyHigh, skyLow, skyBottom, hillFar, hillMid, hillNear,
+            birdInk, birdHighlight, rival, fieldOchre, fieldGreen, falcon,
+        ]
+        .allSatisfy(\.isValid)
     }
 }
 
@@ -132,6 +134,13 @@ public struct Region: Codable, Sendable, Equatable, Identifiable {
     public let fields: [FieldDef]
     /// Landscape palette.
     public let palette: RegionPalette
+    /// Static world obstacles (MU-P3.1): circular pillars the flock steers
+    /// around. Empty in regions authored before P3.
+    public let obstacles: [ObstacleDef]
+    /// Wind pattern (R-1) this region plays under.
+    public let windPattern: WindPattern
+    /// Falcon behavior (R-10) used by this region's falcons.
+    public let falconBehavior: FalconBehavior
 
     /// A roost placement.
     public struct RoostDef: Codable, Sendable, Equatable {
@@ -161,6 +170,19 @@ public struct Region: Codable, Sendable, Equatable, Identifiable {
         }
     }
 
+    /// A static circular obstacle placement (MU-P3.1).
+    public struct ObstacleDef: Codable, Sendable, Equatable {
+        public let x: Int32
+        public let y: Int32
+        public let radius: Int
+
+        public init(x: Int32, y: Int32, radius: Int) {
+            self.x = x
+            self.y = y
+            self.radius = radius
+        }
+    }
+
     public init(
         id: String,
         name: String,
@@ -174,7 +196,10 @@ public struct Region: Codable, Sendable, Equatable, Identifiable {
         seed: UInt64,
         roosts: [RoostDef],
         fields: [FieldDef],
-        palette: RegionPalette
+        palette: RegionPalette,
+        obstacles: [ObstacleDef] = [],
+        windPattern: WindPattern = .uniform,
+        falconBehavior: FalconBehavior = .patrol
     ) {
         self.id = id
         self.name = name
@@ -189,6 +214,52 @@ public struct Region: Codable, Sendable, Equatable, Identifiable {
         self.roosts = roosts
         self.fields = fields
         self.palette = palette
+        self.obstacles = obstacles
+        self.windPattern = windPattern
+        self.falconBehavior = falconBehavior
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case id, name, worldWidth, worldHeight, birdCount, falconCount
+        case hasRival, rivalStartBirds, windSeedOffset, seed
+        case roosts, fields, palette, obstacles, windPattern, falconBehavior
+    }
+
+    /// JSON decoding defaults let regions authored before P3 load unchanged:
+    /// no obstacles, uniform wind, patrol falcons. Unknown feature strings
+    /// throw, so bad content never reaches the sim.
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(String.self, forKey: .id)
+        name = try container.decode(String.self, forKey: .name)
+        worldWidth = try container.decode(Int32.self, forKey: .worldWidth)
+        worldHeight = try container.decode(Int32.self, forKey: .worldHeight)
+        birdCount = try container.decode(Int.self, forKey: .birdCount)
+        falconCount = try container.decode(Int.self, forKey: .falconCount)
+        hasRival = try container.decode(Bool.self, forKey: .hasRival)
+        rivalStartBirds = try container.decodeIfPresent(Int.self, forKey: .rivalStartBirds) ?? 0
+        windSeedOffset = try container.decode(Int.self, forKey: .windSeedOffset)
+        seed = try container.decode(UInt64.self, forKey: .seed)
+        roosts = try container.decode([RoostDef].self, forKey: .roosts)
+        fields = try container.decode([FieldDef].self, forKey: .fields)
+        palette = try container.decode(RegionPalette.self, forKey: .palette)
+        obstacles = try container.decodeIfPresent([ObstacleDef].self, forKey: .obstacles) ?? []
+        windPattern = try container.decodeIfPresent(WindPattern.self, forKey: .windPattern) ?? .uniform
+        falconBehavior = try container.decodeIfPresent(FalconBehavior.self, forKey: .falconBehavior) ?? .patrol
+    }
+
+    /// A copy with different obstacles — validation tests build variants.
+    public func copy(obstacles: [ObstacleDef]) -> Region {
+        Region(
+            id: id, name: name,
+            worldWidth: worldWidth, worldHeight: worldHeight,
+            birdCount: birdCount, falconCount: falconCount,
+            hasRival: hasRival, rivalStartBirds: rivalStartBirds,
+            windSeedOffset: windSeedOffset, seed: seed,
+            roosts: roosts, fields: fields, palette: palette,
+            obstacles: obstacles, windPattern: windPattern,
+            falconBehavior: falconBehavior
+        )
     }
 
     /// Build a fresh GameState for this region.
@@ -209,7 +280,12 @@ public struct Region: Codable, Sendable, Equatable, Identifiable {
             falconCount: falconCount,
             hasRival: hasRival,
             windSeedOffset: windSeedOffset,
-            seed: seed
+            seed: seed,
+            windPattern: windPattern,
+            falconBehavior: falconBehavior,
+            obstacleCenterX: obstacles.map(\.x),
+            obstacleCenterY: obstacles.map(\.y),
+            obstacleRadius: obstacles.map { Int32($0.radius) }
         )
     }
 
@@ -222,7 +298,9 @@ public struct Region: Codable, Sendable, Equatable, Identifiable {
             birdCount: count, falconCount: falconCount,
             hasRival: false, rivalStartBirds: 0,
             windSeedOffset: windSeedOffset, seed: seed,
-            roosts: roosts, fields: fields, palette: palette
+            roosts: roosts, fields: fields, palette: palette,
+            obstacles: obstacles, windPattern: windPattern,
+            falconBehavior: falconBehavior
         )
     }
 
@@ -234,7 +312,9 @@ public struct Region: Codable, Sendable, Equatable, Identifiable {
             birdCount: birdCount, falconCount: falconCount,
             hasRival: hasRival, rivalStartBirds: rivalStartBirds,
             windSeedOffset: windSeedOffset, seed: newSeed,
-            roosts: roosts, fields: fields, palette: palette
+            roosts: roosts, fields: fields, palette: palette,
+            obstacles: obstacles, windPattern: windPattern,
+            falconBehavior: falconBehavior
         )
     }
 }

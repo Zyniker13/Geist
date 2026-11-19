@@ -46,6 +46,20 @@
       "richness": 50
     }
   ],
+  "obstacles": [
+    {
+      "x": 400,
+      "y": 1250,
+      "radius": 85
+    },
+    {
+      "x": 1700,
+      "y": 350,
+      "radius": 95
+    }
+  ],
+  "windPattern": "uniform",
+  "falconBehavior": "patrol",
   "palette": {
     "skyTop": {
       "r": 0.18,

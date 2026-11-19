@@ -40,9 +40,10 @@ public struct RegionCatalog: Sendable {
 
     /// Load the bundled regions from `Resources/Content/regions`.
     public static func loadBundled() throws -> RegionCatalog {
-        guard let url = Bundle.main.url(
-            forResource: "regions", withExtension: "json", subdirectory: "Content"
-        ) ?? Bundle.main.url(forResource: "regions", withExtension: "json")
+        guard
+            let url = Bundle.main.url(
+                forResource: "regions", withExtension: "json", subdirectory: "Content"
+            ) ?? Bundle.main.url(forResource: "regions", withExtension: "json")
         else {
             // Fall back to a directory lookup.
             if let dir = Bundle.main.url(forResource: "regions", withExtension: nil) {
@@ -100,7 +101,8 @@ public struct RegionCatalog: Sendable {
                 problems.append("roost[\(i)] radius must be > 0")
             }
             if roost.x < 0 || roost.x >= region.worldWidth
-                || roost.y < 0 || roost.y >= region.worldHeight {
+                || roost.y < 0 || roost.y >= region.worldHeight
+            {
                 problems.append("roost[\(i)] center is out of bounds")
             }
         }
@@ -112,8 +114,22 @@ public struct RegionCatalog: Sendable {
                 problems.append("field[\(i)] richness must be > 0")
             }
             if field.x < 0 || field.x >= region.worldWidth
-                || field.y < 0 || field.y >= region.worldHeight {
+                || field.y < 0 || field.y >= region.worldHeight
+            {
                 problems.append("field[\(i)] center is out of bounds")
+            }
+        }
+        if region.obstacles.count > 16 {
+            problems.append("obstacles must be <= 16 (kernel capacity)")
+        }
+        for (i, obstacle) in region.obstacles.enumerated() {
+            if obstacle.radius <= 0 {
+                problems.append("obstacle[\(i)] radius must be > 0")
+            }
+            if obstacle.x < 0 || obstacle.x >= region.worldWidth
+                || obstacle.y < 0 || obstacle.y >= region.worldHeight
+            {
+                problems.append("obstacle[\(i)] center is out of bounds")
             }
         }
         return problems
