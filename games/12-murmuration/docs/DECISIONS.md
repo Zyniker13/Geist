@@ -515,3 +515,33 @@ Architecture decision records. Every deviation from the roadmap is recorded here
   behavior. The app now loads the real shipped regions and the tutorial
   region from the bundle. The directory-based `load(from:)` is unchanged and
   still used by the package tests against the source tree.
+
+## ADR-0025: Versus mode suppresses the R-5 auto-merge because the day-start split starts both player flocks coincident
+
+- **Status:** Accepted (P3.3)
+- **Context:** MU-P3.3 adds local two-flock versus on one iPad. The mode is
+  built on the existing sub-flock engine: the day starts with
+  `RegionStarter`'s split (the rival carve-out), and each human player owns
+  the touches nearest their flock. R-5 auto-merge runs inside every tick and
+  merges two sub-flocks whose centroids stay within 200 units for 30
+  consecutive ticks. Both versus flocks start at the same world point, so
+  without intervention R-5 collapses them back into one flock before either
+  player can steer away — the versus UI test showed the second leader vanish
+  by tick ~30. Two latent engine bugs surfaced on the way: `splitFlock` never
+  gave the new flock a leader path (its birds steered toward the world
+  origin via the `leader(for:)` fallback until a driver set a path — masked
+  in solo/tutorial by drivers that steer immediately), and the leader debug
+  row hid pathless flocks.
+- **Decision:** `GameState` gains `versusMergeSuppressed` (default false);
+  `computeMerge` resets its streak and returns no events while the flag is
+  set; `GameModel` sets it once per fresh day in versus mode. The
+  `splitFlock` reducer now seeds the new flock's leader path anchored at its
+  birds' centroid, so every split leaves both flocks steerable and visible.
+  Solo, tutorial, and rival behavior are unchanged: R-5 still fires when two
+  flocks hold proximity without suppression.
+- **Consequences:** Two MUCore regression tests pin the behavior
+  (`testVersusMergeSuppressionBlocksR5`,
+  `testR5AutoMergeStillFiresWithoutSuppression`) plus the split-anchor test
+  (`testSplitFlockAnchorsNewFlockLeaderAtItsCentroid`). The new state field
+  grows the replay encoding, so `replayContentVersion` bumped to 7 and the
+  twenty committed goldens were regenerated with the sim tool.

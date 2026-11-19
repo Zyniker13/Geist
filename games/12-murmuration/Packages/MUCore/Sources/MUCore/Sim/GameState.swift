@@ -53,6 +53,12 @@ public struct GameState: Codable, Sendable, Equatable {
     /// `mergeProximity` (R-5): the merge fires after `mergeThresholdTicks`.
     public var mergeProximityStreak: Int
 
+    /// Versus mode suppresses the R-5 auto-merge (MU-P3.3): the day-start
+    /// split defines the two player flocks, and both start coincident at the
+    /// world center — the proximity rule would collapse them back into one
+    /// flock within 30 ticks, before either player can steer away.
+    public var versusMergeSuppressed: Bool
+
     /// Wind vectors per 256-unit cell, row-major (R-1). Regenerated
     /// deterministically every 600 ticks (20 s at 30 Hz) from the region seed.
     public var windCellsX: [Int32]
@@ -103,7 +109,13 @@ public struct GameState: Codable, Sendable, Equatable {
     /// v5: P3.2 solo objective — `soloTargetBirds` joined the state (default
     /// 0 reproduces versus behavior, but the JSON encoding grew, so hashes
     /// change).
-    public static let replayContentVersion = 5
+    /// v6: P3.3 versus fix — `splitFlock` now seeds the new flock's leader
+    /// path at its centroid (regression: pathless flocks steered toward the
+    /// world origin), so replay trajectories with a split diverge.
+    /// v7: P3.3 versus fix — `versusMergeSuppressed` joined the state (R-5
+    /// auto-merge collapsed the versus flocks; default false reproduces the
+    /// v6 behavior, but the JSON encoding grew, so hashes change).
+    public static let replayContentVersion = 7
 
     /// Content version for golden replays.
     public let contentVersion: Int
@@ -198,6 +210,7 @@ public struct GameState: Codable, Sendable, Equatable {
         falconCount: Int,
         hasRival: Bool,
         soloTargetBirds: Int = 0,
+        versusMergeSuppressed: Bool = false,
         windSeedOffset: Int,
         seed: UInt64,
         windPattern: WindPattern = .uniform,
@@ -215,6 +228,7 @@ public struct GameState: Codable, Sendable, Equatable {
         self.falconCount = falconCount
         self.hasRival = hasRival
         self.soloTargetBirds = soloTargetBirds
+        self.versusMergeSuppressed = versusMergeSuppressed
         self.windSeedOffset = windSeedOffset
         self.windPattern = windPattern
         self.falconBehavior = falconBehavior
@@ -340,6 +354,7 @@ public struct GameState: Codable, Sendable, Equatable {
         && lhs.roosts == rhs.roosts
         && lhs.roostClaims == rhs.roostClaims
         && lhs.soloTargetBirds == rhs.soloTargetBirds
+        && lhs.versusMergeSuppressed == rhs.versusMergeSuppressed
         && lhs.mergeProximityStreak == rhs.mergeProximityStreak
         && lhs.windCellsX == rhs.windCellsX
         && lhs.windCellsY == rhs.windCellsY

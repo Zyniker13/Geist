@@ -243,7 +243,7 @@ public func effectiveParams(_ state: GameState) -> BoidsParams {
 /// function of the state so the streak is unit-testable.
 public func computeMerge(state: inout GameState) -> [GameEvent] {
     var events: [GameEvent] = []
-    guard state.subFlockCount > 1 else {
+    guard state.subFlockCount > 1, !state.versusMergeSuppressed else {
         state.mergeProximityStreak = 0
         return events
     }
@@ -305,6 +305,14 @@ public func applyAction(_ action: GameAction, to state: GameState) -> (GameState
                 reassigned += 1
             }
         }
+        // The new flock needs its own leader path anchored at its birds'
+        // centroid: without one, the kernel's `leader(for:)` fallback steers
+        // it toward the world origin until a driver sets a real path (the
+        // versus mode has no rival driver to mask this).
+        let (cx, cy) = centroidOfFlock(
+            birds: state.birds, assignments: state.subFlockAssignments, subFlock: newSF
+        )
+        state.leaderPaths.append(LeaderPath(points: [Waypoint(x: cx, y: cy)]))
         events.append(.split(from: from, into: newSF))
 
     case .condense(let sf):

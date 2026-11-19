@@ -45,6 +45,69 @@ final class ReducerIntegrationTests: XCTestCase {
         XCTAssertLessThan(flock1, 100)
     }
 
+    /// MU-P3.3 regression: a split must leave the new flock with its own
+    /// leader path anchored at its birds' centroid. Without it the kernel's
+    /// per-flock fallback steers the pathless flock toward the world origin
+    /// (leader(for:) falls back to (0, 0) when `leaderPaths` is short), which
+    /// stranded the versus flock in a corner until a driver set a path.
+    func testSplitFlockAnchorsNewFlockLeaderAtItsCentroid() {
+        let state = makeState(birdCount: 100)
+        let (after, _) = applyAction(.splitFlock(from: 0, ratio: 0.5), to: state)
+        XCTAssertEqual(after.leaderPaths.count, 2, "the new flock needs its own leader path")
+        let (cx, cy) = centroidOfFlock(
+            birds: after.birds, assignments: after.subFlockAssignments, subFlock: 1
+        )
+        let attractor = after.leaderPaths[1].attractor()
+        XCTAssertEqual(attractor.x, cx, "flock 1's leader anchors at its centroid")
+        XCTAssertEqual(attractor.y, cy, "flock 1's leader anchors at its centroid")
+        XCTAssertNotEqual(attractor.x, 0, "the centroid anchor must not collapse to the origin fallback")
+        XCTAssertNotEqual(attractor.y, 0, "the centroid anchor must not collapse to the origin fallback")
+    }
+
+    /// MU-P3.3: versus mode suppresses the R-5 auto-merge — the day-start
+    /// split defines the two player flocks and both start coincident, so
+    /// without suppression they collapse back into one within 30 ticks.
+    func testVersusMergeSuppressionBlocksR5() {
+        var state = makeState(birdCount: 40)
+        state.versusMergeSuppressed = true
+        let (split, _) = applyAction(.splitFlock(from: 0, ratio: 0.5), to: state)
+        state = split
+        // Pin the two flocks well inside merge proximity (R-5 test style:
+        // flock 0 at x=900, flock 1 at x=1000).
+        for i in 0..<state.birds.count {
+            state.birds.posX[i] = state.subFlockAssignments[i] == 0 ? 900 : 1000
+            state.birds.posY[i] = 768
+            state.birds.velX[i] = 0
+            state.birds.velY[i] = 0
+        }
+        for _ in 0..<(GameState.mergeThresholdTicks + 10) {
+            let events = computeMerge(state: &state)
+            XCTAssertTrue(events.isEmpty, "suppressed versus mode must not merge")
+        }
+        XCTAssertEqual(state.subFlockCount, 2, "suppression must keep both flocks alive")
+        XCTAssertEqual(state.mergeProximityStreak, 0, "suppressed mode must not build a streak")
+    }
+
+    /// The suppression must not leak into normal play: without it, R-5 still
+    /// merges two flocks that hold proximity.
+    func testR5AutoMergeStillFiresWithoutSuppression() {
+        var state = makeState(birdCount: 40)
+        let (split, _) = applyAction(.splitFlock(from: 0, ratio: 0.5), to: state)
+        state = split
+        for i in 0..<state.birds.count {
+            state.birds.posX[i] = state.subFlockAssignments[i] == 0 ? 900 : 1000
+            state.birds.posY[i] = 768
+            state.birds.velX[i] = 0
+            state.birds.velY[i] = 0
+        }
+        var mergeEvents = 0
+        for _ in 0..<(GameState.mergeThresholdTicks + 10) {
+            mergeEvents += computeMerge(state: &state).count
+        }
+        XCTAssertEqual(mergeEvents, 1, "R-5 must still merge coincident flocks in normal play")
+        XCTAssertEqual(state.subFlockCount, 1)
+    }
+
     /// INV-1 property test: bird count changes only through growth, falcons,
     /// and starvation events — never silently.
     func testINV1BirdCountChangesOnlyViaCountEvents() {
