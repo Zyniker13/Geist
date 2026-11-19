@@ -3,22 +3,17 @@
 This file is the single place to resume the program from. Keep every field below current after every meaningful step (see "Resuming After a Restart" in `ROADMAP.md`). Per-game detail (gate evidence and sign-offs) lives in each game's `docs/STATUS.md`.
 
 - **Current game:** Murmuration (`12-murmuration`)
-- **Phase:** P3 (Content and Systems) — starting on `murmur/phase/P3-content-systems`.
-- **Last done:** G2 PASSED. Run 44449181682 (c95c3c7) green on all six
-  jobs; the CI artifact's first AX-tree dump gave ground truth for the
-  overlay rows (macOS `.accessibilityElement()` yields a leaf `Other`
-  with only the identifier — no label/value/children), so ADR-0019 was
-  rewritten: rows are `Text(...).accessibilityElement(children:
-  .ignore).accessibilityLabel(text).accessibilityIdentifier(id)`.
-  ADR-0020 records that local GUI apps expose zero AX windows in this
-  session (game build, TextEdit, Finder alike; screencapture refused) —
-  local mac UI runs are impossible; mac UI evidence is CI-only (issue
-  #13 commented). Tag `murmur/gate-G2-pass` pushed; merged to main.
-- **Next step:** P3 on a fresh branch: MU-P3.1 six regions with
-  obstacles + wind patterns and two falcon behaviors, MU-P3.2 five-step
-  tutorial + solo-objective regions, MU-P3.3 local two-flock versus on
-  one iPad. Then G3 (counts; content-lint 0 errors; tutorial + versus
-  UI tests).
+- **Phase:** P3 (Content and Systems) — on `murmur/phase/P3-content-systems`.
+- **Last done:** P3.1 core implemented and pushed (9a5ff4b): obstacle
+  circles + avoidance/containment in the boids kernel, three integer
+  wind patterns (`uniform` bit-identical to legacy, `shear`, `gusts`
+  1/8..8/8 with Int64-widened products), falcon `lurk` behavior (96-unit
+  orbit on the largest field, closest-edge dive). 11 new P3 tests green
+  locally (MUCore: 78 tests, 0 failures); `make lint` exit 0; the 20
+  engine goldens regenerated at replayContentVersion 4 (ADR-0021).
+  iOS sim `xcodebuild test` running locally in the background.
+- **Next step:** verify local iOS sim test + branch CI green, merge to
+  main; then MU-P3.2 (tutorial) and MU-P3.3 (local versus), then G3.
 - **Blocked on:** nothing.
 
 ## Environment Check
