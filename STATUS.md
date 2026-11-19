@@ -17,10 +17,13 @@ This file is the single place to resume the program from. Keep every field below
   5/5 incl. tutorial + versus; pause-hash + perf gate), `make lint` 0
   violations, content-lint 9 files / 0 errors. G3 counts verified (6
   regions, 2 falcon behaviors, rival flock, 5 tutorial steps) — evidence in
-  the game's `docs/STATUS.md`.
-- **Next step:** watch branch CI for `ea3c1b7`, then merge P3 to `main`,
-  push the `murmur/gate-G3-pass` tag, and start MU-P4.1 (rival AI with
-  three difficulties, falcon tuning, balance report).
+  the game's `docs/STATUS.md`. CI on `ea3c1b7` failed only in
+  `testVersusTwoFlockRouting` (twice): a stale-position race between the
+  leaders-row parse and the touch on the slow CI runner — fixed by pausing
+  the sim around each parse+drag (`fd46dc7`, ADR-0026), local rerun green.
+- **Next step:** watch branch CI for `fd46dc7` (run in progress), then
+  merge P3 to `main`, push the `murmur/gate-G3-pass` tag, and start MU-P4.1
+  (rival AI with three difficulties, falcon tuning, balance report).
 - **Blocked on:** nothing.
 
 ## Environment Check
@@ -148,3 +151,4 @@ One line per meaningful step, newest last: date, phase or game and stage, what w
   (MUCore 90, MUContent 31, MUAI 26, MURender 12), `make lint` 0; full
   `make test` + commit next.
 - 2026-11-19: Murmuration P3.3 complete on `murmur/phase/P3-content-systems` (`ea3c1b7`): local two-flock versus with player-visible menu entry, nearest-flock touch routing (iOS) and option-drag (Mac); ADR-0025 records the two engine fixes — `splitFlock` seeds the new flock's leader path at its centroid, and `versusMergeSuppressed` blocks the R-5 auto-merge that collapsed the coincident versus flocks; replay contentVersion 7 with 20 regenerated goldens. `make test` green (MUCore 93, MUGateTests 5/5 incl. tutorial + versus), `make lint` 0. G3 gate checks (counts, content-lint 0, tutorial + versus UI tests) verified with output in the game's docs/STATUS.md; tag `murmur/gate-G3-pass` after merge.
+- 2026-11-19: CI red on `ea3c1b7` (`testVersusTwoFlockRouting` stale-position race on slow runner); fixed by pausing around parse+drag (`fd46dc7`, ADR-0026), local rerun green, awaiting CI.
