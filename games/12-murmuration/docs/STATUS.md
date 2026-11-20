@@ -827,6 +827,14 @@ standoff) and rival interaction, measured next with the real
 `sim --balance` harness (which includes the rival; the probe does
 not).
 
+**Lint fix (2026-11-20, 501df5d):** the branch CI lint job failed with 11
+violations in the new code; all fixed — `ForageScoring.directive` now takes
+`flock: (x:y:birds:)` and `pilot: PilotPrior` (parameter count), `planHard`
+takes a `leader` tuple, the two condense tests moved to
+`AutoplayerCondenseTests`, over-long diagnostic lines split, alignments and
+an empty enum argument fixed. MUAI 52/52, MUCore 99/99, MUContent 37/37,
+`make lint` clean.
+
 **G4 balance sweep (pending re-run):** `sim --balance <tier> --days 500` over all
 six regions, output `docs/balance/<tier>.csv`. Targets: player win rate
 ≈ 85% gentle / 60% normal / 35% hard, dusk flock 1,000–2,500, falcon

@@ -5,19 +5,18 @@ This file is the single place to resume the program from. Keep every field below
 - **Current game:** Murmuration (`12-murmuration`)
 - **Phase:** P4 (AI Opponents) in progress on
   `murmur/phase/P4-ai-opponents`; P3 complete, G3 gate pass tagged.
-- **Last done:** Forage economy rework committed on
-  `murmur/phase/P4-ai-opponents` (ADR-0029/0030): the autoplayer now
-  commits to its field (finishing meals), starves only on food a field
-  holds now (≥150, never projected regrowth — the crumb-trap that
-  pinned every field's regrowth ramp), parks at the nearest point
-  clearing all fields by radius+200 (the old centroid push-out swung
-  and dragged the flock across fields), and re-issues condense while
-  its target holds. MUAI 53/53, MUCore, MUContent green. Earlier in
-  P4.1: rival AI tiers + picker (see the game's docs/STATUS.md).
-- **Next step:** re-run `sim --balance` (3 tiers, includes the rival,
-  which the probe lacked); check dusk flock 1,000–2,500 and the
-  85/60/35 targets; the staggered rotation is the next lever if the
-  dusk floor is still missed; then app build + UI tests, CI.
+- **Last done:** Branch CI lint job failed on the new code (11
+  violations); all fixed (501df5d): the forage directive's centroid and
+  bird count bundle into a `flock` tuple and the pilot's last decision
+  into `PilotPrior` (parameter counts ≤5), `planHard` takes a leader
+  tuple, the two condense tests moved to `AutoplayerCondenseTests`
+  (class body ≤400 lines), over-long diagnostic lines split,
+  alignments fixed. MUAI 52/52, MUCore 99/99, MUContent 37/37 green;
+  `make lint` clean locally. Gentle balance sweep running (~2/6
+  regions); normal and hard chained behind it.
+- **Next step:** when the sweeps finish, record the CSVs and win rates
+  in docs/balance + docs/STATUS.md, check dusk flock 1,000–2,500 and
+  the 85/60/35 targets, then app build + UI tests, merge P4.1.
 - **Blocked on:** nothing.
 
 ## Environment Check
