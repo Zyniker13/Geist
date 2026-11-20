@@ -220,22 +220,36 @@ final class MUGateTests: XCTestCase {
     /// chosen tier reaches the game (the debug overlay reports it) with the
     /// rival flock alive.
     func testDifficultyPickerSelectsTier() throws {
+        // The menu must be up (no -uitest-play auto-start), with the debug
+        // overlay enabled for the play session that follows.
         let app = XCUIApplication()
+        app.launchArguments = [
+            "-uitest-overlay",
+            "-uitest-region", "meadow",
+            "-uitest-days", "3",
+            "-uitest-trace",
+        ]
         app.launch()
 
         let play = app.buttons["menu.play"]
         XCTAssertTrue(play.waitForExistence(timeout: 10), "menu Play button missing")
 
-        let picker = app.otherElements["menu.difficulty"]
-        XCTAssertTrue(picker.waitForExistence(timeout: 5), "difficulty picker missing")
+        // iOS maps the SwiftUI segmented picker to SegmentedControl (with
+        // Button segments); fall back to any type in case a future OS maps
+        // it differently.
+        let picker = app.descendants(matching: .any)["menu.difficulty"].firstMatch
+        XCTAssertTrue(picker.waitForExistence(timeout: 10), "difficulty picker missing")
+        let segment: (String) -> XCUIElement = { tier in
+            picker.descendants(matching: .button)[tier].firstMatch
+        }
         for tier in ["Gentle", "Normal", "Hard"] {
             XCTAssertTrue(
-                picker.children(matching: .any)[tier].exists,
+                segment(tier).waitForExistence(timeout: 5),
                 "picker missing \(tier) segment"
             )
         }
 
-        picker.children(matching: .any)["Hard"].tap()
+        segment("Hard").tap()
         play.tap()
 
         let diffRow = GameUITest.overlayRow(app: app, identifier: "debug.difficulty")
