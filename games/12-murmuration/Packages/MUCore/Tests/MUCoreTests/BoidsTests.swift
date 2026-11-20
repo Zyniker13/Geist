@@ -104,12 +104,15 @@ final class BoidsTests: XCTestCase {
 
     /// Regression test: Swift binds `<<`/`>>` tighter than `*`//`, so an
     /// unparenthesized `unit << 16 * weight >> 16` applies `weight >> 16`
-    /// (whole units only: 1.2 became 1.0, 0.8 and 0.6 became 0). The leader
-    /// force on a bird cruising at 30 units must add exactly 1.2 units/tick.
+    /// (whole units only: 1.2 became 1.0, 0.8 and 0.6 became 0). A bird
+    /// cruising at 30 units/tick outside the brake radius must gain exactly
+    /// leaderWeight 1.2 units/tick; inside the radius the P4 brake instead
+    /// removes exactly 0.5 of the bird's velocity per tick.
     func testR6LeaderForceMatchesWeight() {
         let width: Int32 = 2048, height: Int32 = 1536
-        var birds = BirdSoA(capacity: 1)
-        birds.append(x: 1000, y: 768, velXQ: 1_966_080, velYQ: 0, subFlock: 0) // 30 units/tick, +x
+        var birds = BirdSoA(capacity: 2)
+        birds.append(x: 600, y: 768, velXQ: 1_966_080, velYQ: 0, subFlock: 0) // 900 from leader: no brake
+        birds.append(x: 1000, y: 768, velXQ: 1_966_080, velYQ: 0, subFlock: 0) // 500 from leader: braked
         var hash = SpatialHash(width: width, height: height, cellSize: 96)
         hash.rebuild(posX: birds.posX, posY: birds.posY, count: birds.count)
         stepBirds(
@@ -119,6 +122,35 @@ final class BoidsTests: XCTestCase {
         )
         // 30 units + leaderWeight 1.2 (78_643 Q16.16), still inside [18, 40].
         XCTAssertEqual(birds.velX[0], 1_966_080 + 78_643)
+        // Braked: −0.5 × 30 (983_040 Q16.16) then + leaderWeight 1.2.
+        XCTAssertEqual(birds.velX[1], 1_061_683)
+    }
+
+    // Regression (P4 diagnostics): the leader force was a constant-magnitude
+    // pull with no braking, so a parked flock swung past the leader point and
+    // back forever — the centroid pendulummed ±800 units and the flock could
+    // never hold a roost or a standoff. Inside `leaderBrakeRadius` the leader
+    // now also damps velocity, so the flock converges onto the point and holds.
+    func testFlockConvergesToStationaryLeader() {
+        let flock = makeFlock(count: 250, seed: 19)
+        var birds = flock.birds
+        var hash = flock.hash
+        var worst = Int64(0)
+        for tick in 0..<600 {
+            hash.rebuild(posX: birds.posX, posY: birds.posY, count: birds.count)
+            stepBirds(
+                birds: &birds, hash: &hash,
+                frame: frame(width: flock.width, height: flock.height),
+                params: BoidsParams()
+            )
+            if tick >= 400 {
+                worst = max(worst, centroidDistance(of: birds))
+            }
+        }
+        XCTAssertLessThan(
+            worst, 80,
+            "parked flock never settled on the leader: worst offset \(worst)"
+        )
     }
 
     // INV-2: no bird may leave the world bounds.
@@ -193,9 +225,13 @@ final class BoidsTests: XCTestCase {
         XCTAssertLessThan(dOn, dOff, "leader attraction did not pull the flock closer than the leaderless control: \(dOn) vs \(dOff)")
     }
 
-    /// Wind must have a causal steering effect: with identical seed, spawn, and
-    /// ticks, the run with wind active drifts farther downwind (along (1,1))
-    /// than the windless control run.
+    /// Wind must have a causal steering effect: with identical seed, spawn,
+    /// leader point, and ticks, the run with wind active ends up displaced
+    /// downwind (along (1,1)) relative to the windless control. The probe is
+    /// taken mid-travel toward an upwind leader point: the P4 leader brake
+    /// holds a parked flock at its leader point (where wind's residual effect
+    /// is only a few units), so the parked case cannot distinguish wind from
+    /// cluster-shape variance.
     func testR1WindDriftsFlockDownwind() {
         let flock = makeFlock(count: 250, seed: 19)
         var withWind = flock.birds
@@ -215,23 +251,30 @@ final class BoidsTests: XCTestCase {
             // scaled by √2 to stay in integers: (dx + dy) grows downwind.
             return cx + cy
         }
-        for _ in 0..<300 {
+        for _ in 0..<120 {
             withHash.rebuild(posX: withWind.posX, posY: withWind.posY, count: withWind.count)
             stepBirds(
                 birds: &withWind, hash: &withHash,
-                frame: frame(windX: 655_360, windY: 655_360, width: flock.width, height: flock.height),
+                frame: frame(
+                    leaderX: 400, leaderY: 400,
+                    windX: 655_360, windY: 655_360,
+                    width: flock.width, height: flock.height
+                ),
                 params: BoidsParams()
             )
             withoutHash.rebuild(posX: withoutWind.posX, posY: withoutWind.posY, count: withoutWind.count)
             stepBirds(
                 birds: &withoutWind, hash: &withoutHash,
-                frame: frame(width: flock.width, height: flock.height),
+                frame: frame(leaderX: 400, leaderY: 400, width: flock.width, height: flock.height),
                 params: BoidsParams()
             )
         }
         let driftOn = downwind(withWind)
         let driftOff = downwind(withoutWind)
-        XCTAssertGreaterThan(driftOn - driftOff, 100, "wind did not drift the flock downwind: \(driftOn) vs \(driftOff)")
+        XCTAssertGreaterThan(
+            driftOn - driftOff, 100,
+            "wind did not displace the traveling flock downwind: \(driftOn) vs \(driftOff)"
+        )
     }
 
     // Regression: an ultra-dense flock (thousands of neighbors inside the
@@ -255,9 +298,13 @@ final class BoidsTests: XCTestCase {
         )
         // All birds are co-located and aligned +x: separation and cohesion
         // contribute zero (zero displacement), alignment is +x at full
-        // weight, so every bird stays at max speed heading +x.
+        // weight. The spawn point is also the default leader point, so the
+        // P4 leader brake damps speed below maxSpeed — the guarded invariant
+        // is that the alignment sum never overflows and every bird keeps
+        // heading +x within its clamped speed range.
         for i in 0..<n {
-            XCTAssertEqual(birds.velX[i], 2_621_440)
+            XCTAssertGreaterThan(birds.velX[i], 0)
+            XCTAssertLessThanOrEqual(birds.velX[i], 2_621_440)
             XCTAssertEqual(birds.velY[i], 0)
         }
     }

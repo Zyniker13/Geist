@@ -119,7 +119,10 @@ public struct GameState: Codable, Sendable, Equatable {
     /// v8: P4 energy fix — feeding gain now counts only the birds inside the
     /// field's radius (R-8), not the whole sub-flock, so replay trajectories
     /// diverge wherever a flock grazed a field from outside (see ADR-0028).
-    public static let replayContentVersion = 8
+    /// v9: P4 leader brake — inside `leaderBrakeRadius` of the leader point
+    /// the bird's velocity is damped each tick, so a parked flock settles
+    /// onto the point instead of penduluming around it forever.
+    public static let replayContentVersion = 9
 
     /// Content version for golden replays.
     public let contentVersion: Int

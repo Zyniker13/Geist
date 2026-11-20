@@ -18,6 +18,13 @@ public struct BoidsParams: Sendable, Codable {
     public var edgeMargin: Int32 = 64         // steer inward within this band
     public var edgeWeight: Int32 = 65_536     // 1.0
     public var obstacleWeight: Int32 = 98_304 // 1.5 — P3: rock beats flock
+    /// Leader brake (P4): inside this radius of the leader point the bird's
+    /// velocity is damped each tick so the flock settles onto the point
+    /// instead of swinging past it and back forever (undamped pendulum).
+    public var leaderBrakeRadius: Int32 = 800
+    /// Fraction (Q16.16) of the bird's velocity removed per tick inside the
+    /// brake radius: 32_768 = 0.5.
+    public var leaderBrakeQ: Int32 = 32_768
 
     public init() {}
 }
@@ -272,6 +279,15 @@ public func stepBirds(
         let leaderF = normalizedScaled(leaderDX, leaderDY, params.leaderWeight)
         forceX += leaderF.x
         forceY += leaderF.y
+        // Leader brake (P4): near the leader point, damp velocity each tick so
+        // a bird converges onto the point instead of overshooting and swinging
+        // back forever. Far away the pull is unchanged, so travel is untouched.
+        let brake2 = Int64(params.leaderBrakeRadius)
+            * Int64(params.leaderBrakeRadius)
+        if leaderDX * leaderDX + leaderDY * leaderDY < brake2 {
+            forceX -= (Int64(birds.velX[i]) * Int64(params.leaderBrakeQ)) >> 16
+            forceY -= (Int64(birds.velY[i]) * Int64(params.leaderBrakeQ)) >> 16
+        }
         let (windX, windY) = frame.wind(at: px, py)
         if windX != 0 || windY != 0 {
             let windF = normalizedScaled(Int64(windX), Int64(windY), params.windWeight)
