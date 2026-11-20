@@ -865,3 +865,21 @@ the new binary — treated as a timing flake, re-verified. CI on
 81580cd: lint/build/ui-test jobs all pass; only the SPM `test` job
 failed on the pre-ramp merge test (fixed by 7318e7d). Balance sweeps
 re-running on the ramped binary.
+
+**Hard-tier crash fixed (2026-11-20, 335fc3c):** the G4 hard-tier
+balance sweep (500 days × 6 regions) crashed deterministically with
+exit 133 (SIGTRAP, Swift runtime failure: Index out of range) in
+`computeRoostClaims(state:)` called from `applyTick` — trap at
+line 94 `state.roostClaims[roostIdx][majority] += 1`. Root cause: the
+hard rival splits, minting a third sub-flock, but claim rows were
+hard-sized `[0, 0]` at state creation (R-12). Gentle/normal never
+split → no crash. The ramped-brake commit (7318e7d) un-starved the
+flock, enabling the split path for the first time in the hard tier.
+Fix: `Reducer.splitFlock` now appends a zero slot to every roost
+claim row so the third sub-flock's dusk claim does not trap. Test:
+`testR12ThirdFlockClaimsDoNotTrapAfterSplit` (RED → GREEN). Golden:
+v10→v11 (20 replays re-anchored with wider claim rows). Verified:
+`sim --balance hard --days 240 --regions commons` exits 0 (was
+crash). All packages green: MUCore 101/101, MUAI 53/53, MUContent
+37/37, MURender 12/12, MUAudio 1/1, MUPlatform 1/1; `make lint`
+clean. CI green on 335fc3c. Balance sweep to be re-run.
