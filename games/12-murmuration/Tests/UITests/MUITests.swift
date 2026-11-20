@@ -215,4 +215,68 @@ final class MUGateTests: XCTestCase {
             "flock 1 leader did not move right: \(leaders)"
         )
     }
+
+    /// MU-P4.1: the menu's difficulty picker offers all three tiers, and the
+    /// chosen tier reaches the game (the debug overlay reports it) with the
+    /// rival flock alive.
+    func testDifficultyPickerSelectsTier() throws {
+        let app = XCUIApplication()
+        app.launch()
+
+        let play = app.buttons["menu.play"]
+        XCTAssertTrue(play.waitForExistence(timeout: 10), "menu Play button missing")
+
+        let picker = app.otherElements["menu.difficulty"]
+        XCTAssertTrue(picker.waitForExistence(timeout: 5), "difficulty picker missing")
+        for tier in ["Gentle", "Normal", "Hard"] {
+            XCTAssertTrue(
+                picker.children(matching: .any)[tier].exists,
+                "picker missing \(tier) segment"
+            )
+        }
+
+        picker.children(matching: .any)["Hard"].tap()
+        play.tap()
+
+        let diffRow = GameUITest.overlayRow(app: app, identifier: "debug.difficulty")
+        XCTAssertTrue(
+            diffRow.waitForExistence(timeout: 30),
+            "difficulty row never appeared after Play"
+        )
+        let diff = GameUITest.rowText(of: diffRow)
+        XCTAssertTrue(diff.contains("hard"), "expected hard tier in overlay, got: \(diff)")
+
+        // The rival flock is alive: both leaders present.
+        let leadersRow = GameUITest.overlayRow(app: app, identifier: "debug.leaders")
+        var leaders = ""
+        for _ in 0..<30 {
+            leaders = GameUITest.rowText(of: leadersRow)
+            if leaders.contains("L0 ") && leaders.contains("L1 ") { break }
+            Thread.sleep(forTimeInterval: 1)
+        }
+        XCTAssertTrue(
+            leaders.contains("L0 ") && leaders.contains("L1 "),
+            "rival flock not present: \(leaders)"
+        )
+    }
+
+    /// MU-P4.1: the -uitest-difficulty launch argument overrides the region
+    /// default end to end.
+    func testDifficultyLaunchArgument() throws {
+        let app = XCUIApplication()
+        GameUITest.launch(
+            app: app,
+            region: "meadow",
+            days: 1,
+            difficulty: "gentle"
+        )
+
+        let diffRow = GameUITest.overlayRow(app: app, identifier: "debug.difficulty")
+        XCTAssertTrue(
+            diffRow.waitForExistence(timeout: 30),
+            "difficulty row never appeared"
+        )
+        let diff = GameUITest.rowText(of: diffRow)
+        XCTAssertTrue(diff.contains("gentle"), "expected gentle tier in overlay, got: \(diff)")
+    }
 }

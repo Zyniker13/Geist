@@ -3,27 +3,21 @@
 This file is the single place to resume the program from. Keep every field below current after every meaningful step (see "Resuming After a Restart" in `ROADMAP.md`). Per-game detail (gate evidence and sign-offs) lives in each game's `docs/STATUS.md`.
 
 - **Current game:** Murmuration (`12-murmuration`)
-- **Phase:** P3 complete; G3 gate pass tagged — next P4 (AI Opponents) on
-  `murmur/phase/P4-ai-opponents`.
-- **Last done:** MU-P3.3 local two-flock versus built and green (`ea3c1b7`,
-  pushed). Player-visible menu entry (`menu.versus`), nearest-flock touch
-  routing on iOS (tie-break to flock 0 at the coincident start),
-  option-drag routing on Mac, rival AI skipped in versus. Two engine bugs
-  fixed (ADR-0025): `splitFlock` now anchors the new flock's leader at its
-  centroid; versus sets `versusMergeSuppressed` so R-5 auto-merge cannot
-  collapse the day-start split (replay contentVersion 7, 20 goldens
-  regenerated). `make test` green end-to-end (MUCore 93, MUContent 33,
-  MURender 26, MUAudio 12, MUAI 15, MUPlatform 13, MUMeta 20; MUGateTests
-  5/5 incl. tutorial + versus; pause-hash + perf gate), `make lint` 0
-  violations, content-lint 9 files / 0 errors. G3 counts verified (6
-  regions, 2 falcon behaviors, rival flock, 5 tutorial steps) — evidence in
-  the game's `docs/STATUS.md`. CI on `ea3c1b7` failed only in
-  `testVersusTwoFlockRouting` (twice): a stale-position race between the
-  leaders-row parse and the touch on the slow CI runner — fixed by pausing
-  the sim around each parse+drag (`fd46dc7`, ADR-0026), local rerun green.
-- **Next step:** watch branch CI for `fd46dc7` (run in progress), then
-  merge P3 to `main`, push the `murmur/gate-G3-pass` tag, and start MU-P4.1
-  (rival AI with three difficulties, falcon tuning, balance report).
+- **Phase:** P4 (AI Opponents) in progress on
+  `murmur/phase/P4-ai-opponents`; P3 complete, G3 gate pass tagged.
+- **Last done:** Forage economy rework committed on
+  `murmur/phase/P4-ai-opponents` (ADR-0029/0030): the autoplayer now
+  commits to its field (finishing meals), starves only on food a field
+  holds now (≥150, never projected regrowth — the crumb-trap that
+  pinned every field's regrowth ramp), parks at the nearest point
+  clearing all fields by radius+200 (the old centroid push-out swung
+  and dragged the flock across fields), and re-issues condense while
+  its target holds. MUAI 53/53, MUCore, MUContent green. Earlier in
+  P4.1: rival AI tiers + picker (see the game's docs/STATUS.md).
+- **Next step:** re-run `sim --balance` (3 tiers, includes the rival,
+  which the probe lacked); check dusk flock 1,000–2,500 and the
+  85/60/35 targets; the staggered rotation is the next lever if the
+  dusk floor is still missed; then app build + UI tests, CI.
 - **Blocked on:** nothing.
 
 ## Environment Check
@@ -51,7 +45,7 @@ If Xcode 27.2 or an iOS 26-or-later runtime is missing and cannot be installed w
 | Order | No. | Folder | Game | State | Last Gate | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | 04 | [`04-night-market`](games/04-night-market/ROADMAP.md) | Night Market | Done | `night-market/gate-G10-pass` | All gates G0–G10 tagged; TestFlight/App Store steps owner-only in #12 |
-| 2 | 12 | [`12-murmuration`](games/12-murmuration/ROADMAP.md) | Murmuration | In Progress (P3) | `murmur/gate-G2-pass` | G2 pass: 6/6 CI jobs green (run 44449181682); autoplay, perf (ADR-0017 display-slot budget), pause/resume hash all green; ADR-0019 rewritten from the CI AX-tree dump (rows = `children: .ignore` leaves with explicit labels); ADR-0020 mac UI evidence CI-only |
+| 2 | 12 | [`12-murmuration`](games/12-murmuration/ROADMAP.md) | Murmuration | In Progress (P4) | `murmur/gate-G3-pass` | P4.1 in progress: rival AI + picker done; forage economy rework (ADR-0029/0030) landed; balance sweep re-run pending |
 | 3 | 02 | [`02-orrery`](games/02-orrery/ROADMAP.md) | Orrery | Not Started | — | — |
 | 4 | 14 | [`14-beacon-coast`](games/14-beacon-coast/ROADMAP.md) | Beacon Coast | Not Started | — | — |
 | 5 | 13 | [`13-terrace`](games/13-terrace/ROADMAP.md) | Terrace | Not Started | — | — |
@@ -152,3 +146,4 @@ One line per meaningful step, newest last: date, phase or game and stage, what w
   `make test` + commit next.
 - 2026-11-19: Murmuration P3.3 complete on `murmur/phase/P3-content-systems` (`ea3c1b7`): local two-flock versus with player-visible menu entry, nearest-flock touch routing (iOS) and option-drag (Mac); ADR-0025 records the two engine fixes — `splitFlock` seeds the new flock's leader path at its centroid, and `versusMergeSuppressed` blocks the R-5 auto-merge that collapsed the coincident versus flocks; replay contentVersion 7 with 20 regenerated goldens. `make test` green (MUCore 93, MUGateTests 5/5 incl. tutorial + versus), `make lint` 0. G3 gate checks (counts, content-lint 0, tutorial + versus UI tests) verified with output in the game's docs/STATUS.md; tag `murmur/gate-G3-pass` after merge.
 - 2026-11-19: CI red on `ea3c1b7` (`testVersusTwoFlockRouting` stale-position race on slow runner); fixed by pausing around parse+drag (`fd46dc7`, ADR-0026), local rerun green, awaiting CI.
+- 2026-11-19: P3 merged to main (`fd46dc7`), tag `murmur/gate-G3-pass` pushed, CI green (run 44622087845). P4 started on `murmur/phase/P4-ai-opponents`: MU-P4.1 implementation in progress (three-tier `RivalDifficulty`, region wiring, `GentleRival` rewrite, menu picker + `-uitest-difficulty`, `debug.difficulty` overlay, two new UI tests); engine bugs fixed with regressions (`splitFlock` world-count split, R-13 `rivalBirds` placeholder, R-5 rival-mode merge); AI budget verified in Release (rival 1.76 µs/tick ≤ 0.5 ms/tick); G4 balance sweep (3 tiers × 500 days × 6 regions) running.

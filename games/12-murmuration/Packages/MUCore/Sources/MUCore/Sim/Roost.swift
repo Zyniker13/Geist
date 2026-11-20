@@ -178,9 +178,10 @@ public func checkVictory(state: inout GameState) -> ([RoostEvent], RoostEvent?) 
     if rivalWon > playerWon {
         return (events, .victory(winner: 1))
     }
-    // R-13 tiebreak: more birds alive takes the day.
-    let playerBirds = state.birds.count
-    let rivalBirds = 0 // the rival flock arrives with P4; until then the player wins ties on birds
+    // R-13 tiebreak: more birds alive takes the day (exact ties go to the
+    // rival — P4 ships the rival flock, so ties are counted per flock).
+    let playerBirds = state.subFlockAssignments.reduce(0) { $0 + ($1 == 0 ? 1 : 0) }
+    let rivalBirds = state.subFlockAssignments.count - playerBirds
     if playerBirds > rivalBirds {
         return (events, .victory(winner: 0))
     }

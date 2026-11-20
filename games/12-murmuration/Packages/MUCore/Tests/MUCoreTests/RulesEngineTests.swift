@@ -175,6 +175,33 @@ final class RulesEngineTests: XCTestCase {
         XCTAssertEqual(state.subFlockCount, 1, "merge fires on the 30rd consecutive proximity tick")
     }
 
+    /// MU-P4.1 regression: in rival mode the day-start split puts the rival's
+    /// flock (1) coincident with the player's (0); the R-5 auto-merge must not
+    /// absorb the rival's flock into the player's. GameModel sets
+    /// `versusMergeSuppressed` for rival mode; this pins the reducer side.
+    func testR5MergeSuppressedWhenFlagSet() {
+        var state = makeState(birdCount: 40, seed: 9)
+        let (split, _) = applyAction(.splitFlock(from: 0, ratio: 0.5), to: state)
+        state = split
+        XCTAssertEqual(state.subFlockCount, 2)
+        for i in 0..<state.birds.count {
+            state.birds.posY[i] = 1000
+            state.birds.velX[i] = 0
+            state.birds.velY[i] = 0
+        }
+        for i in 0..<state.birds.count {
+            state.birds.posX[i] = state.subFlockAssignments[i] == 0 ? 900 : 1000
+        }
+        state.versusMergeSuppressed = true
+        var mergeEvents = 0
+        for _ in 1...40 {
+            let events = computeMerge(state: &state)
+            mergeEvents += events.count
+        }
+        XCTAssertEqual(mergeEvents, 0, "suppressed state never merges")
+        XCTAssertEqual(state.subFlockCount, 2, "both flocks survive the proximity window")
+    }
+
     func testR5ProximityBreakResetsStreak() {
         var state = makeState(birdCount: 40, seed: 9)
         let (split, _) = applyAction(.splitFlock(from: 0, ratio: 0.5), to: state)
@@ -395,6 +422,18 @@ final class RulesEngineTests: XCTestCase {
         let (_, victory) = checkVictory(state: &state)
         guard case .victory(let winner)? = victory else { return XCTFail("expected victory") }
         XCTAssertEqual(winner, 0, "1–1 in roosts: the player has birds alive, the rival has none")
+    }
+
+    func testR13TieGoesToRivalWhenRivalHasMoreBirds() {
+        var state = makeState(birdCount: 10, roostCount: 2)
+        state.roostClaims = [[5, 0], [0, 5]]
+        for i in 0..<state.subFlockAssignments.count {
+            state.subFlockAssignments[i] = i < 4 ? 0 : 1
+            state.birds.subFlock[i] = state.subFlockAssignments[i]
+        }
+        let (_, victory) = checkVictory(state: &state)
+        guard case .victory(let winner)? = victory else { return XCTFail("expected victory") }
+        XCTAssertEqual(winner, 1, "1–1 in roosts with the rival holding 6 birds vs 4: rival wins the tiebreak")
     }
 
     func testR13PointTieLeavesRoostUnclaimed() {

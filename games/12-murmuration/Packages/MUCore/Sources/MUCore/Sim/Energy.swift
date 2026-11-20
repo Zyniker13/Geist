@@ -84,21 +84,29 @@ public func computeFeeding(state: inout GameState, rng: inout SeededRNG) -> [Ene
         // in a nearly-full field go to whichever flock is visited first), so
         // the candidate list must be a deterministically ordered array.
         var subFlocksInField: [UInt8] = []
+        var birdsInField: [Int] = []
         for (birdIdx, assignment) in state.subFlockAssignments.enumerated() {
             let bx = state.birds.posX[birdIdx]
             let by = state.birds.posY[birdIdx]
             let dx = bx - field.centerX
             let dy = by - field.centerY
-            if dx * dx + dy * dy <= field.radius * field.radius,
-               !subFlocksInField.contains(assignment) {
+            guard dx * dx + dy * dy <= field.radius * field.radius else { continue }
+            if let idx = subFlocksInField.firstIndex(of: assignment) {
+                birdsInField[idx] += 1
+            } else {
                 subFlocksInField.append(assignment)
+                birdsInField.append(1)
             }
         }
         subFlocksInField.sort()
 
         for sf in subFlocksInField where field.currentDepletion < field.maxDepletion {
-            // Feed: gain energy proportional to bird count and field richness.
-            let birdCount = countBirdsInFlock(assignments: state.subFlockAssignments, subFlock: sf)
+            // Feed: gain energy proportional to the birds actually inside the
+            // field's radius and the field richness (R-8), not the whole
+            // sub-flock — a lone straggler grazing the edge must not drain the
+            // field at the full flock's rate (see ADR-0028).
+            let idx = subFlocksInField.firstIndex(of: sf)!
+            let birdCount = birdsInField[idx]
             let gain = min(birdCount * field.richness / 10, field.maxDepletion - field.currentDepletion)
             if gain > 0 {
                 state.energy[Int(sf)] = min(GameState.maxEnergy, state.energy[Int(sf)] + gain)

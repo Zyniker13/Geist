@@ -4,6 +4,7 @@
 // debug overlay. Shared between iOS and macOS; only the surface type differs.
 
 import SwiftUI
+import MUCore
 import MUContent
 
 /// Launch-time configuration for a play session (UI-test harness and menu).
@@ -22,6 +23,9 @@ struct GameLaunchConfig {
     /// is human-driven (no GentleRival) and each touch routes to the nearest
     /// flock.
     var versus = false
+    /// The rival pilot's difficulty tier (MU-P4.1); nil keeps the region
+    /// default.
+    var rivalDifficulty: RivalDifficulty?
 
     /// Parse the effective UI-test flags (file config on macOS, else argv).
     static func resolved() -> GameLaunchConfig {
@@ -42,6 +46,10 @@ struct GameLaunchConfig {
         if args.contains("-uitest-hash") { config.hashUpdates = true }
         if args.contains("-uitest-tutorial") { config.tutorial = true }
         if args.contains("-uitest-versus") { config.versus = true }
+        if let difficulty = value("-uitest-difficulty"),
+           let tier = RivalDifficulty(rawValue: difficulty) {
+            config.rivalDifficulty = tier
+        }
         if let seed = value("-uitest-seed"), let n = UInt64(seed) { config.seed = n }
         return config
     }
@@ -92,7 +100,8 @@ struct PlayView: View {
                 autoplay: config.autoplay,
                 ticksPerFrame: config.ticksPerFrame,
                 tutorial: tutorial,
-                versus: config.versus
+                versus: config.versus,
+                rivalDifficulty: config.rivalDifficulty
             ))
         // Applied after init via the view's task (published-mutable only).
         _pendingPauseAt = State(initialValue: config.pauseAt)

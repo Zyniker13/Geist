@@ -53,10 +53,11 @@ public struct GameState: Codable, Sendable, Equatable {
     /// `mergeProximity` (R-5): the merge fires after `mergeThresholdTicks`.
     public var mergeProximityStreak: Int
 
-    /// Versus mode suppresses the R-5 auto-merge (MU-P3.3): the day-start
-    /// split defines the two player flocks, and both start coincident at the
-    /// world center — the proximity rule would collapse them back into one
-    /// flock within 30 ticks, before either player can steer away.
+    /// Versus and rival modes suppress the R-5 auto-merge (MU-P3.3, MU-P4.1):
+    /// the day-start split defines the two flocks, and both start coincident
+    /// at the world center — the proximity rule would collapse them back into
+    /// one flock within 30 ticks. In versus that merges the two players; in
+    /// rival mode it would absorb the rival's flock into the player's.
     public var versusMergeSuppressed: Bool
 
     /// Wind vectors per 256-unit cell, row-major (R-1). Regenerated
@@ -115,7 +116,10 @@ public struct GameState: Codable, Sendable, Equatable {
     /// v7: P3.3 versus fix — `versusMergeSuppressed` joined the state (R-5
     /// auto-merge collapsed the versus flocks; default false reproduces the
     /// v6 behavior, but the JSON encoding grew, so hashes change).
-    public static let replayContentVersion = 7
+    /// v8: P4 energy fix — feeding gain now counts only the birds inside the
+    /// field's radius (R-8), not the whole sub-flock, so replay trajectories
+    /// diverge wherever a flock grazed a field from outside (see ADR-0028).
+    public static let replayContentVersion = 8
 
     /// Content version for golden replays.
     public let contentVersion: Int

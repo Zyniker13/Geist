@@ -53,6 +53,7 @@ struct GameDebugOverlay: View, Equatable {
         var hash = ""
         var frameMs = 0.0
         var leaders = ""
+        var difficulty = ""
     }
 
     /// All parent-created instances are equal: the body reads only the
@@ -80,6 +81,12 @@ struct GameDebugOverlay: View, Equatable {
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel("frame \(sample.frameMs, specifier: "%.2f")ms")
                 .accessibilityIdentifier("debug.frame")
+            if !sample.difficulty.isEmpty {
+                Text("diff \(sample.difficulty)")
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel("diff \(sample.difficulty)")
+                    .accessibilityIdentifier("debug.difficulty")
+            }
             if !sample.leaders.isEmpty {
                 Text(sample.leaders)
                     .accessibilityElement(children: .ignore)
@@ -105,7 +112,8 @@ struct GameDebugOverlay: View, Equatable {
                 tick: model.state.tick,
                 hash: model.hashLabel,
                 frameMs: model.frameMs,
-                leaders: Self.leaderLabel(model.state)
+                leaders: Self.leaderLabel(model.state),
+                difficulty: model.region.hasRival ? model.rivalDifficulty.rawValue : ""
             )
             try? await Task.sleep(nanoseconds: 500_000_000)
         }
@@ -164,6 +172,8 @@ struct MenuView: View {
     // wait for them (docs/STATUS.md, run 44286953243).
     @State private var playing: Bool
     @State private var versusMode = false
+    /// The menu's rival-difficulty choice (MU-P4.1).
+    @State private var difficultyMode: RivalDifficulty = .gentle
     @State private var catalog: RegionCatalog
 
     init() {
@@ -199,10 +209,12 @@ struct MenuView: View {
     }
 
     /// The launch config with the menu's versus choice applied (the flag
-    /// channel still wins for UI-test launches).
+    /// overrides argv's `-uitest-versus` when set from the menu).
     private var launchConfig: GameLaunchConfig {
         var config = GameLaunchConfig.resolved()
         if versusMode { config.versus = true }
+        // An explicit UI-test flag wins over the menu picker default.
+        config.rivalDifficulty = config.rivalDifficulty ?? difficultyMode
         return config
     }
 
@@ -241,6 +253,17 @@ struct MenuView: View {
                 }
                 .buttonStyle(.bordered)
                 .accessibilityIdentifier("menu.versus")
+                // Rival difficulty (MU-P4.1): the tier overrides the region's
+                // default. Regions without a rival ignore it.
+                Picker("Rival difficulty", selection: $difficultyMode) {
+                    Text("Gentle").tag(RivalDifficulty.gentle)
+                    Text("Normal").tag(RivalDifficulty.normal)
+                    Text("Hard").tag(RivalDifficulty.hard)
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+                .frame(maxWidth: 320)
+                .accessibilityIdentifier("menu.difficulty")
                 Spacer()
             }
             .padding(24)

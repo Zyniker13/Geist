@@ -738,3 +738,97 @@ Evidence (local, 2026-11-18):
   (App Store Connect / TestFlight items remain maintainer issues; G3 has no
   owner-only steps). Gate tagged `murmur/gate-G3-pass`.
 - Next: P4 AI opponents (MU-P4.1).
+
+### P4.1 — Three-tier rival AI (in progress, 2026-11-19)
+
+Implementation on `murmur/phase/P4-ai-opponents` (uncommitted):
+
+- **`RivalDifficulty`** (MUCore `Sim/RivalDifficulty.swift`): `gentle`,
+  `normal`, `hard` with per-tier cadences — gentle
+  (`forageInterval 480`, `fleeInterval 60`, `fleeRadius 320`,
+  `standoffDistance 640`), normal (`300/45/360/520`), hard
+  (`240/30/400/380`). Hard alone runs a staged dusk split
+  (`splitStage` routing to two roost targets) once the flock has at
+  least `splitMinBirds` (500), contesting two roosts as MU-P4.1
+  specifies; save/resume decodes legacy saves as gentle with unset
+  split state.
+- **Region wiring:** `Region.rivalDifficulty` (flat JSON key, default
+  `gentle`, decode throws on unknown tiers) decoded in MUContent; all
+  six shipped regions set explicitly
+  (`meadow`, `ridge` gentle; `fenlands`, `gorge` normal; `commons`,
+  `delta` hard — the default menu region is gentle).
+  `RivalDifficultyDecodingTests` locks the shipped tiers, the gentle
+  default, and the unknown-tier failure.
+- **`GentleRival` rewrite** (MUAI): tier-driven cadences, hard split
+  action, falcon-avoidance standoff, forage/flee/roost behavior per tier.
+- **Player-visible picker:** menu segmented control `menu.difficulty`
+  (Shell), `GameModel` takes `rivalDifficulty` (falls back to the region
+  default), `-uitest-difficulty <tier>` launch arg (PlayView),
+  `debug.difficulty` overlay row (rival regions only).
+- **UI tests (MUITests):** `testDifficultyPickerSelectsTier` (picker
+  offers all three tiers; selecting Hard reaches the game and the rival
+  flock is alive) and `testDifficultyLaunchArgument`
+  (`-uitest-difficulty gentle` end to end).
+
+Engine bugs found by the P4.1 tests and fixed, each with a regression
+test:
+
+1. **`splitFlock` used the whole-world bird count** to size the split,
+   which emptied the rival flock (a sub-flock is a subset of the world).
+   Now computed from the source flock's own count
+   (`ReducerTests.testSplitFlockSizesFromSourceFlock`).
+2. **R-13 tiebreak still carried the P3 `rivalBirds = 0` placeholder**,
+   so a tied day always went to the player. Now counts live rival birds
+   from `subFlockAssignments` (`RulesEngineTests` R-13 tiebreak cases).
+3. **R-5 auto-merge collapsed the rival flock in rival mode** (flocks
+   start coincident; the 30-tick proximity merge absorbed all 300 rival
+   birds by tick 480 in the balance harness). `versusMergeSuppressed` is
+   now set for rival mode as well (GameModel + sim harness;
+   `testR5MergeRequires30TickProximity` updated).
+
+**AI budget (G4 check, Release build):** `sim --balance normal --days 2
+--regions meadow` reports `autoplayerNsPerTick=68, rivalNsPerTick=1756`
+(≈ 0.068 µs and 1.76 µs per tick) — both far under the 0.5 ms/tick
+budget. (The CSV header previously mislabeled the columns as µs; fixed to
+ns.)
+
+### P4.1 — Forage economy rework (2026-11-20, ADR-0029/0030)
+
+The dusk flock still collapsed in the balance setup, so the forage
+directive was reworked before the sweep could mean anything
+(ADR-0029, ADR-0030 in `docs/DECISIONS.md`):
+
+- **Commitment:** the autoplayer holds its current field while it is
+  worth a trip, or — starving — while any food remains (finish the
+  meal); the starve branch flies only for food a field holds now
+  (≥ 150), never projected regrowth (nibbling a ramped crumb restarts
+  its ramp and pins every field at a trickle).
+- **Standoff:** deterministic grid scan — nearest point clearing all
+  fields by radius+200 (was: centroid push-out that swung and dragged
+  the flock across fields, grazing them); the directive reuses a
+  still-clear point.
+- **Condense by day (ADR-0030):** the autoplayer re-issues condense
+  whenever the target holds and the 120-tick cooldown has lapsed; a
+  parked cloud mills within ~200 units, so standoffMargin is 200.
+- New RED→GREEN tests: starve standoff, crumb refusal, meal
+  finishing, near standoff, day condense; `skipsRepath`/
+  `holdsWhileFoodRemains` updated to the no-repath contract.
+- MUAI 53/53, MUCore, MUContent all green.
+
+**Diagnostics (temporary, uncommitted at this point):**
+`TravelDiagnosticsAI` (MUAI) runs an AI day with `MU_AI=1` and a
+parked-cloud probe without it; during the work its `applyAction`
+results were discarded, which had invalidated earlier traces (fixed).
+The fixed AI probe on the commons settles into a strip→park→strip
+pulse holding ~850–1,200 birds with the bank cycling 0–600; the
+dusk target (1,000–2,500) is close but not yet reliably met — the
+remaining levers are the staggered rotation (never waiting at a far
+standoff) and rival interaction, measured next with the real
+`sim --balance` harness (which includes the rival; the probe does
+not).
+
+**G4 balance sweep (pending re-run):** `sim --balance <tier> --days 500` over all
+six regions, output `docs/balance/<tier>.csv`. Targets: player win rate
+≈ 85% gentle / 60% normal / 35% hard, dusk flock 1,000–2,500, falcon
+losses 5–20% of peak. Results and the balance report to be recorded here
+when the sweep completes.

@@ -19,19 +19,17 @@ public struct Autoplayer: Codable, Equatable, Sendable {
     /// difference is taken, so the sentinel stays far from the edges.
     static let noTick = -1_000_000
 
-    /// Ticks between forage re-decisions.
-    public var forageInterval: Int
-    /// Tick of the last issued (or deliberately skipped) forage decision.
-    var lastForageTick: Int
     /// The waypoint of the last issued path, if any.
     var lastTarget: Waypoint?
+    /// The flock's standoff waypoint while it waits for fields to re-arm,
+    /// if any.
+    var lastStandoff: Waypoint?
     /// Whether this dusk already received its roost path.
     var issuedDuskPath: Bool
 
-    public init(forageInterval: Int = 480) {
-        self.forageInterval = forageInterval
-        self.lastForageTick = Self.noTick
+    public init() {
         self.lastTarget = nil
+        self.lastStandoff = nil
         self.issuedDuskPath = false
     }
 
@@ -41,7 +39,6 @@ public struct Autoplayer: Codable, Equatable, Sendable {
         // the per-day flags whenever daytime is observed.
         if state.tick < GameState.duskStart {
             issuedDuskPath = false
-            if lastForageTick > state.tick { lastForageTick = Self.noTick }
         }
 
         if state.isDusk {
@@ -52,19 +49,56 @@ public struct Autoplayer: Codable, Equatable, Sendable {
 
     // MARK: - Daytime: forage
 
+    /// Re-decides the forage target every tick. The 480-tick interval this
+    /// once used let the flock sit on a field its last gulp had emptied:
+    /// each trickle of regrowth was eaten immediately, restarting the
+    /// field's 100-tick regrowth ramp, so the flock starved on a trickle.
+    /// Every-tick re-decision leaves a spent field at once; the hysteresis
+    /// bonus in `ForageScoring` keeps the choice stable while food lasts.
     private mutating func forageAction(_ state: GameState) -> GameAction? {
-        guard state.tick - lastForageTick >= forageInterval else { return nil }
         let (cx, cy) = centroid(state, subFlock: 0)
-        guard let field = bestField(state, nearX: cx, nearY: cy) else {
-            // Every field is spent; hold the current path.
-            lastForageTick = state.tick
+        let birds = countBirdsInFlock(
+            assignments: state.subFlockAssignments, subFlock: 0
+        )
+        switch ForageScoring.directive(
+            state,
+            bank: state.energy[0],
+            nearX: cx,
+            nearY: cy,
+            birds: birds,
+            current: lastTarget,
+            standoff: lastStandoff
+        ) {
+        case .hold:
+            // No fields at all; hold the current path.
+            return condenseIfAvailable(state)
+        case .standoff(let point):
+            // Stand clear of regrowing fields so no straggler grazes one
+            // and restarts its ramp. Re-issuing the same path would
+            // teleport the leader, so only a new standoff point issues.
+            lastStandoff = point
+            if point == lastTarget { return condenseIfAvailable(state) }
+            lastTarget = point
+            return .setLeaderPath(subFlock: 0, waypoints: [point])
+        case .forage(let point):
+            lastStandoff = nil
+            if point == lastTarget { return condenseIfAvailable(state) }
+            lastTarget = point
+            return .setLeaderPath(subFlock: 0, waypoints: [point])
+        }
+    }
+
+    /// A condense while none is active or cooling down. The day cloud
+    /// stretches as it flies and grazes fields it passes, restarting
+    /// their regrowth ramps; doubling cohesion keeps it compact so
+    /// travel is faster and standing off actually stands clear
+    /// (ADR-0030). Only issued when no path change is due, so it never
+    /// delays steering.
+    private func condenseIfAvailable(_ state: GameState) -> GameAction? {
+        guard state.condenseActive == 0, state.condenseCooldown == 0 else {
             return nil
         }
-        let target = Waypoint(x: field.centerX, y: field.centerY)
-        lastForageTick = state.tick
-        if target == lastTarget { return nil }
-        lastTarget = target
-        return .setLeaderPath(subFlock: 0, waypoints: [target])
+        return .condense(subFlock: 0)
     }
 
     // MARK: - Dusk: roost and condense
@@ -91,28 +125,6 @@ public struct Autoplayer: Codable, Equatable, Sendable {
     }
 
     // MARK: - Target selection (integer math only)
-
-    /// The field with the most remaining food; ties break toward the flock.
-    private func bestField(
-        _ state: GameState, nearX: Int32, nearY: Int32
-    ) -> FieldState? {
-        var best: FieldState?
-        var bestRemaining = -1
-        var bestDist = Int64.max
-        for field in state.fields {
-            let remaining = field.maxDepletion - field.currentDepletion
-            if remaining <= 0 { continue }
-            let dx = Int64(field.centerX) - Int64(nearX)
-            let dy = Int64(field.centerY) - Int64(nearY)
-            let dist = dx * dx + dy * dy
-            if remaining > bestRemaining || (remaining == bestRemaining && dist < bestDist) {
-                best = field
-                bestRemaining = remaining
-                bestDist = dist
-            }
-        }
-        return best
-    }
 
     private func nearestRoost(
         _ state: GameState, toX: Int32, toY: Int32

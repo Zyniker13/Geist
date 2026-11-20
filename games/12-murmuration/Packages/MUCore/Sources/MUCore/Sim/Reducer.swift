@@ -297,7 +297,11 @@ public func applyAction(_ action: GameAction, to state: GameState) -> (GameState
         // `subFlockAssignments`; both arrays must move together or the new
         // sub-flock keeps steering to the old leader point.
         var reassigned = 0
-        let targetCount = Int(Double(state.birds.count) * ratio)
+        // Split a fraction of the flock being split (not of all birds):
+        // splitting the rival flock, which holds fewer birds than the
+        // world total, used to strip every bird out of it.
+        let fromCount = state.subFlockAssignments.filter { $0 == from }.count
+        let targetCount = Int(Double(fromCount) * ratio)
         for i in 0..<state.subFlockAssignments.count {
             if state.subFlockAssignments[i] == from && reassigned < targetCount {
                 state.subFlockAssignments[i] = newSF

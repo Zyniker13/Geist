@@ -23,7 +23,8 @@ enum GameUITest {
         hash: Bool = false,
         tutorial: Bool = false,
         versus: Bool = false,
-        autoplay: Bool = true
+        autoplay: Bool = true,
+        difficulty: String? = nil
     ) {
         var args = [
             "-uitest-overlay",
@@ -38,6 +39,9 @@ enum GameUITest {
         }
         if versus {
             args += ["-uitest-versus"]
+        }
+        if let difficulty {
+            args += ["-uitest-difficulty", difficulty]
         }
         // Trace the app's own log lines ([MU] …) into the xcodebuild output so
         // a failing tutorial run can be diagnosed after the fact.

@@ -10,6 +10,8 @@
 
 import Foundation
 @_exported import MUCore
+import MUContent
+import MUAI
 
 let arguments = Array(CommandLine.arguments.dropFirst())
 
@@ -29,6 +31,18 @@ let goldenCount = argument("--golden", default: 0) // generate N golden replays
 let goldenOut = arguments.firstIndex(of: "--golden-out").flatMap { idx -> String? in
     idx + 1 < arguments.count ? arguments[idx + 1] : nil
 }
+// MU-P4 balance harness: Autoplayer vs tiered rival, one seeded day per row.
+let balanceTier = arguments.firstIndex(of: "--balance").flatMap { idx -> String? in
+    idx + 1 < arguments.count ? arguments[idx + 1] : nil
+}
+let balanceDays = argument("--days", default: 100)
+let balanceRegions = arguments.firstIndex(of: "--regions").flatMap { idx -> String? in
+    idx + 1 < arguments.count ? arguments[idx + 1] : nil
+}
+let balanceOut = arguments.firstIndex(of: "--out").flatMap { idx -> String? in
+    idx + 1 < arguments.count ? arguments[idx + 1] : nil
+}
+let balanceTrace = argument("--trace", default: 0) // print rival flock state every N ticks
 
 let worldWidth: Int32 = 2048
 let worldHeight: Int32 = 1536
@@ -139,6 +153,191 @@ func actionScript(seed: UInt64, worldWidth: Int32, worldHeight: Int32) -> [Timed
         TimedGameAction(tick: 3300, action: .condense(subFlock: 1)),
         TimedGameAction(tick: 3900, action: .setLeaderPath(subFlock: 0, waypoints: sweep(span2))),
     ]
+}
+
+// MARK: - MU-P4 balance harness: Autoplayer vs tiered rival
+
+/// One seeded day: the player (Autoplayer) against a tiered rival, mirroring
+/// GameModel's loop (autoplayer action, rival action, applyTick). Day variety
+/// comes from reseeding the region per day; winner is 0 player, 1 rival, -1
+/// when no roost was claimed at dusk.
+func runBalanceDay(region: Region, tier: RivalDifficulty, day: UInt64) -> String {
+    let seeded = region.reseeded(day)
+    var state = seeded.makeGameState()
+    // Mirror GameModel: versus and rival modes suppress the R-5 auto-merge
+    // (the day-start split starts both flocks coincident).
+    state.versusMergeSuppressed = seeded.hasRival
+    for action in RegionStarter.startingActions(for: seeded) {
+        let (applied, _) = applyAction(action, to: state)
+        state = applied
+    }
+    var player = Autoplayer()
+    var rival = GentleRival(difficulty: tier)
+    var rng = SeededRNG(seed: seeded.seed)
+
+    var winner = -1
+    var playerPeak = 0
+    var rivalPeak = 0
+    var playerFalconLosses = 0
+    var rivalFalconLosses = 0
+    var autoplayerUsTotal: UInt64 = 0
+    var rivalUsTotal: UInt64 = 0
+    let trace = balanceTrace > 0
+
+    func flockCounts() -> (Int, Int) {
+        var player = 0
+        for assignment in state.subFlockAssignments where assignment == 0 { player += 1 }
+        return (player, state.subFlockAssignments.count - player)
+    }
+
+    while state.tick < GameState.dayTicks {
+        let t0 = DispatchTime.now().uptimeNanoseconds
+        let playerAction = player.action(for: state)
+        autoplayerUsTotal &+= DispatchTime.now().uptimeNanoseconds &- t0
+        if let playerAction {
+            let (applied, _) = applyAction(playerAction, to: state)
+            state = applied
+        }
+        let t1 = DispatchTime.now().uptimeNanoseconds
+        let rivalAction = rival.action(for: state)
+        rivalUsTotal &+= DispatchTime.now().uptimeNanoseconds &- t1
+        if let rivalAction {
+            let (applied, _) = applyAction(rivalAction, to: state)
+            state = applied
+        }
+        let (next, events) = applyTick(to: state, rng: &rng)
+        state = next
+        for event in events {
+            switch event {
+            case .victory(let who):
+                winner = who
+            case .falcon(.diveResult(_, let flock, let hit)) where hit:
+                if flock == 0 { playerFalconLosses += 1 } else { rivalFalconLosses += 1 }
+            default:
+                break
+            }
+        }
+        if state.tick % 30 == 0 {
+            let (playerCount, rivalCount) = flockCounts()
+            playerPeak = max(playerPeak, playerCount)
+            rivalPeak = max(rivalPeak, rivalCount)
+        }
+        if trace && state.tick % balanceTrace == 0 {
+            var rx = 0.0
+            var ry = 0.0
+            var rn = 0
+            for i in state.subFlockAssignments.indices where state.subFlockAssignments[i] == 1 {
+                rx += Double(state.birds.posX[i])
+                ry += Double(state.birds.posY[i])
+                rn += 1
+            }
+            let pathPts = state.leaderPaths.count > 1 ? state.leaderPaths[1].points.count : -1
+            let rivalEnergy = state.energy.count > 1 ? state.energy[1] : -1
+            let playerEnergy = state.energy.count > 0 ? state.energy[0] : -1
+            let fieldBudgets = state.fields.map { "\($0.maxDepletion - $0.currentDepletion)" }.joined(separator: ",")
+            var px = 0.0
+            var py = 0.0
+            var pn = 0
+            for i in state.subFlockAssignments.indices where state.subFlockAssignments[i] == 0 {
+                px += Double(state.birds.posX[i])
+                py += Double(state.birds.posY[i])
+                pn += 1
+            }
+            let lead = state.leaderPaths.first
+            var falcons = ""
+            for f in state.falcons {
+                falcons += "F(\(f.currentX),\(f.currentY))d\(f.cooldown) "
+            }
+            var subCounts = ""
+            var seen: [UInt8: Int] = [:]
+            for a in state.subFlockAssignments { seen[a, default: 0] += 1 }
+            for (k, v) in seen.sorted(by: { $0.key < $1.key }) { subCounts += "sf\(k)=\(v) " }
+            FileHandle.standardError.write(Data(
+                "t\(state.tick) p=\(flockCounts().0) pE=\(playerEnergy) pC=(\(Int(px / Double(max(pn, 1)))),\(Int(py / Double(max(pn, 1))))) L=(\(lead?.currentX ?? -1),\(lead?.currentY ?? -1)) f=[\(fieldBudgets)] r=\(rn) rE=\(rivalEnergy) rC=(\(Int(rx / Double(max(rn, 1)))),\(Int(ry / Double(max(rn, 1))))) \(falcons)\(subCounts)pts=\(pathPts)\n".utf8
+            ))
+        }
+    }
+
+    let (playerBirds, rivalBirds) = flockCounts()
+    let ticks = String(state.tick)
+    let tickCount = max(state.tick, 1)
+    let autoplayerUs = String(Int(autoplayerUsTotal) / tickCount)
+    let rivalUs = String(Int(rivalUsTotal) / tickCount)
+    var row: [String] = []
+    row.append(seeded.id)
+    row.append(tierName(tier))
+    row.append(String(day))
+    row.append(String(winner))
+    row.append(String(playerBirds))
+    row.append(String(rivalBirds))
+    row.append(String(playerPeak))
+    row.append(String(rivalPeak))
+    row.append(String(playerFalconLosses))
+    row.append(String(rivalFalconLosses))
+    row.append(autoplayerUs)
+    row.append(rivalUs)
+    row.append(ticks)
+    return row.joined(separator: ",")
+}
+
+func tierName(_ tier: RivalDifficulty) -> String {
+    switch tier {
+    case .gentle: return "gentle"
+    case .normal: return "normal"
+    case .hard: return "hard"
+    }
+}
+
+if let balanceTierName = balanceTier {
+    let tier: RivalDifficulty
+    switch balanceTierName {
+    case "gentle": tier = .gentle
+    case "normal": tier = .normal
+    case "hard": tier = .hard
+    default:
+        FileHandle.standardError.write(Data("unknown tier \(balanceTierName)\n".utf8))
+        exit(2)
+    }
+    let base = URL(fileURLWithPath: "Resources/Content/regions")
+    let catalog = try RegionCatalog.load(from: base)
+    let ids = balanceRegions.map { $0.split(separator: ",").map(String.init) } ?? catalog.ids
+    let regions = ids.compactMap { catalog.region(id: $0) }
+    precondition(regions.count == ids.count, "unknown region id in \(ids)")
+    var rows = ["region,tier,day,winner,playerBirds,rivalBirds,playerPeak,rivalPeak,falconLossPlayer,falconLossRival,autoplayerNsPerTick,rivalNsPerTick,ticks"]
+    for region in regions {
+        for day in 1...max(balanceDays, 1) {
+            rows.append(runBalanceDay(region: region, tier: tier, day: UInt64(day)))
+        }
+        FileHandle.standardError.write(Data("done \(region.id) tier=\(balanceTierName)\n".utf8))
+    }
+    let csv = rows.joined(separator: "\n") + "\n"
+    if let outPath = balanceOut {
+        try csv.write(to: URL(fileURLWithPath: outPath), atomically: true, encoding: .utf8)
+    } else {
+        print(csv)
+    }
+    // Win-rate summary per region and overall.
+    var perRegion: [String: (wins: Int, total: Int)] = [:]
+    var totalWins = 0
+    var totalDays = 0
+    for row in rows.dropFirst() {
+        let cols = row.split(separator: ",").map(String.init)
+        guard cols.count >= 4 else { continue }
+        let won = cols[3] == "0"
+        perRegion[cols[0], default: (0, 0)].total += 1
+        if won {
+            perRegion[cols[0]]!.wins += 1
+            totalWins += 1
+        }
+        totalDays += 1
+    }
+    for (id, tally) in perRegion.sorted(by: { $0.key < $1.key }) {
+        let pct = Double(tally.wins) / Double(max(tally.total, 1)) * 100
+        print(String(format: "%@ winRate=%.1f%% (%d/%d)", id, pct, tally.wins, tally.total))
+    }
+    let overall = Double(totalWins) / Double(max(totalDays, 1)) * 100
+    print(String(format: "overall tier=%@ winRate=%.1f%% (%d/%d)", balanceTierName, overall, totalWins, totalDays))
+    exit(0)
 }
 
 if goldenCount > 0 {

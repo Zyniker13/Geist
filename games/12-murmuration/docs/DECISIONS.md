@@ -563,3 +563,104 @@ Architecture decision records. Every deviation from the roadmap is recorded here
 - **Consequences:** Routing assertions no longer depend on runner speed.
   The test verifies steer targeting on frozen state plus follow-through on
   resume, which the un-paused flow only implied.
+
+## ADR-0027: Rival difficulty is a flat region key, tiers tune one AI, and hard splits only when the flock can afford it (2026-11-19)
+- **Context:** MU-P4.1 adds three difficulties to the rival AI. The
+  roadmap's `RegionDef` sketch nests the tier inside the rival object
+  (`"rival": { "startBirds": 600, "difficulty": "gentle" }`), but the P3
+  content shipped `hasRival` and `rivalStartBirds` as flat top-level keys
+  in every region file, and the whole decode path follows that shape.
+- **Decision:** Three parts.
+  1. **Flat key:** `rivalDifficulty` sits beside `rivalStartBirds` as a
+     flat top-level region key (`"gentle"` default when absent, decode
+     throws on an unknown tier). The roadmap's nested shape predates the
+     P3 content migration; matching the shipped shape avoids a
+     content-wide rewrite and a second reader for the nested object.
+  2. **One AI, tiered tunables:** the tiers tune one `GentleRival`
+     through a `cadence` table (gentle forage 480/flee 60/radius
+     320/standoff 640; normal 300/45/360/520; hard 240/30/400/380)
+     rather than three AI classes. Behavior differences come from
+     cadence plus the hard-only dusk split plan.
+  3. **Hard split gating:** the hard tier's second sub-flock (contesting
+     two roosts, per MU-P4.1) is staged through a dusk split plan
+     (`splitStage` routing split → two roost targets) and only runs when
+     the flock has at least `splitMinBirds` (500) — a struggling rival
+     does not thin itself further. Save/resume decodes legacy saves as
+     gentle with unset split state.
+- **Consequences:** Region files stay flat and additive; the picker and
+  the launch argument override the region default in `GameModel` (nil →
+  `region.rivalDifficulty`). Balance targets (85/60/35) tune the cadence
+  table, not the AI's structure; the G4 sweep validates it.
+
+## ADR-0028: Feeding gain counts the birds inside the field, not the whole sub-flock (2026-11-19)
+- **Context:** MU-P4 balance traced dusk-flock collapse (1207 → 156
+  birds) to the energy economy, not predation. `computeFeeding` gated
+  the regrowth clock on `gain > 0` but computed gain from the whole
+  sub-flock's count whenever any single bird stood inside the radius.
+  Consequence: a scattered flock's stragglers kept a spent field's
+  ramp permanently reset while drawing `wholeFlock × richness / 10`
+  per tick from the trickle, so fields never re-armed and the flock
+  starved at ~0.1% per tick. R-8 reads "birds within a field's radius
+  feed, adding energy by field richness" — the whole-flock formula
+  made density meaningless and let one straggler drain a field at the
+  full flock's rate.
+- **Decision:** Feed gain is `birdsInField × richness / 10`, capped by
+  the field's remaining budget, computed per sub-flock from actual
+  bird positions. The clock semantics stay: any real gain resets the
+  100-tick regrowth ramp, zero-gain grazing does not (both pinned by
+  new tests). Regrowth denial by grazing is intended play: a flock
+  parked on a spent field keeps it from recovering, and rival AI can
+  do the same on purpose later.
+- **Consequences:** `replayContentVersion` bumps to v8 and the 20
+  goldens are regenerated (EngineGoldenReplayTests doc procedure).
+  Autoplayer and rival must now stand off spent fields to let them
+  re-arm; the balance sweep (G4) revalidates against the new economy.
+
+## ADR-0029: Forage directive discipline — commitment, starvation floor, standoff stability (2026-11-20)
+- **Context:** After ADR-0028 the flocks still starved on the commons.
+  Tracing the autoplayer day exposed four failure modes. (1) The
+  re-deciding flock teleported its leader among spent fields when the
+  bank ran dry: the starve branch picked the least-bad field even when
+  every field scored below zero. (2) A starving flock nibbled a
+  ramped crumb's trickle: regrowth-by-arrival credit (13 × travel)
+  lured a trip whose grazing restarted the field's 100-tick ramp, so
+  the counted regrowth never materialised and every field stayed
+  pinned near empty. (3) The standoff point was recomputed from the
+  moving centroid each tick; when the clamp could not satisfy the
+  clearance the point swung and the flock chased it across fields,
+  grazing them. (4) A flock abandoned a half-eaten meal the moment
+  its holdings dipped below the trip floor, re-issuing a path every
+  tick.
+- **Decision:** The directive commits to the current target while it
+  is worth a trip, or — for a starving flock — while any food at all
+  remains (finish the meal you are standing on). The starve branch
+  flies only for food a field HOLDS now (≥ `starveYield` 150), never
+  for projected regrowth, and stands off when nothing substantial
+  exists. The standoff point is chosen by a deterministic grid scan:
+  the nearest point clearing every field by `radius + standoffMargin`
+  (200, sized for a condensed flock), falling back to the greatest
+  clearance; the directive reuses a still-clear point, and the point
+  is computed against all fields so the hold survives blocked-set
+  changes.
+- **Consequences:** The commons day settles into a pulse: strip, park
+  clear of all fields while they re-arm, strip again. Unit tests pin
+  each rule (starve standoff, crumb refusal, meal finishing, near
+  standoff). The equilibrium still depends on travel time; condense
+  (ADR-0030) and the staggered rotation are the remaining levers.
+
+## ADR-0030: The day flock condenses while its target holds (2026-11-20)
+- **Context:** A flying day cloud stretched to ~1,000-unit spread
+  (birds cruise at 18–40/tick and turn slowly — a full reversal takes
+  ~170 ticks), so its fringe grazed fields the flock merely passed and
+  the parked flock could not fit a clear pocket. Condense (R-4)
+  doubles cohesion for 60 ticks with a 120-tick cooldown, but the
+  autoplayer never used it by day.
+- **Decision:** When the forage directive holds the current target
+  (no path change due), the autoplayer issues `condense(subFlock: 0)`
+  whenever the cooldown has lapsed. It never delays steering: a path
+  change always preempts the condense. The dusk roost condense is
+  unchanged.
+- **Consequences:** A parked flock mills within ~200 units of its
+  centre, so standoffMargin shrinks from 400 to 200 and the standoff
+  pockets sit near the fields, shortening the wait phase's travel.
+  The rival AI should adopt the same habit in its own cadence.

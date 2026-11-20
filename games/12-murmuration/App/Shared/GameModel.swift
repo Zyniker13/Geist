@@ -67,6 +67,9 @@ final class GameModel: ObservableObject {
     /// Local two-flock versus (MU-P3.3): the rival flock is human-driven, so
     /// GentleRival is disabled and each touch routes to the nearest flock.
     let versus: Bool
+    /// The rival pilot's difficulty tier (MU-P4.1): region default unless the
+    /// menu picker (or the UI-test flag) overrides it.
+    let rivalDifficulty: RivalDifficulty
     /// Ticks advanced per display frame in fast-forward (UI tests).
     let ticksPerFrame: Int
 
@@ -122,12 +125,14 @@ final class GameModel: ObservableObject {
         ticksPerFrame: Int = 1,
         save: SavedGame? = nil,
         tutorial: Tutorial? = nil,
-        versus: Bool = false
+        versus: Bool = false,
+        rivalDifficulty: RivalDifficulty? = nil
     ) {
         self.region = region
         self.totalDays = totalDays
         self.autoplay = autoplay
         self.versus = versus
+        self.rivalDifficulty = rivalDifficulty ?? region.rivalDifficulty
         self.ticksPerFrame = max(ticksPerFrame, 1)
         if let save = save, save.regionID == region.id {
             self.state = save.state
@@ -140,6 +145,7 @@ final class GameModel: ObservableObject {
             let fresh = region.makeGameState()
             self.state = fresh
             self.rng = SeededRNG(seed: region.seed)
+            self.rival = GentleRival(difficulty: self.rivalDifficulty)
             self.previousBirds = fresh.birds
         }
         if autoplay {
@@ -159,10 +165,12 @@ final class GameModel: ObservableObject {
     private func startDayIfNeeded() {
         // Fresh day (not a resume): spawn the rival and seed the trace.
         if state.tick == 0 {
-            // Versus suppresses the R-5 auto-merge: the day-start split
-            // defines the two player flocks, both starting coincident, so
-            // the proximity rule would collapse them within 30 ticks.
-            state.versusMergeSuppressed = versus
+            // Versus and rival modes suppress the R-5 auto-merge: the
+            // day-start split defines the two flocks, both starting
+            // coincident, so the proximity rule would collapse them within
+            // 30 ticks — merging the two players in versus, or absorbing
+            // the rival's flock into the player's in rival mode (MU-P4.1).
+            state.versusMergeSuppressed = versus || region.hasRival
             for action in RegionStarter.startingActions(for: region) {
                 apply(action)
             }
@@ -390,7 +398,7 @@ final class GameModel: ObservableObject {
         lastTraceTick = -1
         dayEnded = false
         autoplayer = autoplay ? Autoplayer() : nil
-        rival = GentleRival()
+        rival = GentleRival(difficulty: rivalDifficulty)
         startDayIfNeeded()
     }
 
@@ -443,7 +451,7 @@ final class GameModel: ObservableObject {
         finished = false
         paused = false
         autoplayer = autoplay ? Autoplayer() : nil
-        rival = GentleRival()
+        rival = GentleRival(difficulty: rivalDifficulty)
         startDayIfNeeded()
     }
 

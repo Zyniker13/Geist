@@ -245,4 +245,134 @@ final class EnergyRuleTests: XCTestCase {
         XCTAssertEqual(starveEvents.count, 0)
         XCTAssertEqual(state.birds.count, 100)
     }
+
+    /// R-8 regression: feeding gain counts the birds actually inside the
+    /// field's radius, not the whole sub-flock. The old implementation used
+    /// the whole-flock count whenever any bird grazed the edge, so a single
+    /// straggler drained the field at the full flock's rate and reset the
+    /// regrowth clock every tick — spent fields never re-armed and flocks
+    /// starved. See ADR-0028.
+    func testR8FeedingCountsBirdsInField() {
+        let params = BoidsParams()
+        var state = GameState(
+            birdCount: 20,
+            worldWidth: 2048,
+            worldHeight: 1536,
+            boidsParams: params,
+            fieldRichness: [10],
+            fieldRadius: [200],
+            fieldCenterX: [1024],
+            fieldCenterY: [768],
+            roostCount: 1,
+            roostCenterX: [512],
+            roostCenterY: [768],
+            roostRadius: [128],
+            falconCount: 1,
+            hasRival: false,
+            windSeedOffset: 0,
+            seed: 42
+        )
+        // 5 birds inside the field, 15 far outside it (all flock 0).
+        for i in 0..<state.birds.count {
+            state.birds.subFlock[i] = 0
+            state.subFlockAssignments[i] = 0
+            if i < 5 {
+                state.birds.posX[i] = 1024
+                state.birds.posY[i] = 768
+            } else {
+                state.birds.posX[i] = 100
+                state.birds.posY[i] = 100
+            }
+        }
+        state.energy = [100]
+
+        var rng = SeededRNG(seed: 1)
+        let feedEvents = computeFeeding(state: &state, rng: &rng)
+
+        // gain = birdsInField * richness / 10 = 5 * 10 / 10 = 5
+        XCTAssertEqual(feedEvents.count, 1)
+        guard case .feed(_, let amount, _) = feedEvents[0] else {
+            return XCTFail("expected a feed event")
+        }
+        XCTAssertEqual(amount, 5)
+        XCTAssertEqual(state.energy[0], 105)
+        XCTAssertEqual(state.fields[0].currentDepletion, 5)
+    }
+
+    /// Regrowth clock pin: a flock grazing a fully spent field gains nothing,
+    /// so the clock keeps running (the field can begin to regrow).
+    func testRegrowthClockRunsWhenSpentFieldGrazed() {
+        let params = BoidsParams()
+        var state = GameState(
+            birdCount: 10,
+            worldWidth: 2048,
+            worldHeight: 1536,
+            boidsParams: params,
+            fieldRichness: [10],
+            fieldRadius: [200],
+            fieldCenterX: [1024],
+            fieldCenterY: [768],
+            roostCount: 1,
+            roostCenterX: [512],
+            roostCenterY: [768],
+            roostRadius: [128],
+            falconCount: 1,
+            hasRival: false,
+            windSeedOffset: 0,
+            seed: 42
+        )
+        for i in 0..<state.birds.count {
+            state.birds.posX[i] = 1024
+            state.birds.posY[i] = 768
+        }
+        state.fields[0].currentDepletion = state.fields[0].maxDepletion
+
+        var rng = SeededRNG(seed: 1)
+        for _ in 0..<50 {
+            _ = computeFeeding(state: &state, rng: &rng)
+        }
+
+        XCTAssertEqual(state.fields[0].ticksSinceFeed, 50, "grazing a spent field gains nothing and must not reset the clock")
+        XCTAssertEqual(state.fields[0].currentDepletion, state.fields[0].maxDepletion)
+    }
+
+    /// Regrowth clock pin: actual gain resets the clock — grazing a regrowing
+    /// field interrupts regrowth (rivals can deny regrowth by grazing).
+    func testGainResetsRegrowthClock() {
+        let params = BoidsParams()
+        var state = GameState(
+            birdCount: 10,
+            worldWidth: 2048,
+            worldHeight: 1536,
+            boidsParams: params,
+            fieldRichness: [10],
+            fieldRadius: [200],
+            fieldCenterX: [1024],
+            fieldCenterY: [768],
+            roostCount: 1,
+            roostCenterX: [512],
+            roostCenterY: [768],
+            roostRadius: [128],
+            falconCount: 1,
+            hasRival: false,
+            windSeedOffset: 0,
+            seed: 42
+        )
+        for i in 0..<state.birds.count {
+            state.birds.posX[i] = 1024
+            state.birds.posY[i] = 768
+        }
+        // Field partially spent with the clock already halfway to regrowth.
+        state.fields[0].currentDepletion = 20
+        state.fields[0].ticksSinceFeed = 50
+
+        var rng = SeededRNG(seed: 1)
+        _ = computeFeeding(state: &state, rng: &rng)
+
+        XCTAssertGreaterThan(state.energy[0], 100, "the flock must gain energy while the field has capacity")
+        // The feed resets the clock to 0; the same call's regrowth block then
+        // increments it once, so a feed tick leaves the clock at 1.
+        XCTAssertEqual(state.fields[0].ticksSinceFeed, 1, "a real feed restarts the regrowth clock")
+        XCTAssertEqual(state.fields[0].currentDepletion, 30)
+    }
 }
