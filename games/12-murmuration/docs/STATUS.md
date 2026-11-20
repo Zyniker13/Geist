@@ -905,3 +905,21 @@ running binary isn't swapped). G4 sweep (100 days × 6 regions × 3
 tiers, with new `playerDusk`/`rivalDusk` columns for the
 1,000–2,500 dusk-flock target) running; results and the remaining
 tuning follow.
+
+**Tier-table inversion found (2026-11-20, in progress):** the sweep's
+first two tiers finished and inverted the intended difficulty
+ordering: gentle 57.3% player wins (target 85), normal 72.2%
+(target 60). Event traces explain why: feeding is per-tick inside a
+field radius, so the gentle rival's slow forage cadence (480 ticks)
+makes it sit in fields longer and feed MORE (3-day trace: gentle
+1,359 feeds → +5,758 birds grown vs normal 1,049 feeds → +2,621),
+and its large standoff (640) lets it farm uncontested. Faster
+cadence is weaker, not stronger. Flock collapse is fixed — dusk
+medians are in/near the 1,000–2,500 window (commons 1,125; delta
+2,444; meadow 1,562; fenlands 946; ridge 810; gorge 529). Action:
+added `--rival-forage/-flee/-radius/-standoff` CLI overrides to the
+sim balance harness (probe-only), and a 4×4 forage×standoff probe
+grid on commons (30 days/cell) is running to re-derive the tier
+table; hard tier still running. Tier table retune + balance report
+will follow as ADR-0033, then golden regeneration (contentVersion
+12) and the full suite.
