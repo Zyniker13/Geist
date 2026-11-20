@@ -106,13 +106,14 @@ final class BoidsTests: XCTestCase {
     /// unparenthesized `unit << 16 * weight >> 16` applies `weight >> 16`
     /// (whole units only: 1.2 became 1.0, 0.8 and 0.6 became 0). A bird
     /// cruising at 30 units/tick outside the brake radius must gain exactly
-    /// leaderWeight 1.2 units/tick; inside the radius the P4 brake instead
-    /// removes exactly 0.5 of the bird's velocity per tick.
+    /// leaderWeight 1.2 units/tick; inside the radius the P4 brake ramps
+    /// linearly to zero at the edge, so a bird 500 of 800 units out loses
+    /// exactly 0.1875 of its velocity per tick.
     func testR6LeaderForceMatchesWeight() {
         let width: Int32 = 2048, height: Int32 = 1536
         var birds = BirdSoA(capacity: 2)
         birds.append(x: 600, y: 768, velXQ: 1_966_080, velYQ: 0, subFlock: 0) // 900 from leader: no brake
-        birds.append(x: 1000, y: 768, velXQ: 1_966_080, velYQ: 0, subFlock: 0) // 500 from leader: braked
+        birds.append(x: 1000, y: 768, velXQ: 1_966_080, velYQ: 0, subFlock: 0) // 500 from leader: ramped brake (t=0.375)
         var hash = SpatialHash(width: width, height: height, cellSize: 96)
         hash.rebuild(posX: birds.posX, posY: birds.posY, count: birds.count)
         stepBirds(
@@ -122,8 +123,9 @@ final class BoidsTests: XCTestCase {
         )
         // 30 units + leaderWeight 1.2 (78_643 Q16.16), still inside [18, 40].
         XCTAssertEqual(birds.velX[0], 1_966_080 + 78_643)
-        // Braked: −0.5 × 30 (983_040 Q16.16) then + leaderWeight 1.2.
-        XCTAssertEqual(birds.velX[1], 1_061_683)
+        // Ramped brake: −0.1875 × 30 = −368,640 Q16.16, then + leaderWeight 1.2.
+        // (leaderBrakeQ 32_768 × ramp 300 / radius 800 = 12_288 = 0.1875.)
+        XCTAssertEqual(birds.velX[1], 1_966_080 - 368_640 + 78_643)
     }
 
     // Regression (P4 diagnostics): the leader force was a constant-magnitude

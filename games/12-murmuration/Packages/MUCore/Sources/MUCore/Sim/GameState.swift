@@ -122,7 +122,10 @@ public struct GameState: Codable, Sendable, Equatable {
     /// v9: P4 leader brake — inside `leaderBrakeRadius` of the leader point
     /// the bird's velocity is damped each tick, so a parked flock settles
     /// onto the point instead of penduluming around it forever.
-    public static let replayContentVersion = 9
+    /// v10: the brake ramps linearly to zero at the radius edge (arrive
+    /// profile); the flat brake damped day-start trips to a crawl and merged
+    /// the day-start clouds before the pilots could separate them.
+    public static let replayContentVersion = 10
 
     /// Content version for golden replays.
     public let contentVersion: Int

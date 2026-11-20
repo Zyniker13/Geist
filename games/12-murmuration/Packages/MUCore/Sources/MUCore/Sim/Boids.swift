@@ -22,8 +22,9 @@ public struct BoidsParams: Sendable, Codable {
     /// velocity is damped each tick so the flock settles onto the point
     /// instead of swinging past it and back forever (undamped pendulum).
     public var leaderBrakeRadius: Int32 = 800
-    /// Fraction (Q16.16) of the bird's velocity removed per tick inside the
-    /// brake radius: 32_768 = 0.5.
+    /// Damping (Q16.16) applied at the leader point itself, ramping linearly
+    /// down to zero at `leaderBrakeRadius`: 32_768 = 0.5 per tick at the
+    /// point, 0.125 at three-quarters of the radius out, 0 at the edge.
     public var leaderBrakeQ: Int32 = 32_768
 
     public init() {}
@@ -279,14 +280,21 @@ public func stepBirds(
         let leaderF = normalizedScaled(leaderDX, leaderDY, params.leaderWeight)
         forceX += leaderF.x
         forceY += leaderF.y
-        // Leader brake (P4): near the leader point, damp velocity each tick so
-        // a bird converges onto the point instead of overshooting and swinging
-        // back forever. Far away the pull is unchanged, so travel is untouched.
+        // Leader brake (P4): near the leader point, damp velocity so a bird
+        // converges onto the point instead of overshooting and swinging back
+        // forever. The damping ramps linearly from zero at the radius edge to
+        // the full `leaderBrakeQ` at the point, so transit through the outer
+        // radius keeps cruise speed and only the final approach decelerates
+        // (an arrive profile; a flat brake inside 800 damped day-start trips
+        // to a crawl and merged the day-start clouds before they separated).
         let brake2 = Int64(params.leaderBrakeRadius)
             * Int64(params.leaderBrakeRadius)
-        if leaderDX * leaderDX + leaderDY * leaderDY < brake2 {
-            forceX -= (Int64(birds.velX[i]) * Int64(params.leaderBrakeQ)) >> 16
-            forceY -= (Int64(birds.velY[i]) * Int64(params.leaderBrakeQ)) >> 16
+        let d2 = leaderDX * leaderDX + leaderDY * leaderDY
+        if d2 < brake2 {
+            let ramp = Int64(params.leaderBrakeRadius) - isqrt64(UInt64(max(d2, 1)))
+            let q = (Int64(params.leaderBrakeQ) * ramp) / Int64(params.leaderBrakeRadius)
+            forceX -= (Int64(birds.velX[i]) * q) >> 16
+            forceY -= (Int64(birds.velY[i]) * q) >> 16
         }
         let (windX, windY) = frame.wind(at: px, py)
         if windX != 0 || windY != 0 {
