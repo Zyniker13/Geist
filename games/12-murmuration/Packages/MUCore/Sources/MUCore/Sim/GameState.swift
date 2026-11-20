@@ -125,7 +125,10 @@ public struct GameState: Codable, Sendable, Equatable {
     /// v10: the brake ramps linearly to zero at the radius edge (arrive
     /// profile); the flat brake damped day-start trips to a crawl and merged
     /// the day-start clouds before the pilots could separate them.
-    public static let replayContentVersion = 10
+    /// v11: a split widens every roost's claim row by one slot (R-12);
+    /// before this, a third sub-flock's dusk claim trapped with
+    /// "Index out of range" (exit 133 in the G4 hard-tier balance sweep).
+    public static let replayContentVersion = 11
 
     /// Content version for golden replays.
     public let contentVersion: Int

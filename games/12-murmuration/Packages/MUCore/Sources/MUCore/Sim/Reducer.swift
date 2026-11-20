@@ -292,6 +292,13 @@ public func applyAction(_ action: GameAction, to state: GameState) -> (GameState
         guard state.subFlockCount <= 2 else { return (state, events) } // Max 2 sub-flocks.
         let newSF = UInt8(state.subFlockCount)
         state.energy.append(800) // New sub-flock starts at 800 energy.
+        // Every roost's claim row gains a slot for the new sub-flock (R-12):
+        // rows are sized to the sub-flock count and a split adds one, or the
+        // dusk accrual traps with "Index out of range" (exit 133 in the G4
+        // hard-tier balance sweep).
+        for idx in state.roostClaims.indices {
+            state.roostClaims[idx].append(0)
+        }
         // Reassign some birds to the new sub-flock. The boids kernel reads
         // `birds.subFlock` while merge/energy logic reads
         // `subFlockAssignments`; both arrays must move together or the new

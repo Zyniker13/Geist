@@ -404,6 +404,42 @@ final class RulesEngineTests: XCTestCase {
         XCTAssertEqual(state.roostClaims[0][0], 3)
     }
 
+    /// MU-P4.1 regression: a rival split mints a third sub-flock, but roost
+    /// claim rows were sized [player, rival] at state creation; accruing a
+    /// dusk claim for the split flock trapped with "Index out of range"
+    /// (seen as exit 133 in the G4 hard-tier balance sweep).
+    func testR12ThirdFlockClaimsDoNotTrapAfterSplit() {
+        var state = makeState(birdCount: 60)
+        let (firstSplit, _) = applyAction(.splitFlock(from: 0, ratio: 0.4), to: state)
+        state = firstSplit
+        XCTAssertEqual(state.subFlockCount, 2)
+        let (secondSplit, _) = applyAction(.splitFlock(from: 1, ratio: 0.5), to: state)
+        state = secondSplit
+        XCTAssertEqual(state.subFlockCount, 3)
+        XCTAssertEqual(state.roostClaims.count, state.roosts.count)
+        // Claim rows start [0, 0] and gain one slot per split, so they stay
+        // at least as wide as the sub-flock count; every new slot starts 0.
+        for row in state.roostClaims {
+            XCTAssertGreaterThanOrEqual(row.count, 3, "claim row must index the new sub-flock")
+            XCTAssertEqual(row[2], 0, "the split flock starts with no claims")
+        }
+        state.tick = GameState.duskStart
+        // Park the split flock (2) alone inside roost 0 so it holds the
+        // strict majority there.
+        for i in 0..<state.birds.count {
+            if state.subFlockAssignments[i] == 2 {
+                state.birds.posX[i] = 512
+                state.birds.posY[i] = 768
+            } else {
+                state.birds.posX[i] = 1600
+                state.birds.posY[i] = 900
+            }
+        }
+        let events = computeRoostClaims(state: &state)
+        XCTAssertTrue(events.contains { if case .claim(0, 2) = $0 { return true }; return false })
+        XCTAssertEqual(state.roostClaims[0][2], 1)
+    }
+
     // MARK: - R-13 Victory
 
     func testR13WinnerHoldsMoreRoosts() {
