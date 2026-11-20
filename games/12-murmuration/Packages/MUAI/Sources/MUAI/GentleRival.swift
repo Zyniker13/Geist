@@ -184,7 +184,10 @@ public struct GentleRival: Equatable, Sendable {
         case .normal:
             return planNormal(state, ranked: ranked, lx: lx, ly: ly)
         case .hard:
-            return planHard(state, ranked: ranked, lx: lx, ly: ly, rivalBirds: rivalBirds, playerBirds: playerBirds)
+            return planHard(
+                state, ranked: ranked, leader: (x: lx, y: ly),
+                rivalBirds: rivalBirds, playerBirds: playerBirds
+            )
         }
     }
 
@@ -237,7 +240,8 @@ public struct GentleRival: Equatable, Sendable {
     /// 2:1 against); in multi-roost regions with a fighting flock, split so
     /// the two roosts the player is least likely to reach are both contested.
     private mutating func planHard(
-        _ state: GameState, ranked: [RoostState], lx: Int32, ly: Int32,
+        _ state: GameState, ranked: [RoostState],
+        leader: (x: Int32, y: Int32),
         rivalBirds: Int, playerBirds: Int
     ) -> GameAction? {
         guard !ranked.isEmpty else { return holdStandoff(state) }
@@ -346,11 +350,8 @@ public struct GentleRival: Equatable, Sendable {
         switch ForageScoring.directive(
             state,
             bank: state.energy[1],
-            nearX: cx,
-            nearY: cy,
-            birds: birds,
-            current: lastTarget,
-            standoff: lastStandoff,
+            flock: (x: cx, y: cy, birds: birds),
+            pilot: .init(current: lastTarget, standoff: lastStandoff),
             avoid: (x: pcx, y: pcy, distance: standoffDistance)
         ) {
         case .hold:

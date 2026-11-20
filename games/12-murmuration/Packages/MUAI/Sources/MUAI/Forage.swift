@@ -27,6 +27,18 @@ enum ForageDirective: Equatable, Sendable {
 
 /// Regrowth-aware field choice shared by the autoplayer and the rivals.
 enum ForageScoring {
+    /// The pilot's last forage decision, feeding the directive's
+    /// commitment hysteresis: `current` is the waypoint of the last
+    /// issued path (a field center or a standoff point), `standoff` the
+    /// pilot's parked position, if any.
+    struct PilotPrior: Equatable, Sendable {
+        let current: Waypoint?
+        let standoff: Waypoint?
+
+        /// No decision has been issued yet.
+        static let none = PilotPrior(current: nil, standoff: nil)
+    }
+
     /// Ticks after a feed before a field starts regrowing again.
     static let rampTicks = 100
 
@@ -186,21 +198,22 @@ enum ForageScoring {
     /// - Parameters:
     ///   - state: the world state.
     ///   - bank: the flock's energy bank (`state.energy[subFlock]`).
-    ///   - nearX/nearY: the flock's centroid.
-    ///   - birds: the flock's bird count (for the trip's drain cost).
-    ///   - current: the waypoint of the pilot's last issued path.
-    ///   - standoff: the pilot's current standoff waypoint, if any.
+    ///   - flock: the flock's centroid and bird count (the count sizes
+    ///     the trip's drain cost).
+    ///   - pilot: the pilot's last issued decision (hysteresis).
     ///   - avoid: optional soft penalty applied to forage choices.
     static func directive(
         _ state: GameState,
         bank: Int,
-        nearX: Int32,
-        nearY: Int32,
-        birds: Int,
-        current: Waypoint?,
-        standoff: Waypoint?,
+        flock: (x: Int32, y: Int32, birds: Int),
+        pilot: PilotPrior,
         avoid: (x: Int32, y: Int32, distance: Int)? = nil
     ) -> ForageDirective {
+        let nearX = flock.x
+        let nearY = flock.y
+        let birds = flock.birds
+        let current = pilot.current
+        let standoff = pilot.standoff
         guard !state.fields.isEmpty else { return .hold }
         // Commitment (ADR-0029): while the pilot's current target still
         // holds a worthwhile meal, keep it. Re-deciding every tick let the
@@ -224,8 +237,10 @@ enum ForageScoring {
         let worthies = state.fields.filter {
             isWorthStripping($0, nearX: nearX, nearY: nearY)
         }
-        if let field = bestField(in: worthies, nearX: nearX, nearY: nearY,
-            birds: birds, current: current, avoid: avoid) {
+        if let field = bestField(
+            in: worthies, nearX: nearX, nearY: nearY,
+            birds: birds, current: current, avoid: avoid
+        ) {
             return .forage(Waypoint(x: field.centerX, y: field.centerY))
         }
         // Starving: graze what the field HOLDS now, never the regrowth
@@ -238,8 +253,10 @@ enum ForageScoring {
             let yielding = state.fields.filter {
                 Int64($0.maxDepletion - $0.currentDepletion) >= starveYield
             }
-            if let field = bestField(in: yielding, nearX: nearX, nearY: nearY,
-                birds: birds, current: current, avoid: avoid) {
+            if let field = bestField(
+                in: yielding, nearX: nearX, nearY: nearY,
+                birds: birds, current: current, avoid: avoid
+            ) {
                 return .forage(Waypoint(x: field.centerX, y: field.centerY))
             }
         }

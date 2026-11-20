@@ -149,7 +149,12 @@ final class TravelDiagnosticsAI: XCTestCase {
                     windGridRows: Int32(max(1, Int(probe.worldHeight) / GameState.windCellSize)),
                     windCellSize: Int32(GameState.windCellSize))
                 let w = frame.wind(at: Int32(pos.0), Int32(pos.1))
-                print("PARK t=\(probe.tick) n=\(radii.count) c=(\(pos.0),\(pos.1)) p90=\(Int(p90)) max=\(Int(maxR)) falcon=(\(fx),\(fy)) lead=(\(lead?.currentX ?? -1),\(lead?.currentY ?? -1)) wind=(\(w.x >> 16),\(w.y >> 16))")
+                print(
+                    "PARK t=\(probe.tick) n=\(radii.count) c=(\(pos.0),\(pos.1))"
+                    + " p90=\(Int(p90)) max=\(Int(maxR))"
+                    + " falcon=(\(fx),\(fy))"
+                    + " lead=(\(lead?.currentX ?? -1),\(lead?.currentY ?? -1))"
+                    + " wind=(\(w.x >> 16),\(w.y >> 16))")
             }
         }
     }

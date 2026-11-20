@@ -63,11 +63,8 @@ public struct Autoplayer: Codable, Equatable, Sendable {
         switch ForageScoring.directive(
             state,
             bank: state.energy[0],
-            nearX: cx,
-            nearY: cy,
-            birds: birds,
-            current: lastTarget,
-            standoff: lastStandoff
+            flock: (x: cx, y: cy, birds: birds),
+            pilot: .init(current: lastTarget, standoff: lastStandoff)
         ) {
         case .hold:
             // No fields at all; hold the current path.

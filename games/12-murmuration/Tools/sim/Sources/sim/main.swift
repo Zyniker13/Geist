@@ -252,9 +252,13 @@ func runBalanceDay(region: Region, tier: RivalDifficulty, day: UInt64) -> String
             var seen: [UInt8: Int] = [:]
             for a in state.subFlockAssignments { seen[a, default: 0] += 1 }
             for (k, v) in seen.sorted(by: { $0.key < $1.key }) { subCounts += "sf\(k)=\(v) " }
-            FileHandle.standardError.write(Data(
-                "t\(state.tick) p=\(flockCounts().0) pE=\(playerEnergy) pC=(\(Int(px / Double(max(pn, 1)))),\(Int(py / Double(max(pn, 1))))) L=(\(lead?.currentX ?? -1),\(lead?.currentY ?? -1)) f=[\(fieldBudgets)] r=\(rn) rE=\(rivalEnergy) rC=(\(Int(rx / Double(max(rn, 1)))),\(Int(ry / Double(max(rn, 1))))) \(falcons)\(subCounts)pts=\(pathPts)\n".utf8
-            ))
+            let line = "t\(state.tick) p=\(flockCounts().0) pE=\(playerEnergy)"
+                + " pC=(\(Int(px / Double(max(pn, 1)))),\(Int(py / Double(max(pn, 1)))))"
+                + " L=(\(lead?.currentX ?? -1),\(lead?.currentY ?? -1))"
+                + " f=[\(fieldBudgets)] r=\(rn) rE=\(rivalEnergy)"
+                + " rC=(\(Int(rx / Double(max(rn, 1)))),\(Int(ry / Double(max(rn, 1)))))"
+                + " \(falcons)\(subCounts)pts=\(pathPts)"
+            FileHandle.standardError.write(Data((line + "\n").utf8))
         }
     }
 

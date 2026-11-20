@@ -197,8 +197,10 @@ final class ForageDirectiveTests: XCTestCase {
         state.fields[field].ticksSinceFeed = ramped ? ForageScoring.rampTicks : 0
     }
 
-    private func assertClearOfFields(_ point: Waypoint, _ fields: [FieldState],
-        file: StaticString = #filePath, line: UInt = #line) {
+    private func assertClearOfFields(
+        _ point: Waypoint, _ fields: [FieldState],
+        file: StaticString = #filePath, line: UInt = #line
+    ) {
         for field in fields {
             let dx = Int64(point.x) - Int64(field.centerX)
             let dy = Int64(point.y) - Int64(field.centerY)
@@ -214,13 +216,15 @@ final class ForageDirectiveTests: XCTestCase {
         var state = makeRegion().makeGameState()
         state.tick = 1
         let directive = ForageScoring.directive(
-            state, bank: 400, nearX: 1024, nearY: 768, birds: 100,
-            current: nil, standoff: nil)
+            state, bank: 400,
+            flock: (x: 1024, y: 768, birds: 100),
+            pilot: .init(current: nil, standoff: nil))
         guard case .forage(let point) = directive else {
             return XCTFail("expected .forage, got \(directive)")
         }
         let centers: [(x: Int32, y: Int32)] = [(500, 480), (1560, 1060)]
-        XCTAssertTrue(centers.contains { $0.x == point.x && $0.y == point.y },
+        XCTAssertTrue(
+            centers.contains { $0.x == point.x && $0.y == point.y },
             "expected a field center, got \(point)")
     }
 
@@ -230,8 +234,9 @@ final class ForageDirectiveTests: XCTestCase {
         spend(&state, field: 0, ramped: true)
         spend(&state, field: 1, ramped: true)
         let directive = ForageScoring.directive(
-            state, bank: 400, nearX: 1024, nearY: 768, birds: 100,
-            current: nil, standoff: nil)
+            state, bank: 400,
+            flock: (x: 1024, y: 768, birds: 100),
+            pilot: .init(current: nil, standoff: nil))
         guard case .standoff(let point) = directive else {
             return XCTFail("expected .standoff, got \(directive)")
         }
@@ -244,14 +249,16 @@ final class ForageDirectiveTests: XCTestCase {
         spend(&state, field: 0, ramped: true)
         spend(&state, field: 1, ramped: true)
         guard case .standoff(let first) = ForageScoring.directive(
-            state, bank: 400, nearX: 1024, nearY: 768, birds: 100,
-            current: nil, standoff: nil)
+            state, bank: 400,
+            flock: (x: 1024, y: 768, birds: 100),
+            pilot: .init(current: nil, standoff: nil))
         else { return XCTFail("expected first .standoff") }
         // With the previous standoff point still clear, the directive must
         // return the same point so the flock does not chase a moving goal.
         let second = ForageScoring.directive(
-            state, bank: 380, nearX: 1030, nearY: 770, birds: 100,
-            current: first, standoff: first)
+            state, bank: 380,
+            flock: (x: 1030, y: 770, birds: 100),
+            pilot: .init(current: first, standoff: first))
         XCTAssertEqual(second, .standoff(first))
     }
 
@@ -260,16 +267,18 @@ final class ForageDirectiveTests: XCTestCase {
         state.tick = 1
         spend(&state, field: 0, ramped: true)
         spend(&state, field: 1, ramped: true)
-        guard case .standoff(_) = ForageScoring.directive(
-            state, bank: 400, nearX: 1024, nearY: 768, birds: 100,
-            current: nil, standoff: nil)
+        guard case .standoff = ForageScoring.directive(
+            state, bank: 400,
+            flock: (x: 1024, y: 768, birds: 100),
+            pilot: .init(current: nil, standoff: nil))
         else { return XCTFail("expected initial .standoff") }
         // Field 0 has refilled to 60% of its budget: worth a strip trip.
         state.fields[0].currentDepletion =
             state.fields[0].maxDepletion * 4 / 10
         let directive = ForageScoring.directive(
-            state, bank: 350, nearX: 1024, nearY: 768, birds: 100,
-            current: nil, standoff: nil)
+            state, bank: 350,
+            flock: (x: 1024, y: 768, birds: 100),
+            pilot: .init(current: nil, standoff: nil))
         guard case .forage(let point) = directive else {
             return XCTFail("expected .forage, got \(directive)")
         }
@@ -288,8 +297,9 @@ final class ForageDirectiveTests: XCTestCase {
         meal.currentDepletion = meal.maxDepletion - 300
         state.fields[0] = meal
         let directive = ForageScoring.directive(
-            state, bank: 50, nearX: 1024, nearY: 768, birds: 100,
-            current: nil, standoff: nil)
+            state, bank: 50,
+            flock: (x: 1024, y: 768, birds: 100),
+            pilot: .init(current: nil, standoff: nil))
         guard case .forage(let point) = directive else {
             return XCTFail("expected starving .forage, got \(directive)")
         }
@@ -333,16 +343,18 @@ final class ForageDirectiveTests: XCTestCase {
         // target is the far field B. Even though A scores higher, the
         // directive must commit to B.
         let committed = ForageScoring.directive(
-            state, bank: 400, nearX: 500, nearY: 480, birds: 1400,
-            current: Waypoint(x: 1560, y: 1060), standoff: nil)
+            state, bank: 400,
+            flock: (x: 500, y: 480, birds: 1400),
+            pilot: .init(current: Waypoint(x: 1560, y: 1060), standoff: nil))
         XCTAssertEqual(committed, .forage(Waypoint(x: 1560, y: 1060)))
         // Once B is spent the commitment lapses and the directive
         // re-decides — to field A, which is full and near.
         var spent = state
         spend(&spent, field: 1, ramped: true)
         let redecided = ForageScoring.directive(
-            spent, bank: 400, nearX: 1560, nearY: 1060, birds: 1400,
-            current: Waypoint(x: 1560, y: 1060), standoff: nil)
+            spent, bank: 400,
+            flock: (x: 1560, y: 1060, birds: 1400),
+            pilot: .init(current: Waypoint(x: 1560, y: 1060), standoff: nil))
         guard case .forage(let point) = redecided else {
             return XCTFail("expected re-decision to field A, got \(redecided)")
         }
@@ -362,8 +374,9 @@ final class ForageDirectiveTests: XCTestCase {
         spend(&state, field: 0, ramped: false)
         spend(&state, field: 1, ramped: false)
         let directive = ForageScoring.directive(
-            state, bank: 50, nearX: 1024, nearY: 900, birds: 1400,
-            current: nil, standoff: nil)
+            state, bank: 50,
+            flock: (x: 1024, y: 900, birds: 1400),
+            pilot: .init(current: nil, standoff: nil))
         guard case .standoff = directive else {
             return XCTFail("expected standoff while all fields are spent, got \(directive)")
         }
@@ -387,8 +400,9 @@ final class ForageDirectiveTests: XCTestCase {
         // regrowth-by-arrival once scored ~170, enough to lure a trip
         // that would milk the trickle and pin the field.
         let directive = ForageScoring.directive(
-            state, bank: 50, nearX: 1013, nearY: 335, birds: 1400,
-            current: nil, standoff: nil)
+            state, bank: 50,
+            flock: (x: 1013, y: 335, birds: 1400),
+            pilot: .init(current: nil, standoff: nil))
         guard case .standoff = directive else {
             return XCTFail("expected standoff on a ramped crumb, got \(directive)")
         }
@@ -413,7 +427,8 @@ final class ForageDirectiveTests: XCTestCase {
         let dx = Int64(point.x) - 700
         let dy = Int64(point.y) - 750
         let dist = isqrt64(UInt64(dx * dx + dy * dy))
-        XCTAssertLessThan(dist, 900,
+        XCTAssertLessThan(
+            dist, 900,
             "standoff point should be near the flock, got dist \(dist)")
     }
 
@@ -432,9 +447,11 @@ final class ForageDirectiveTests: XCTestCase {
         crumb.currentDepletion = crumb.maxDepletion - 100
         state.fields[1] = crumb
         let directive = ForageScoring.directive(
-            state, bank: 50, nearX: crumb.centerX, nearY: crumb.centerY,
-            birds: 1400, current: Waypoint(x: crumb.centerX, y: crumb.centerY),
-            standoff: nil)
+            state, bank: 50,
+            flock: (x: crumb.centerX, y: crumb.centerY, birds: 1400),
+            pilot: .init(
+                current: Waypoint(x: crumb.centerX, y: crumb.centerY),
+                standoff: nil))
         XCTAssertEqual(
             directive, .forage(Waypoint(x: crumb.centerX, y: crumb.centerY)))
     }
