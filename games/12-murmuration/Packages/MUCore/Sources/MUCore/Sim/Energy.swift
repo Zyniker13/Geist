@@ -50,11 +50,33 @@ public enum EnergyEvent: Codable, Sendable, Equatable, Hashable {
 }
 
 /// Compute energy drain for all sub-flocks.
-/// R-8: energy drains proportional to flock size.
+/// R-8: energy drains proportional to flock size **while in flight**.
+/// A sub-flock settled inside a roost radius is not in flight, so it does not drain.
 public func computeEnergyDrain(state: inout GameState) -> [EnergyEvent] {
     var events: [EnergyEvent] = []
     for sf in 0..<Int(state.subFlockCount) {
         let birdCount = countBirdsInFlock(assignments: state.subFlockAssignments, subFlock: UInt8(sf))
+        guard birdCount > 0 else { continue }
+        // Centroid of this sub-flock.
+        var cx = 0, cy = 0
+        for i in 0..<state.birds.count where state.birds.subFlock[i] == UInt8(sf) {
+            cx += Int(state.birds.posX[i])
+            cy += Int(state.birds.posY[i])
+        }
+        cx /= birdCount
+        cy /= birdCount
+        // If the centroid is within 2x any roost radius, the flock is settled (not in flight).
+        var settled = false
+        for roost in state.roosts {
+            let dx = cx - Int(roost.centerX)
+            let dy = cy - Int(roost.centerY)
+            let r2 = Int(roost.radius) * 2
+            if dx * dx + dy * dy <= r2 * r2 {
+                settled = true
+                break
+            }
+        }
+        if settled { continue }
         let drain = (birdCount * GameState.energyDrainPer100) / 100
         if drain > 0 {
             state.energy[sf] = max(0, state.energy[sf] - drain)
@@ -107,7 +129,7 @@ public func computeFeeding(state: inout GameState, rng: inout SeededRNG) -> [Ene
             // field at the full flock's rate (see ADR-0028).
             let idx = subFlocksInField.firstIndex(of: sf)!
             let birdCount = birdsInField[idx]
-            let gain = min(birdCount * field.richness / 10, field.maxDepletion - field.currentDepletion)
+            let gain = min(birdCount * field.richness / 7, field.maxDepletion - field.currentDepletion)
             if gain > 0 {
                 state.energy[Int(sf)] = min(GameState.maxEnergy, state.energy[Int(sf)] + gain)
                 field.currentDepletion += gain

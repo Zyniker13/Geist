@@ -696,3 +696,50 @@ Architecture decision records. Every deviation from the roadmap is recorded here
   travel and biases parked flocks by a few units. The P4 balance
   tiers must be re-measured on the braked kernel; the pre-brake
   numbers (gentle 67.5%, normal 66.3%, hard 62.8%) are superseded.
+
+## ADR-0032: The energy drain applies only while in flight; grazing budget doubled (2026-11-20)
+- **Context:** After ADR-0031 removed the pendulum, the balance sweep
+  still showed every flock shrinking all day (player 838→80, rival
+  661→356 over one day) and collapsing at dusk (peak ~1058 → ~353);
+  hard-tier win rates sat far above the 35% target. Instrumented
+  traces (per-tick events) showed flocks cycling 0→X→0 energy from
+  the morning trip onward, and both sides going to 0 energy for the
+  whole 900-tick dusk. Two independent causes:
+  (1) the feed rate was capped below the drain rate — the default
+  depletion budget `fieldRichness * 10` (~650 on commons) with slow
+  regrowth (13 per 100 ticks) bounds grazing at ~3.7 energy/tick
+  while a 500-bird flock drains ~5/tick, so no flock could ever
+  build the surplus the growth rule (R-9) needs; and
+  (2) the drain applied unconditionally, but R-8 says energy
+  "decreases ... while in flight" — during dusk every flock sits at
+  a roost, and no region's roosts overlap any feeding field
+  (closest ~403 units on commons), so a condensed flock burns
+  energy it has no way to replace: the 900-tick dusk alone costs a
+  500-bird flock 4,500 energy against a 1,000 cap.
+- **Decision:** three aligned changes. (a) The default field budget
+  doubles to `fieldRichness * 20` (GameState; region JSONs may still
+  override `maxDepletion` explicitly). (b) The grazing gain divisor
+  drops from 10 to 7 (`birdCount * richness / 7`), so grazing a
+  full field outpaces the flight drain — this constant is engine
+  tuning, not a roadmap-pinned rule. (c) `computeEnergyDrain`
+  applies the R-8 drain only while the sub-flock is in flight: it
+  computes the sub-flock centroid from the bird SoA and skips the
+  drain when the centroid lies within twice a roost's radius (twice,
+  because boids keep milling and a bare 1× radius test almost never
+  catches the centroid). A split flock drains per sub-flock on its
+  own centroid, so parking one bird cannot shelter the flock.
+  `replayContentVersion` bumps to 12; goldens are regenerated.
+- **Tests:** `testR8FeedingCountsBirdsInField` and
+  `testGainResetsRegrowthClock` re-anchored to the /7 divisor;
+  new regression `testR8EnergyDrainSkippedWhenSettledAtRoost`
+  (settled → no drain, energy unchanged) and
+  `testR8EnergyDrainAppliesWhenCentroidOutsideRoost` (flying →
+  1/tick per 100 birds).
+- **Consequences:** Feeding is now possible at a surplus, R-9's
+  growth rule can operate, and settled flocks hold energy through
+  dusk instead of starving to the tiebreak. The G4 balance targets
+  must be re-measured on this energy model (sweep rerun); the
+  pre-ADR numbers (hard tier 61–100% player) are superseded. If the
+  re-sweep still misses the dusk-flock window, the next levers are
+  the grazing radius/geometry, not the drain rule, which stays
+  pinned to R-8's wording.

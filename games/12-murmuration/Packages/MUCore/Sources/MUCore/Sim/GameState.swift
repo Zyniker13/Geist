@@ -128,7 +128,12 @@ public struct GameState: Codable, Sendable, Equatable {
     /// v11: a split widens every roost's claim row by one slot (R-12);
     /// before this, a third sub-flock's dusk claim trapped with
     /// "Index out of range" (exit 133 in the G4 hard-tier balance sweep).
-    public static let replayContentVersion = 11
+    /// v12: energy tuning for the G4 dusk-flock window (ADR-0032) — fields
+    /// hold double the depletion budget (`fieldRichness * 20`), grazing gain
+    /// uses divisor 7 instead of 10, and the energy drain applies only while
+    /// the sub-flock is in flight (R-8 "while flying"), so flocks no longer
+    /// starve through the 900-tick dusk on roosts that overlap no field.
+    public static let replayContentVersion = 12
 
     /// Content version for golden replays.
     public let contentVersion: Int
@@ -300,7 +305,7 @@ public struct GameState: Codable, Sendable, Equatable {
                 radius: Int32(fieldRadius[i]),
                 richness: fieldRichness[i],
                 currentDepletion: 0,
-                maxDepletion: fieldRichness[i] * 10,
+                maxDepletion: fieldRichness[i] * 20,
                 ticksSinceFeed: 0
             ))
         }

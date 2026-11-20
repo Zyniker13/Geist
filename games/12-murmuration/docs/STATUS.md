@@ -883,3 +883,25 @@ v10→v11 (20 replays re-anchored with wider claim rows). Verified:
 crash). All packages green: MUCore 101/101, MUAI 53/53, MUContent
 37/37, MURender 12/12, MUAudio 1/1, MUPlatform 1/1; `make lint`
 clean. CI green on 335fc3c. Balance sweep to be re-run.
+
+**Energy model rework (2026-11-20, in progress):** the G4 sweep on
+the ramped binary still showed every flock starving (energy cycling
+0→X→0 all day, both sides at 0 through the 900-tick dusk; hard tier
+61–100% player wins vs the 35% target). Two causes, both fixed
+(ADR-0032): (1) the grazing rate was capped below the flight drain
+— the field budget `richness*10` (~650) with 13/100-tick regrowth
+bounds feed at ~3.7/tick vs a ~5/tick drain; (2) the drain applied
+unconditionally though R-8 pins it "while in flight", so dusk
+(900 ticks, no roost overlaps any field) burned every flock to the
+bird-count tiebreak. Changes: field budget `richness*10`→`*20`
+(GameState default), feed divisor 10→7 (Energy), and
+`computeEnergyDrain` now skips the drain while the sub-flock
+centroid sits within 2× a roost radius (per sub-flock, so a parked
+straggler can't shelter a flying flock). `replayContentVersion`
+11→12. Rule tests re-anchored to /7; new settled-drain regressions
+both pass; the full suite waits on golden regeneration (sim
+rebuild is sequenced behind the running balance sweep so the
+running binary isn't swapped). G4 sweep (100 days × 6 regions × 3
+tiers, with new `playerDusk`/`rivalDusk` columns for the
+1,000–2,500 dusk-flock target) running; results and the remaining
+tuning follow.
