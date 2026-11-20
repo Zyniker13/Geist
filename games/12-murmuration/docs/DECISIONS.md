@@ -664,3 +664,35 @@ Architecture decision records. Every deviation from the roadmap is recorded here
   centre, so standoffMargin shrinks from 400 to 200 and the standoff
   pockets sit near the fields, shortening the wait phase's travel.
   The rival AI should adopt the same habit in its own cadence.
+
+## ADR-0031: The boid kernel brakes velocity near the leader point (2026-11-20)
+- **Context:** The R-6 leader force is constant-magnitude, so a flock
+  parked on a roost or field pendulumed around the leader point
+  forever (worst centroid offset 135 units after 600 ticks) instead
+  of settling. The oscillation kept birds out of field radius for
+  large fractions of the day, starved the flock, and pinned the
+  balance sweep: every tier won ~63–67% with no separation.
+- **Decision:** `BoidsParams` gains `leaderBrakeRadius` (800) and
+  `leaderBrakeQ` (0.5 in Q16.16). Inside the radius of the leader
+  point, a bird's velocity is damped by `leaderBrakeQ` each tick
+  (force `−v·q`); outside, the leader force is unchanged, so travel
+  speed is untouched. `replayContentVersion` bumps to 9 and the 20
+  golden replays were regenerated. Tests re-anchored: R6 measures
+  the bare force outside the radius (plus a braked case); R1 wind
+  now probes the travel phase (leader upwind, 120 ticks), because a
+  braked parked flock can no longer show wind displacement above
+  cluster-shape variance.
+- **Follow-up (same day):** the first brake was flat — 0.5/tick everywhere
+  inside the 800 radius — which covers whole day-start trips (roost to field
+  is ~600 units), so both pilots crawled at 4–5 units/tick and the day-start
+  clouds merged on tick 29 before they could separate. The brake now ramps
+  linearly from full damping at the leader point to zero at the radius edge
+  (an arrive profile): transit keeps cruise speed, only the final approach
+  decelerates. `replayContentVersion` 10, goldens regenerated, R6 re-anchored
+  to the ramp (commit 7318e7d).
+- **Consequences:** A parked flock mills within ~100 units of the
+  leader point and keeps nearly all birds inside a field's radius,
+  which is what the feeding rules (R-8) assume. Wind still steers
+  travel and biases parked flocks by a few units. The P4 balance
+  tiers must be re-measured on the braked kernel; the pre-brake
+  numbers (gentle 67.5%, normal 66.3%, hard 62.8%) are superseded.

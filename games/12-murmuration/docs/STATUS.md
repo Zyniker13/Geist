@@ -840,3 +840,28 @@ six regions, output `docs/balance/<tier>.csv`. Targets: player win rate
 ≈ 85% gentle / 60% normal / 35% hard, dusk flock 1,000–2,500, falcon
 losses 5–20% of peak. Results and the balance report to be recorded here
 when the sweep completes.
+
+**Boid leader brake (2026-11-20, 81580cd + 7318e7d, ADR-0031):** the
+R-6 leader force was a constant-magnitude pull with no damping — an
+undamped oscillator — so a parked flock pendulummed around the leader
+point (worst centroid offset 135 units after 600 ticks) and the
+balance sweep pinned at ~63–67% for every tier with no separation:
+the flock never sat inside a field long enough to feed. The kernel
+now brakes velocity near the leader point (`leaderBrakeRadius` 800,
+`leaderBrakeQ` 0.5/tick at the point, ramping linearly to zero at the
+edge). The flat first cut (81580cd) damped whole day-start trips to a
+crawl (4–5 units/tick) and the day-start clouds merged on tick 29
+before the pilots could separate them — diagnosed with a per-tick
+separation dump (`MergeDiagnostics`, `MU_MERGE_DIAG=1`); the ramp
+(7318e7d) restores cruise-speed transit and clears the merge window
+at tick 26. `replayContentVersion` 8→10, goldens regenerated,
+`testR6LeaderForceMatchesWeight`/`testR1WindDriftsFlockDownwind`/
+`testUltraDenseOverflow` re-anchored, plus a new
+`testFlockConvergesToStationaryLeader` regression (RED 135 → GREEN <80).
+All packages green: MUCore 100/100, MUAI 53/53 (1 env-gated skip),
+MUContent 37/37; `make lint` clean. `testVersusTwoFlockRouting`
+failed once in the full gate re-run (pre-brake binary) and passes on
+the new binary — treated as a timing flake, re-verified. CI on
+81580cd: lint/build/ui-test jobs all pass; only the SPM `test` job
+failed on the pre-ramp merge test (fixed by 7318e7d). Balance sweeps
+re-running on the ramped binary.
