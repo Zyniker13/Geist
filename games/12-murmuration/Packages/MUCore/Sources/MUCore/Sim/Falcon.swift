@@ -135,8 +135,14 @@ public func computeFalcons(state: inout GameState, rng: inout SeededRNG) -> [Fal
                         falconX: Int64(falcon.currentX), falconY: Int64(falcon.currentY),
                         targetX: Int64(targetX), targetY: Int64(targetY))
                     let pathRadius2 = Int64(GameState.diveRadius) * Int64(GameState.diveRadius)
+                    // ADR-0036: the budget scales with the struck flock's
+                    // whole side (R-13 owners), so a forced split cannot
+                    // halve the side's per-dive losses.
                     let grabBudget = falconKillBudget(
-                        flockSize: state.subFlockAssignments.filter { $0 == UInt8(bestSF) }.count,
+                        flockSize: birdsOnSideCount(
+                            assignments: state.subFlockAssignments,
+                            owners: state.subFlockOwners,
+                            side: state.subFlockOwners[Int(bestSF)]),
                         edgeDensity: bestDensity,
                         perThousand: GameState.falconGrabPerThousand)
                     var candidates: [(d2: Int64, idx: Int)] = []
@@ -254,13 +260,29 @@ func divePathEnd(
     return (targetX + dirX * reach / len, targetY + dirY * reach / len)
 }
 
-/// R-10 grab budget for one successful dive: proportional to the target
-/// flock's size (`perThousand` birds per 1,000) so losses stay a stable
-/// fraction of the flock, throttled by the edge density (fewer kills in
-/// dense areas) down to half, floored at one bird.
+/// R-10 grab budget for one successful dive: proportional to the struck
+/// flock's **side** size (`perThousand` birds per 1,000 of all birds on the
+/// side, ADR-0036) so losses stay a stable fraction of the side and a
+/// forced split cannot halve the side's per-dive losses, throttled by the
+/// edge density (fewer kills in dense areas) down to half, floored at one
+/// bird.
 func falconKillBudget(flockSize: Int, edgeDensity: Int, perThousand: Int) -> Int {
     let denseThrottle = 256 - min(edgeDensity, 128)
     return max(1, flockSize * perThousand * denseThrottle / (1000 * 256))
+}
+
+/// Total birds on the side owning `subFlock` (ADR-0033 owners, ADR-0036):
+/// every member of every sub-flock whose owner matches counts once, so the
+/// count is invariant under how a side is partitioned into sub-flocks.
+public func birdsOnSideCount(
+    assignments: some Collection<UInt8>, owners: some Collection<UInt8>, side: UInt8
+) -> Int {
+    let flocks = owners.enumerated()
+        .filter { $0.element == side }
+        .map { $0.offset }
+    return flocks.reduce(0) { total, flock in
+        total + assignments.filter { $0 == UInt8(flock) }.count
+    }
 }
 
 /// Average same-flock neighbor count within the alignment radius for a

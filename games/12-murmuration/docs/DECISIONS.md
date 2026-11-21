@@ -858,3 +858,40 @@ Architecture decision records. Every deviation from the roadmap is recorded here
   rather than by its own flocking, split-off flocks stay alive, and
   the 85/60/35 win-rate targets rest on tuned behavior instead of
   side-stealing or starvation accidents.
+
+## ADR-0036: The falcon grab budget scales with the struck flock's side, not the flock (2026-11-21)
+
+- **Context:** The G4 balance sweeps showed the player beating the hard
+  rival far above the 35% target because the player can farm forced
+  splits as pressure relief: the stoop's grab budget scaled with the
+  struck flock's own size, so a side that held 800 birds in two flocks
+  of 400 drew budget 3 per dive while the intact side drew 6 — halving
+  your own flock cut your falcon losses in half. The budget exists to
+  cap losses per dive (R-10, ADR-0034); its correct denominator is the
+  side that bears the pressure, not the sub-flock that happens to be
+  struck, since `splitFlock` (ADR-0033) keeps the new flock on the same
+  side. A minted leaderless fragment below 100 birds drains zero per
+  tick (integer division in `computeEnergyDrain`), so fragments persist
+  and a persistent fragment under flock-scaled sizing would keep
+  suppressing a side's losses forever.
+- **Decision:** `computeFalcons` now sizes the grab budget with
+  `birdsOnSideCount` — the sum of live birds across every sub-flock
+  owned by the struck flock's side (`subFlockOwners`), counted side-blind
+  so every member of every same-owner sub-flock counts exactly once —
+  instead of the struck flock's count. `falconKillBudget`'s formula and
+  constants are unchanged; only the input changed. This is a
+  behavior-affecting engine change: `replayContentVersion` bumps 15 → 16
+  and the 20 committed golden replays are regenerated against v16.
+- **Tests:** `FalconStoopTests` rewritten for side semantics:
+  `testR10KillBudgetScalesWithSideSize` pins `birdsOnSideCount` across
+  mixed owner/assignment shapes plus the unchanged budget rows, and
+  `testR10DiveOnSplitSideUsesSideBudget` is an end-to-end regression
+  that catches a flock-scaled revert — a split 800-bird side (240/560)
+  takes 3 kills in a 3-bird corridor, where flock-scaled sizing would
+  take 1. MUCore 113/113 green.
+- **Consequences:** Falcon pressure is now invariant under how a side
+  partitions its birds: splitting no longer halves a side's per-dive
+  losses, closing the split-farming asymmetry the G4 sweeps exposed.
+  Sides that split still pay the split's real costs (leadership,
+  micro-fragments are dive bait), but losses per dive track the side's
+  true size.

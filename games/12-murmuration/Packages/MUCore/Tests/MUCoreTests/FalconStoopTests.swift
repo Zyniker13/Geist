@@ -2,7 +2,7 @@ import XCTest
 @testable import MUCore
 
 /// R-10 falcon stoop tests: target selection, path-based kills, and the
-/// size-scaled grab budget (docs/RULES.md R-10, ADR-0034).
+/// side-scaled grab budget (docs/RULES.md R-10, ADR-0034, ADR-0036).
 final class FalconStoopTests: XCTestCase {
 
     func testR10FalconTargetsLowestDensityEdge() {
@@ -95,12 +95,24 @@ final class FalconStoopTests: XCTestCase {
         }
     }
 
-    func testR10KillBudgetScalesWithFlockSize() {
-        // The grab budget scales with flock size so losses stay a stable
-        // fraction of the flock (G4 falcon-loss metric) and is throttled in
-        // dense areas (R-10), floored at one bird. The budget constant is
-        // passed explicitly (the production site reads
-        // GameState.falconGrabPerThousand) so the test pins no global.
+    func testR10KillBudgetScalesWithSideSize() {
+        // ADR-0036: the grab budget scales with the struck flock's *side*
+        // size, not the flock alone, so a forced split cannot halve a
+        // side's per-dive losses (the pre-fix behavior let the player farm
+        // splits as pressure relief while minted fragments still drew
+        // flock-scaled budgets). `birdsOnSideCount` is side-blind: every
+        // member of every sub-flock owned by the side counts exactly once.
+        XCTAssertEqual(birdsOnSideCount(assignments: [0, 0, 1, 1], owners: [0, 1], side: 0), 2)
+        XCTAssertEqual(birdsOnSideCount(assignments: [0, 0, 1, 1], owners: [0, 1], side: 1), 2)
+        XCTAssertEqual(birdsOnSideCount(assignments: [0, 1, 2, 2, 1], owners: [0, 0, 1], side: 0), 3)
+        XCTAssertEqual(birdsOnSideCount(assignments: [0, 1, 2, 2, 1], owners: [0, 0, 1], side: 1), 2)
+        XCTAssertEqual(birdsOnSideCount(assignments: [], owners: [0, 1], side: 0), 0)
+        XCTAssertEqual(birdsOnSideCount(assignments: [0, 1, 2], owners: [0, 1, 1], side: 1), 2)
+
+        // The budget formula itself is unchanged (ADR-0034), now fed the
+        // side size. The constant is passed explicitly (the production
+        // site reads GameState.falconGrabPerThousand) so the test pins no
+        // global.
         XCTAssertEqual(falconKillBudget(flockSize: 50, edgeDensity: 0, perThousand: 8), 1)
         XCTAssertEqual(falconKillBudget(flockSize: 500, edgeDensity: 0, perThousand: 8), 4)
         XCTAssertEqual(falconKillBudget(flockSize: 1400, edgeDensity: 0, perThousand: 8), 11)
@@ -152,5 +164,63 @@ final class FalconStoopTests: XCTestCase {
             return
         }
         XCTFail("no successful dive across seeds 1...40")
+    }
+
+    /// E2E regression for ADR-0036 (catches a revert to flock-scaled
+    /// budgets): a split side must draw the budget its *side* earns, not
+    /// the struck flock's smaller share. Geometry pins every input.
+    /// After `splitFlock(from: 0, ratio: 0.3)` on 800 birds, flock 1 (the
+    /// struck flock) holds 240 birds and the side holds 800, so the
+    /// side-scaled budget is 6 while a flock-scaled revert computes 1.
+    /// The dive corridor holds exactly 3 birds: with the side budget the
+    /// strike takes 3; a flock-scaled revert takes 1 and fails the test.
+    func testR10DiveOnSplitSideUsesSideBudget() {
+        for seed in 1...40 {
+            var state = makeState(birdCount: 800, falconCount: 1, seed: UInt64(seed))
+            let (split, _) = applyAction(.splitFlock(from: 0, ratio: 0.3), to: state)
+            state = split
+            // The split reassigns the first 240 indices to flock 1.
+            // Flock 1 (240, struck): three sparse birds in the dive corridor
+            // and the rest in a ball just outside the 600 engage radius.
+            // Flock 0 (560): a dense ball far away, edge density far above
+            // flock 1's 3, so the patroller targets flock 1.
+            for i in 0..<state.birds.count {
+                state.birds.velX[i] = 0
+                state.birds.velY[i] = 0
+                if i < 240 {
+                    if i < 3 {
+                        state.birds.posX[i] = 1450
+                        state.birds.posY[i] = 768 + Int32(i) * 8
+                    } else {
+                        let j = i - 3
+                        state.birds.posX[i] = 1450 + Int32(j % 8) * 3
+                        state.birds.posY[i] = 1200 + Int32(j / 8) * 3
+                    }
+                } else {
+                    let j = i - 240
+                    state.birds.posX[i] = 300 + Int32(j % 4) * 2
+                    state.birds.posY[i] = 300 + Int32(j / 4) * 2
+                }
+            }
+            state.falcons[0].currentX = 1950
+            state.falcons[0].currentY = 768
+            state.falcons[0].cooldown = 0
+
+            // Stoop: (1950,768) → edge (1450,768) → 60 beyond. The corridor
+            // |y-768| ≤ 30, x ∈ [1390,1950] holds exactly the three sparse
+            // birds. Seed over the success roll (dense-average may make it
+            // 35%); kills = 3 requires budget ≥ 3, which only the side
+            // scaling delivers.
+            var rng = SeededRNG(seed: UInt64(seed))
+            let events = computeFalcons(state: &state, rng: &rng)
+            let kills = events.compactMap { event -> Int? in
+                if case .diveResult(_, _, true, let taken) = event { return taken }
+                return nil
+            }.first
+            guard let kills, kills >= 3 else { continue }
+            XCTAssertEqual(kills, 3, "seed \(seed): the corridor holds exactly 3 birds")
+            return
+        }
+        XCTFail("no dive reached the 3-bird corridor across seeds 1...40")
     }
 }

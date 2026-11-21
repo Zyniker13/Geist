@@ -152,7 +152,12 @@ public struct GameState: Codable, Sendable, Equatable {
     /// `diveRadius` around the stoop path (the 2× catchment minted a
     /// second flock on nearly every hit), and the rival dusk tunables
     /// (`claimGate`/`contestRatio`/`splitMinBirds`) join the pilot.
-    public static let replayContentVersion = 15
+    /// v16: ADR-0036 — the falcon grab budget scales with the struck
+    /// flock's side size (via `subFlockOwners`) instead of the struck
+    /// flock's own size, so a forced split no longer halves a side's
+    /// per-dive losses; replay trajectories diverge wherever a dive hits
+    /// a split side.
+    public static let replayContentVersion = 16
 
     /// R-10 grab budget: successful-dive kills per 1,000 birds of the target
     /// flock (ADR-0034). Tuning constant — the balance harness overrides it
