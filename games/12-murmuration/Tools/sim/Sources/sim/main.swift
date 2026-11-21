@@ -226,8 +226,8 @@ func runBalanceDay(region: Region, tier: RivalDifficulty, day: UInt64) -> String
             switch event {
             case .victory(let who):
                 winner = who
-            case .falcon(.diveResult(_, let flock, let hit)) where hit:
-                if flock == 0 { playerFalconLosses += 1 } else { rivalFalconLosses += 1 }
+            case .falcon(.diveResult(_, let flock, let hit, let kills)) where hit:
+                if flock == 0 { playerFalconLosses += kills } else { rivalFalconLosses += kills }
             case .roost(.dayEnd(let p, let rv)):
                 playerRoosts = p
                 rivalRoosts = rv
@@ -235,13 +235,13 @@ func runBalanceDay(region: Region, tier: RivalDifficulty, day: UInt64) -> String
                 break
             }
             if balanceEvents > 0 {
-                var line: String? = nil
+                var line: String?
                 switch event {
-                case .energy(.drain(_, _)): break
+                case .energy(.drain): break
                 case .energy(.feed(let sf, let amt, let f)): line = "t\(state.tick) feed sf\(sf) +\(amt) f\(f)"
                 case .energy(.grow(let sf, let n)): line = "t\(state.tick) GROW sf\(sf) +\(n)"
                 case .energy(.starve(let sf, let n)): line = "t\(state.tick) STARVE sf\(sf) -\(n)"
-                case .falcon(.diveResult(let fi, let sf, let hit)): line = "t\(state.tick) dive f\(fi) sf\(sf) \(hit ? "hit" : "miss")"
+                case .falcon(.diveResult(let fi, let sf, let hit, let n)): line = "t\(state.tick) dive f\(fi) sf\(sf) \(hit ? "hit \(n)" : "miss")"
                 case .split(let from, let into): line = "t\(state.tick) split \(from)->\(into)"
                 case .merge(let into, let from): line = "t\(state.tick) merge \(from)->\(into)"
                 case .birdCountChange(let d): line = "t\(state.tick) count \(d > 0 ? "+" : "")\(d)"
@@ -357,7 +357,8 @@ if let balanceTierName = balanceTier {
     let ids = balanceRegions.map { $0.split(separator: ",").map(String.init) } ?? catalog.ids
     let regions = ids.compactMap { catalog.region(id: $0) }
     precondition(regions.count == ids.count, "unknown region id in \(ids)")
-    var rows = ["region,tier,day,winner,playerBirds,rivalBirds,playerPeak,rivalPeak,playerDusk,rivalDusk,falconLossPlayer,falconLossRival,playerRoosts,rivalRoosts,autoplayerNsPerTick,rivalNsPerTick,ticks"]
+    var rows = ["region,tier,day,winner,playerBirds,rivalBirds,playerPeak,rivalPeak,playerDusk,rivalDusk,"
+        + "falconLossPlayer,falconLossRival,playerRoosts,rivalRoosts,autoplayerNsPerTick,rivalNsPerTick,ticks"]
     for region in regions {
         for day in 1...max(balanceDays, 1) {
             rows.append(runBalanceDay(region: region, tier: tier, day: UInt64(day)))

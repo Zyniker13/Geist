@@ -906,8 +906,44 @@ tiers, with new `playerDusk`/`rivalDusk` columns for the
 1,000–2,500 dusk-flock target) running; results and the remaining
 tuning follow.
 
+### P4.1 — G4 sweep rerun on the ownership-fixed engine, falcon stoop rework (2026-11-20/21)
+
+**balg4 sweep results (100 days × 6 regions × 3 tiers, engine v13,
+scratch `balg4_*.csv`):** player win rates gentle **75.7%**, normal
+**85.0%**, hard **90.3%** (targets 85/60/35) — the difficulty ordering is
+still inverted after ADR-0033. Rival dusk-flock medians: gentle 550,
+normal 480, hard 424, against player medians 920/1085/1157 (player dusk
+inside the 1,000–2,500 window for normal/hard; gentle a touch under).
+Per-region player win rate: commons 56/68/72%, delta 67/76/91%, gorge
+70/84/90%, ridge 77/91/93%, fenlands 84/91/96%, meadow 100/100/100%.
+Every rival win comes from a 2-roost day against the player's 1 (rival
+roosts med 2 on rival-win days); on tied-roost days the player wins
+~78% on the bird-count tiebreak.
+
+**Why stronger tiers play weaker:** the tier table's only effective day
+levers are `standoffDistance` (640/520/380) and the flee cadence
+(60/45/30). `forageInterval` is vestigial — `forageIfNeeded` re-decides
+through `ForageScoring.directive` every tick and never reads it (the
+pre-fix probe grid's identical forage rows confirmed it). A small
+standoff makes the rival graze the player's fields (shared budget) and
+fly more (the ADR-0032 drain applies in flight), so the hard rival
+starves to ~0.47× the player, trips its own `playerBirds ≤ 2·rivalBirds`
+contest guard, and stops claiming roosts entirely (rival roosts med 0).
+The large standoff farms uncontested fields instead. The dusk-claim
+gates, not the forage cadence, are the levers — retune planned as
+ADR-0035 with `claimGate`/`contestRatio` as separate tunables.
+
+**Falcon stoop rework (ADR-0034, contentVersion 14):** kills now land
+within `diveRadius` of the falcon→target→2×diveRadius segment instead of
+the dive point, the grab budget scales with the target flock's size
+(`flockSize·8/1000`, density-throttled, floor 1), the forced-split check
+runs against the path, and `diveResult` carries the kill count so the
+sweep counts birds taken. `FalconStoopTests` (5 tests) added; the three
+R-10 tests moved out of `RulesEngineTests`. MUCore full suite green
+(131 tests, 0 failures, EXIT=0 at 00:55); sim tool rebuilds clean.
+
 **Tier-table inversion found (2026-11-20, in progress):** the sweep's
-first two tiers finished and inverted the intended difficulty
+ first two tiers finished and inverted the intended difficulty
 ordering: gentle 57.3% player wins (target 85), normal 72.2%
 (target 60). Event traces explain why: feeding is per-tick inside a
 field radius, so the gentle rival's slow forage cadence (480 ticks)

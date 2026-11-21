@@ -144,7 +144,11 @@ public struct GameState: Codable, Sendable, Equatable {
     /// v13: versus sub-flock side ownership (ADR-0033) — `spawnRival`
     /// replaces the starter split, `subFlockOwners` gates forced splits,
     /// scripted splits, and the day-end roost tally.
-    public static let replayContentVersion = 13
+    /// v14: falcon stoop path (ADR-0034) — kills land within `diveRadius`
+    /// of the falcon→target→2×diveRadius segment instead of the dive point,
+    /// the grab budget scales with the target flock's size, and the
+    /// centroid split check runs against the path.
+    public static let replayContentVersion = 14
 
     /// Content version for golden replays.
     public let contentVersion: Int

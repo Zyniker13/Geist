@@ -785,3 +785,39 @@ Architecture decision records. Every deviation from the roadmap is recorded here
   The pre-fix G4 numbers (Gentle 57.3%, Normal 72.2%) are superseded —
   the sweep reruns on this engine. The autoplayer's nearest-roost dusk
   strategy is the remaining known weakness and a legitimate tuning target.
+
+## ADR-0034: The falcon stoop kills along its path with a size-scaled grab budget (2026-11-21)
+
+- **Context:** R-10's successful dive removed `max(1, 4 − density/8)`
+  birds nearest the dive point. Two defects showed up against the
+  post-ADR-0032 economy and the G4 balance report. (1) Geometry: a stoop
+  is a line, not a point — birds strung along the dive line just outside
+  the point survived a dive that visually passed through them, and the
+  R-10 forced-split check only saw the point too. (2) Scaling: a flat
+  ≤4 budget is a constant, so falcon pressure was a vanishing fraction
+  at the G4 dusk-flock scale (4 of 2,500 is 0.16%) while a 60-bird
+  flock lost up to 6.7% per dive — the pressure did not scale with the
+  thing it acted on, and the sweep's `falconLoss*` columns counted
+  dives, not birds.
+- **Decision:** Kills land within `diveRadius` (30) of the stoop path —
+  the segment from the falcon through the dive target extended 2×
+  `diveRadius` beyond in the falcon→target direction. The grab budget
+  is proportional to the target flock's size, `flockSize·8/1000`
+  (a stable ~0.8% unthrottled), throttled by the edge density toward
+  half at density ≥ 128 (R-10's dense-flock shield), floored at one
+  bird. The forced-split check runs against the same path (within 2×
+  `diveRadius` of it, as before). `FalconEvent.diveResult` carries the
+  kill count; the balance harness sums kills per side. Pure integer
+  math (`distanceToSegment2` exact projection, `isqrt64` for the path
+  direction), INV-3 preserved. `replayContentVersion` 13→14; the 20
+  golden replays regenerated.
+- **Tests:** `FalconStoopTests` (5): the three R-10 tests moved from
+  `RulesEngineTests` (lowest-density-edge targeting, radius-bounded
+  kills, dense-flock cap) plus two new ones — the grab-budget table
+  (size-scaled, density-throttled, floored) and a path-kill probe where
+  a bird inside the stoop corridor dies while an equally-near-to-target
+  bird off the corridor survives.
+- **Consequences:** Falcon losses now scale with flock size (~0.4–0.8%
+  per successful dive), the R-10 geometry matches the dive the player
+  sees, and the G4 falcon-loss metric measures birds taken. The balance
+  retune (ADR-0035) probes on this engine.

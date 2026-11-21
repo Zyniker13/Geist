@@ -36,8 +36,9 @@ public struct FalconState: Codable, Sendable, Equatable, Hashable {
 public enum FalconEvent: Codable, Sendable, Equatable, Hashable {
     /// Falcon starts a dive.
     case diveStart(falconIndex: Int, subFlock: UInt8)
-    /// Falcon dive result: hit or missed.
-    case diveResult(falconIndex: Int, subFlock: UInt8, hit: Bool)
+    /// Falcon dive result: hit or missed, with the number of birds taken
+    /// (0 on a miss).
+    case diveResult(falconIndex: Int, subFlock: UInt8, hit: Bool, kills: Int)
     /// The dive passed through the centroid region and forced a split (R-10).
     case forcedSplit(subFlock: UInt8)
 }
@@ -124,44 +125,53 @@ public func computeFalcons(state: inout GameState, rng: inout SeededRNG) -> [Fal
                     : rng.next(upperBound: 10) < 7
 
                 if success {
-                    // R-10: kill the birds closest to the dive point, fewer in
-                    // dense areas: kills = max(1, 4 - density / 8).
-                    let r2 = Int64(GameState.diveRadius) * Int64(GameState.diveRadius)
+                    // R-10: the stoop path runs from the falcon through the
+                    // dive target and 2× diveRadius beyond; birds within
+                    // diveRadius of that segment are taken. Fewer kills in
+                    // dense areas, and the grab budget scales with the flock
+                    // size so losses stay a stable fraction of the flock
+                    // (ADR-0034).
+                    let pathEnd = divePathEnd(
+                        falconX: Int64(falcon.currentX), falconY: Int64(falcon.currentY),
+                        targetX: Int64(targetX), targetY: Int64(targetY))
+                    let pathRadius2 = Int64(GameState.diveRadius) * Int64(GameState.diveRadius)
+                    let grabBudget = falconKillBudget(
+                        flockSize: state.subFlockAssignments.filter { $0 == UInt8(bestSF) }.count,
+                        edgeDensity: bestDensity)
                     var candidates: [(d2: Int64, idx: Int)] = []
                     for i in 0..<state.birds.count {
-                        let dx = Int64(state.birds.posX[i]) - Int64(targetX)
-                        let dy = Int64(state.birds.posY[i]) - Int64(targetY)
-                        let d2 = dx * dx + dy * dy
-                        if d2 <= r2 { candidates.append((d2, i)) }
+                        let d2 = distanceToSegment2(
+                            (Int64(falcon.currentX), Int64(falcon.currentY)),
+                            (pathEnd.x, pathEnd.y),
+                            (Int64(state.birds.posX[i]), Int64(state.birds.posY[i])))
+                        if d2 <= pathRadius2 { candidates.append((d2, i)) }
                     }
-                    let killBudget = max(1, 4 - bestDensity / 8)
-                    if candidates.isEmpty {
-                        events.append(.diveResult(falconIndex: falconIdx, subFlock: UInt8(bestSF), hit: false))
-                    } else {
-                        candidates.sort { $0.d2 == $1.d2 ? $0.idx < $1.idx : $0.d2 < $1.d2 }
-                        let kills = min(candidates.count, killBudget)
-                        // Remove highest bird index first so earlier indices
-                        // stay valid while the arrays shrink.
-                        var hitSF: UInt8 = UInt8(bestSF)
-                        let victimIndices = candidates.prefix(kills).map(\.idx).sorted(by: >)
-                        for idx in victimIndices {
-                            hitSF = state.subFlockAssignments[idx]
-                            state.birds.remove(at: idx)
-                            state.subFlockAssignments.remove(at: idx)
-                        }
-                        events.append(.diveResult(falconIndex: falconIdx, subFlock: hitSF, hit: true))
+                    candidates.sort { $0.d2 == $1.d2 ? $0.idx < $1.idx : $0.d2 < $1.d2 }
+                    let kills = min(candidates.count, grabBudget)
+                    // Remove highest bird index first so earlier indices
+                    // stay valid while the arrays shrink.
+                    var hitSF: UInt8 = UInt8(bestSF)
+                    let victimIndices = candidates.prefix(kills).map(\.idx).sorted(by: >)
+                    for idx in victimIndices {
+                        hitSF = state.subFlockAssignments[idx]
+                        state.birds.remove(at: idx)
+                        state.subFlockAssignments.remove(at: idx)
+                    }
+                    events.append(.diveResult(falconIndex: falconIdx, subFlock: hitSF, hit: true, kills: kills))
 
-                        // R-10: a dive through the centroid region forces a split.
-                        let (cx, cy) = centroidOfFlock(birds: state.birds, assignments: state.subFlockAssignments, subFlock: UInt8(bestSF))
-                        let cdx = Int64(targetX) - Int64(cx)
-                        let cdy = Int64(targetY) - Int64(cy)
-                        if cdx * cdx + cdy * cdy <= Int64(GameState.diveRadius) * Int64(GameState.diveRadius) * 4 {
-                            forceSplit(state: &state, from: UInt8(bestSF))
-                            events.append(.forcedSplit(subFlock: UInt8(bestSF)))
-                        }
+                    // R-10: a dive whose path passes through the centroid
+                    // region forces a split.
+                    let (cx, cy) = centroidOfFlock(birds: state.birds, assignments: state.subFlockAssignments, subFlock: UInt8(bestSF))
+                    let centroidD2 = distanceToSegment2(
+                        (Int64(falcon.currentX), Int64(falcon.currentY)),
+                        (pathEnd.x, pathEnd.y),
+                        (Int64(cx), Int64(cy)))
+                    if centroidD2 <= pathRadius2 * 4 {
+                        forceSplit(state: &state, from: UInt8(bestSF))
+                        events.append(.forcedSplit(subFlock: UInt8(bestSF)))
                     }
                 } else {
-                    events.append(.diveResult(falconIndex: falconIdx, subFlock: UInt8(bestSF), hit: false))
+                    events.append(.diveResult(falconIndex: falconIdx, subFlock: UInt8(bestSF), hit: false, kills: 0))
                 }
 
                 falcon.cooldown = GameState.falconDiveCooldown
@@ -197,6 +207,56 @@ public func computeFalcons(state: inout GameState, rng: inout SeededRNG) -> [Fal
     }
 
     return events
+}
+
+/// Squared distance from point `p` to the segment `a`–`b` in pure integer
+/// arithmetic (ADR-0034). Coordinate products stay well inside Int64 for
+/// world-scale coordinates.
+func distanceToSegment2(
+    _ a: (x: Int64, y: Int64), _ b: (x: Int64, y: Int64), _ p: (x: Int64, y: Int64)
+) -> Int64 {
+    let abx = b.x - a.x
+    let aby = b.y - a.y
+    let ab2 = abx * abx + aby * aby
+    let apx = p.x - a.x
+    let apy = p.y - a.y
+    let t = abx * apx + aby * apy
+    if ab2 == 0 || t <= 0 {
+        // Degenerate segment or nearest point behind the start.
+        return apx * apx + apy * apy
+    }
+    if t >= ab2 {
+        // Nearest point is the segment end.
+        let dx = p.x - b.x
+        let dy = p.y - b.y
+        return dx * dx + dy * dy
+    }
+    // Interior projection: d² = |ap|² − t²/|ab|², exact with integer division.
+    let ap2 = apx * apx + apy * apy
+    return (ap2 * ab2 - t * t) / ab2
+}
+
+/// End of the stoop path: the dive target extended 2× diveRadius beyond in
+/// the falcon→target direction (ADR-0034). A zero-length direction
+/// degenerates to the target itself.
+func divePathEnd(
+    falconX: Int64, falconY: Int64, targetX: Int64, targetY: Int64
+) -> (x: Int64, y: Int64) {
+    let dirX = targetX - falconX
+    let dirY = targetY - falconY
+    let len = isqrt64(UInt64(dirX * dirX + dirY * dirY))
+    guard len > 0 else { return (targetX, targetY) }
+    let reach = Int64(GameState.diveRadius) * 2
+    return (targetX + dirX * reach / len, targetY + dirY * reach / len)
+}
+
+/// R-10 grab budget for one successful dive: proportional to the target
+/// flock's size (8 birds per 1,000) so losses stay a stable fraction of the
+/// flock, throttled by the edge density (fewer kills in dense areas) down to
+/// half, floored at one bird.
+func falconKillBudget(flockSize: Int, edgeDensity: Int) -> Int {
+    let denseThrottle = 256 - min(edgeDensity, 128)
+    return max(1, flockSize * 8 * denseThrottle / (1000 * 256))
 }
 
 /// Average same-flock neighbor count within the alignment radius for a
