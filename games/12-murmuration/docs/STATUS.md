@@ -959,13 +959,35 @@ side — a legitimate ADR-0033 mint, not the subject of that test — so the
 versus fixture now runs falcon-free via a new `-uitest-falcons` launch
 override (`Region.withFalconCount`).
 
-The CI run on 130fc90 also caught two lint violations in the new test
-code (class body >400 lines; non-optional `Data` conversion): the tier
-tunable tests moved to `RivalTierTunablesTests.swift`. MUAI 58/58 green.
-`--falcon-budget` and `--rival-start` probe overrides added to the sim
-harness; the grab-budget constant is now `GameState.falconGrabPerThousand`
-(read only at the dive site, tests pass it explicitly). Probe round 2
-(gate cells + falcon-pressure cells, fresh binary) running.
+**Probe rounds 2–3 and the v15 trigger correction (2026-11-21
+morning):** probe round 2 (gate cells) showed `--rival-gate` alone moves
+normal little on commons (73.3 → 70.0%); gate 320 **plus standoff 640**
+is the strong combination — commons normal drops to **63.3%** (the
+rival out-grows the player, 836 vs 654, and wins bird-count tiebreaks).
+Probe round 3 with the two-flock routing active moved hard from 73.3 to
+**60.0%** on commons (ratio 3 + standoff 640). The falcon grab budget
+probe (8/20/32/48 per 1,000) produced identical days — the stoop's
+sparse-edge targeting means the corridor, not the budget, binds kills at
+~5–11/day (~1–2% of peak); a 100-per-1,000 budget does diverge
+(~291 kills on its probe day), so the 5–20% falcon-loss band is
+reachable but only with a much larger budget — recorded in
+docs/BALANCE.md as a corridor-vs-budget finding.
+
+**The big round-1/2 surprise:** the v14 corridor-based forced-split
+catchment (2× `diveRadius` around the whole stoop path) minted a second
+flock on nearly every successful dive — the falcon preferentially
+strikes the bigger flock, so on multi-roost maps the mints handed the
+leading side extra roosts; gentle commons fell to 43.3% player wins
+(rival roosts median 2.0). ADR-0035 tightens the R-10 trigger back to
+the rule's intent — the stoop path must pass within `diveRadius` (30) of
+the flock centroid ("a dive through the flock's core scatters it") —
+`replayContentVersion` 15, goldens regenerated, MUCore 112/112 green
+(f6d3049). The CI red on 130fc90 (lint: class-body length and a
+`Data` conversion in the new tests; `testVersusTwoFlockRouting`'s third
+leader) was fixed in a252b4e/adf2748; CI green on adf2748. MUAI 58/58.
+Probe round 4 re-baselines all three tiers on v15 and tests
+the remaining lever, a per-tier rival start scale (`--rival-start`
+probe override added to the harness).
 
 **Tier-table inversion found (2026-11-20, in progress):** the sweep's
  first two tiers finished and inverted the intended difficulty
