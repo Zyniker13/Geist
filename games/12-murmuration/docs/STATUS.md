@@ -1063,8 +1063,19 @@ different fields). MUAI 65/65 green. `GentleRival.swift` split into
 hold the 400-line body lint limit; swiftlint 0 violations.
 Committed 6be18df on `murmur/phase/P4-ai-opponents`.
 
-**G4 evidence sweep running:** `sim --balance <tier> --days 500`
-over all six regions per tier (sim-v16, scratch g4-{tier}.csv),
-three tiers in parallel. Gate math on completion: per-tier win
-rates 85/60/35 ± band, dusk medians 1,000–2,500, falcon losses
-5–20% of peak.
+**ADR-0036 committed (7e88060, v16):** the falcon grab budget now
+scales with `birdsOnSideCount` — every sub-flock owned by the
+struck flock's side — instead of the single struck flock's
+`flockSize`. A forced split no longer halves a side's per-dive
+losses, closing the split-farming asymmetry the G4 sweeps exposed.
+`falconKillBudget`'s formula is unchanged. `replayContentVersion`
+15 → 16; all 20 golden replays regenerated against v16.
+`FalconStoopTests` pins side counting and adds an end-to-end
+regression that fails on a flock-scaled revert. MUCore 113/113
+green (the one pre-regen golden failure now passes).
+
+**G4 evidence sweep re-running on the v16 binary:**
+`sim --balance <tier> --days 500` over all six regions per tier
+(scratch g4-{tier}-v16.csv), three tiers sequential. Gate math on
+completion: per-tier win rates 85/60/35 ± band, dusk medians
+1,000–2,500, falcon losses 5–20% of peak.
