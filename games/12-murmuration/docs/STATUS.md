@@ -1029,3 +1029,42 @@ The balg4 balance sweep (100 days × 6 regions × 3 tiers) is running
 on the fixed engine; the pre-fix numbers (gentle 57.3%, normal
 72.2%) are superseded. The autoplayer's nearest-roost dusk strategy
 is the remaining known weakness and a legitimate tuning target.
+
+### P4.1 — Multi-flock rival economy: per-flock plans + sustainability split (2026-11-21, ADR-0035)
+
+The 100-day sweep's hard tier exposed a structural AI gap: the
+rival pilot only ever planned flock 1, so a split-off flock 2 had
+no forage directive at all and starved via R-8 (zero energy kills
+birdCount/100 per event); on two-field regions the side starved as
+a whole. Fix (ADR-0035), three parts:
+
+- **Per-flock forage plans.** Every rival flock plans its own
+  forage via `ForageScoring`, with the other flocks' centroids and
+  the player's leader point in its avoid set, so the flocks
+  de-correlate instead of stacking on one field.
+- **Dawn sustainability split.** A single rival flock of at least
+  `sustainSplit` birds splits once per day at dawn (`.splitFlock`
+  50/50), and the halves route to two *different* fields — growth
+  becomes limited by the fields, not by the flock's own cohesion.
+  Runs in daytime, where the dusk-split per-side cap has no say;
+  once per day (`sustainSplitDone`).
+- **Difficulty-scaled start share** (`RegionStarter.startScale`):
+  gentle 1.0×, normal 1.25×, hard 1.5× of the region's
+  `rivalStartBirds` (capped at 0.9 of birdCount) — a visible
+  "outnumbered" cue and the main lever on tiebreak-heavy days.
+
+Rival memory moved from scalars to per-flock dictionaries
+(`lastTargetByFlock`, `lastForageTickByFlock`, `lastStandoffByFlock`)
+with Codable migration for saves from earlier builds. New
+`RivalSustainTests` (4 tests: fat-flock split fires at dawn, fires
+once per day, small flocks don't split, split halves target
+different fields). MUAI 65/65 green. `GentleRival.swift` split into
+`GentleRival.swift` + `GentleRival+Sustain.swift` (extension) to
+hold the 400-line body lint limit; swiftlint 0 violations.
+Committed 6be18df on `murmur/phase/P4-ai-opponents`.
+
+**G4 evidence sweep running:** `sim --balance <tier> --days 500`
+over all six regions per tier (sim-v16, scratch g4-{tier}.csv),
+three tiers in parallel. Gate math on completion: per-tier win
+rates 85/60/35 ± band, dusk medians 1,000–2,500, falcon losses
+5–20% of peak.

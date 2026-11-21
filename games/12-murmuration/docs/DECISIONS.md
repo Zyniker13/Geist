@@ -821,3 +821,40 @@ Architecture decision records. Every deviation from the roadmap is recorded here
   per successful dive), the R-10 geometry matches the dive the player
   sees, and the G4 falcon-loss metric measures birds taken. The balance
   retune (ADR-0035) probes on this engine.
+
+## ADR-0035: The rival economy is planned per flock, with a dawn sustainability split (2026-11-21)
+
+- **Context:** The 100-day sweep's hard tier exposed a structural gap
+  in the rival pilot: it only ever planned flock 1. A split-off flock 2
+  (falcon forced-split or dusk split) received no forage directive at
+  all, drifted, and starved via R-8 (zero energy kills
+  birdCount/100 per event); on two-field regions the rival side
+  starved as a whole. And because every rival bird fed from wherever
+  the single plan landed, the side's growth was bounded by one field's
+  feed rate no matter how many flocks it held.
+- **Decision:** Every rival flock plans its own forage via
+  `ForageScoring`, with the *other flocks' centroids* and the player's
+  leader point in its avoid set, so the flocks de-correlate instead of
+  stacking on one field. A single rival flock of at least
+  `sustainSplit` birds splits once per day at dawn (`.splitFlock`
+  50/50) and the halves route to two *different* fields — the first
+  takes its best field, the second scores with the first's target in
+  its avoid set. The split runs in daytime, where the dusk-split
+  per-side cap has no say, and fires at most once per day
+  (`sustainSplitDone`, reset at each dawn). Rival memory moved from
+  scalars to per-flock dictionaries (`lastTargetByFlock`,
+  `lastForageTickByFlock`, `lastStandoffByFlock`) with Codable
+  migration for saves from earlier builds. The tier lever that keeps
+  the side from drowning the player is the difficulty-scaled start
+  share (`RegionStarter.startScale`: 1.0×/1.25×/1.5× of the region's
+  `rivalStartBirds`, capped at 0.9 of birdCount). Integer arithmetic
+  throughout, INV-3 preserved.
+- **Tests:** `RivalSustainTests` (4): the dawn split fires for a fat
+  flock, fires at most once per day, does not fire below the
+  threshold, and the two halves target different fields.
+  `ForageTests`/`RivalTierTunablesTests` updated for per-flock state
+  and the start scale. MUAI 65/65 green.
+- **Consequences:** The rival side's growth is limited by the fields
+  rather than by its own flocking, split-off flocks stay alive, and
+  the 85/60/35 win-rate targets rest on tuned behavior instead of
+  side-stealing or starvation accidents.
