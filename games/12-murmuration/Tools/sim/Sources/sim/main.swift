@@ -49,6 +49,9 @@ let rivalForageOverride = argument("--rival-forage", default: -1)
 let rivalFleeOverride = argument("--rival-flee", default: -1)
 let rivalRadiusOverride = argument("--rival-radius", default: -1)
 let rivalStandoffOverride = argument("--rival-standoff", default: -1)
+let rivalGateOverride = argument("--rival-gate", default: -1)
+let rivalRatioOverride = argument("--rival-ratio", default: -1)
+let rivalSplitMinOverride = argument("--rival-splitmin", default: -1)
 
 let worldWidth: Int32 = 2048
 let worldHeight: Int32 = 1536
@@ -184,6 +187,9 @@ func runBalanceDay(region: Region, tier: RivalDifficulty, day: UInt64) -> String
     if rivalFleeOverride >= 0 { rival.fleeInterval = rivalFleeOverride }
     if rivalRadiusOverride >= 0 { rival.fleeRadius = rivalRadiusOverride }
     if rivalStandoffOverride >= 0 { rival.standoffDistance = rivalStandoffOverride }
+    if rivalGateOverride >= 0 { rival.claimGate = rivalGateOverride }
+    if rivalRatioOverride >= 0 { rival.contestRatio = rivalRatioOverride }
+    if rivalSplitMinOverride >= 0 { rival.splitMinBirds = rivalSplitMinOverride }
     var rng = SeededRNG(seed: seeded.seed)
 
     var winner = -1

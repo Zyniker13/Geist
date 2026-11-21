@@ -34,6 +34,19 @@ public struct GentleRival: Equatable, Sendable {
     /// Distance the rival keeps from the player's leader point when picking
     /// fields and roosts.
     public var standoffDistance: Int
+    /// Minimum player-leader distance for a dusk roost claim (squared at the
+    /// comparison site): roosts nearer to the player than this are left to
+    /// the player. Separate from `standoffDistance` — field avoidance and
+    /// claim boldness are different dials (ADR-0035 probing). 0 = claim
+    /// regardless of the player.
+    public var claimGate: Int
+    /// Hard-tier dusk contests are denied when the player outnumbers the
+    /// rival flock by more than this ratio (`playerBirds >
+    /// contestRatio * rivalBirds`). Lower ratios contest more.
+    public var contestRatio: Int
+    /// The minimum birds the hard tier needs before it spends a split on
+    /// contesting two roosts (MU-P4.1: "splits to contest two roosts").
+    public var splitMinBirds: Int
     /// The pilot's difficulty tier (P4.1).
     public var difficulty: RivalDifficulty
 
@@ -51,10 +64,6 @@ public struct GentleRival: Equatable, Sendable {
     var splitStage: Int
     var splitTargetA: Waypoint?
     var splitTargetB: Waypoint?
-
-    /// The minimum birds the hard tier needs before it spends a split on
-    /// contesting two roosts (MU-P4.1: "splits to contest two roosts").
-    static let splitMinBirds = 500
 
     public init(difficulty: RivalDifficulty = .gentle) {
         self.init(
@@ -77,6 +86,9 @@ public struct GentleRival: Equatable, Sendable {
         self.fleeInterval = fleeInterval
         self.fleeRadius = fleeRadius
         self.standoffDistance = standoffDistance
+        self.claimGate = Self.cadence(difficulty).claimGate
+        self.contestRatio = Self.cadence(difficulty).contestRatio
+        self.splitMinBirds = Self.cadence(difficulty).splitMinBirds
         self.difficulty = difficulty
         self.lastForageTick = Autoplayer.noTick
         self.lastFleeCheckTick = Autoplayer.noTick
@@ -88,14 +100,18 @@ public struct GentleRival: Equatable, Sendable {
         self.splitTargetB = nil
     }
 
-    /// Per-tier cadence and standoff tunables.
+    /// Per-tier cadence, standoff, and dusk-aggression tunables. The default
+    /// `claimGate` equals the tier's field standoff for gentle/normal (the
+    /// pre-ADR-0035 behavior, where one dial served both) and 0 for hard
+    /// (contest regardless of the player's position).
     static func cadence(_ difficulty: RivalDifficulty)
-        -> (forage: Int, flee: Int, fleeRadius: Int, standoff: Int)
+        -> (forage: Int, flee: Int, fleeRadius: Int, standoff: Int,
+            claimGate: Int, contestRatio: Int, splitMinBirds: Int)
     {
         switch difficulty {
-        case .gentle: return (480, 60, 320, 640)
-        case .normal: return (300, 45, 360, 520)
-        case .hard: return (240, 30, 400, 380)
+        case .gentle: return (480, 60, 320, 640, 640, 2, 500)
+        case .normal: return (300, 45, 360, 520, 520, 2, 500)
+        case .hard: return (240, 30, 400, 380, 0, 2, 500)
         }
     }
 
@@ -192,15 +208,12 @@ public struct GentleRival: Equatable, Sendable {
     }
 
     /// Gentle: the farthest roost from the player's leader point, taken only
-    /// when it keeps the standoff margin; otherwise hold a standoff (P2.3).
+    /// when it clears the claim gate; otherwise hold a standoff (P2.3).
     private mutating func planGentle(
         _ state: GameState, ranked: [RoostState], lx: Int32, ly: Int32
     ) -> GameAction? {
-        if let roost = ranked.first {
-            let dist = leaderDistanceSquared(roost, lx: lx, ly: ly)
-            if dist >= Int64(standoffDistance) * Int64(standoffDistance) {
-                return route(to: roost)
-            }
+        if let roost = ranked.first, claimable(roost, lx: lx, ly: ly) {
+            return route(to: roost)
         }
         return holdStandoff(state)
     }
@@ -226,19 +239,19 @@ public struct GentleRival: Equatable, Sendable {
                 bestScore = score
             }
         }
-        // Contend only when the pick is far enough from the player's leader
-        // point; ranked is player-distance-ordered, so a nearer pick means a
-        // farther pick does not exist. Fall back to a standoff.
-        let playerDist = leaderDistanceSquared(best, lx: lx, ly: ly)
-        if playerDist >= Int64(standoffDistance) * Int64(standoffDistance) {
+        // Contend only when the pick clears the claim gate; ranked is
+        // player-distance-ordered, so a nearer pick means a farther pick
+        // does not exist. Fall back to a standoff.
+        if claimable(best, lx: lx, ly: ly) {
             return route(to: best)
         }
         return holdStandoff(state)
     }
 
-    /// Hard: contest unless the flock is hopelessly outnumbered (more than
-    /// 2:1 against); in multi-roost regions with a fighting flock, split so
-    /// the two roosts the player is least likely to reach are both contested.
+    /// Hard: contest unless the flock is hopelessly outnumbered (the
+    /// `contestRatio` guard); in multi-roost regions with a fighting flock,
+    /// split so the two roosts the player is least likely to reach are both
+    /// contested.
     private mutating func planHard(
         _ state: GameState, ranked: [RoostState],
         leader: (x: Int32, y: Int32),
@@ -247,16 +260,29 @@ public struct GentleRival: Equatable, Sendable {
         guard !ranked.isEmpty else { return holdStandoff(state) }
         // Hopeless: a condensing player flock that big wins the roost race;
         // hold a standoff instead of feeding birds into a lost contest.
-        guard playerBirds <= 2 * rivalBirds else { return holdStandoff(state) }
+        guard playerBirds <= contestRatio * rivalBirds else {
+            return holdStandoff(state)
+        }
 
         // Two roosts and a fighting flock: contest both top roosts.
-        if ranked.count >= 2, rivalBirds >= Self.splitMinBirds {
+        if ranked.count >= 2, rivalBirds >= splitMinBirds {
             splitTargetA = Waypoint(x: ranked[0].centerX, y: ranked[0].centerY)
             splitTargetB = Waypoint(x: ranked[1].centerX, y: ranked[1].centerY)
             splitStage = 1
             return .splitFlock(from: 1, ratio: 0.5)
         }
-        return route(to: ranked[0])
+        if claimable(ranked[0], lx: leader.x, ly: leader.y) {
+            return route(to: ranked[0])
+        }
+        return holdStandoff(state)
+    }
+
+    /// Whether a dusk roost claim passes the tier's claim gate: the roost
+    /// must sit at least `claimGate` from the player's leader point (0
+    /// claims regardless).
+    private func claimable(_ roost: RoostState, lx: Int32, ly: Int32) -> Bool {
+        leaderDistanceSquared(roost, lx: lx, ly: ly)
+            >= Int64(claimGate) * Int64(claimGate)
     }
 
     /// The follow-up routing for a hard-tier split: flock 1 to roost A, then
@@ -449,19 +475,25 @@ public struct GentleRival: Equatable, Sendable {
 extension GentleRival: Codable {
     private enum CodingKeys: String, CodingKey {
         case forageInterval, fleeInterval, fleeRadius, standoffDistance, difficulty
+        case claimGate, contestRatio, splitMinBirds
         case lastForageTick, lastFleeCheckTick, lastTarget, lastStandoff, issuedDuskPlan
         case splitStage, splitTargetA, splitTargetB
     }
 
     /// Legacy saves (pre-P4.1) have no `difficulty` or split-plan fields;
-    /// decode them as gentle / unset.
+    /// decode them as gentle / unset. The ADR-0035 tunables default to the
+    /// decoded tier's table values so legacy saves keep that tier's behavior.
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
+        difficulty = try container.decodeIfPresent(RivalDifficulty.self, forKey: .difficulty) ?? .gentle
+        let table = Self.cadence(difficulty)
         forageInterval = try container.decodeIfPresent(Int.self, forKey: .forageInterval) ?? 480
         fleeInterval = try container.decodeIfPresent(Int.self, forKey: .fleeInterval) ?? 60
         fleeRadius = try container.decodeIfPresent(Int.self, forKey: .fleeRadius) ?? 320
         standoffDistance = try container.decodeIfPresent(Int.self, forKey: .standoffDistance) ?? 640
-        difficulty = try container.decodeIfPresent(RivalDifficulty.self, forKey: .difficulty) ?? .gentle
+        claimGate = try container.decodeIfPresent(Int.self, forKey: .claimGate) ?? table.claimGate
+        contestRatio = try container.decodeIfPresent(Int.self, forKey: .contestRatio) ?? table.contestRatio
+        splitMinBirds = try container.decodeIfPresent(Int.self, forKey: .splitMinBirds) ?? table.splitMinBirds
         lastForageTick = try container.decodeIfPresent(Int.self, forKey: .lastForageTick) ?? Autoplayer.noTick
         lastFleeCheckTick = try container.decodeIfPresent(Int.self, forKey: .lastFleeCheckTick) ?? Autoplayer.noTick
         lastTarget = try container.decodeIfPresent(Waypoint.self, forKey: .lastTarget)
@@ -479,6 +511,9 @@ extension GentleRival: Codable {
         try container.encode(fleeRadius, forKey: .fleeRadius)
         try container.encode(standoffDistance, forKey: .standoffDistance)
         try container.encode(difficulty, forKey: .difficulty)
+        try container.encode(claimGate, forKey: .claimGate)
+        try container.encode(contestRatio, forKey: .contestRatio)
+        try container.encode(splitMinBirds, forKey: .splitMinBirds)
         try container.encode(lastForageTick, forKey: .lastForageTick)
         try container.encode(lastFleeCheckTick, forKey: .lastFleeCheckTick)
         try container.encode(lastTarget, forKey: .lastTarget)
