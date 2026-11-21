@@ -177,7 +177,9 @@ public func computeFalcons(state: inout GameState, rng: inout SeededRNG) -> [Fal
                         (pathEnd.x, pathEnd.y),
                         (Int64(cx), Int64(cy)))
                     if centroidD2 <= pathRadius2 {
-                        forceSplit(state: &state, from: UInt8(bestSF))
+                        // The event records the source flock; the split's
+                        // target index is deterministic from state.
+                        _ = forceSplit(state: &state, from: UInt8(bestSF))
                         events.append(.forcedSplit(subFlock: UInt8(bestSF)))
                     }
                 } else {
