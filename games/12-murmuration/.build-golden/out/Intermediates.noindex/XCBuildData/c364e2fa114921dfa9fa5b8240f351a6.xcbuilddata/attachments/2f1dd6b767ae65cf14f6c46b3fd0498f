@@ -1,0 +1,36 @@
+{
+  "" : {
+    "const-values" : "/Users/agent/.hermes/profiles/geist/work/Geist/games/12-murmuration/.build-golden/out/Intermediates.noindex/MUAI.build/Release/MUAI-t.build/Objects-normal/arm64/MUAI-primary.swiftconstvalues",
+    "dependencies" : "/Users/agent/.hermes/profiles/geist/work/Geist/games/12-murmuration/.build-golden/out/Intermediates.noindex/MUAI.build/Release/MUAI-t.build/Objects-normal/arm64/MUAI-primary.d",
+    "diagnostics" : "/Users/agent/.hermes/profiles/geist/work/Geist/games/12-murmuration/.build-golden/out/Intermediates.noindex/MUAI.build/Release/MUAI-t.build/Objects-normal/arm64/MUAI-primary.dia",
+    "emit-module-dependencies" : "/Users/agent/.hermes/profiles/geist/work/Geist/games/12-murmuration/.build-golden/out/Intermediates.noindex/MUAI.build/Release/MUAI-t.build/Objects-normal/arm64/MUAI-primary-emit-module.d",
+    "emit-module-diagnostics" : "/Users/agent/.hermes/profiles/geist/work/Geist/games/12-murmuration/.build-golden/out/Intermediates.noindex/MUAI.build/Release/MUAI-t.build/Objects-normal/arm64/MUAI-primary-emit-module.dia",
+    "pch" : "/Users/agent/.hermes/profiles/geist/work/Geist/games/12-murmuration/.build-golden/out/Intermediates.noindex/MUAI.build/Release/MUAI-t.build/Objects-normal/arm64/MUAI-primary-Bridging-header.pch",
+    "swift-dependencies" : "/Users/agent/.hermes/profiles/geist/work/Geist/games/12-murmuration/.build-golden/out/Intermediates.noindex/MUAI.build/Release/MUAI-t.build/Objects-normal/arm64/MUAI-primary.swiftdeps"
+  },
+  "/Users/agent/.hermes/profiles/geist/work/Geist/games/12-murmuration/Packages/MUAI/Sources/MUAI/Autoplayer.swift" : {
+    "index-unit-output-path" : "/MUAI.build/Release/MUAI-t.build/Objects-normal/arm64/Autoplayer.o",
+    "llvm-bc" : "/Users/agent/.hermes/profiles/geist/work/Geist/games/12-murmuration/.build-golden/out/Intermediates.noindex/MUAI.build/Release/MUAI-t.build/Objects-normal/arm64/Autoplayer.bc",
+    "object" : "/Users/agent/.hermes/profiles/geist/work/Geist/games/12-murmuration/.build-golden/out/Intermediates.noindex/MUAI.build/Release/MUAI-t.build/Objects-normal/arm64/Autoplayer.o"
+  },
+  "/Users/agent/.hermes/profiles/geist/work/Geist/games/12-murmuration/Packages/MUAI/Sources/MUAI/Forage.swift" : {
+    "index-unit-output-path" : "/MUAI.build/Release/MUAI-t.build/Objects-normal/arm64/Forage.o",
+    "llvm-bc" : "/Users/agent/.hermes/profiles/geist/work/Geist/games/12-murmuration/.build-golden/out/Intermediates.noindex/MUAI.build/Release/MUAI-t.build/Objects-normal/arm64/Forage.bc",
+    "object" : "/Users/agent/.hermes/profiles/geist/work/Geist/games/12-murmuration/.build-golden/out/Intermediates.noindex/MUAI.build/Release/MUAI-t.build/Objects-normal/arm64/Forage.o"
+  },
+  "/Users/agent/.hermes/profiles/geist/work/Geist/games/12-murmuration/Packages/MUAI/Sources/MUAI/GentleRival.swift" : {
+    "index-unit-output-path" : "/MUAI.build/Release/MUAI-t.build/Objects-normal/arm64/GentleRival.o",
+    "llvm-bc" : "/Users/agent/.hermes/profiles/geist/work/Geist/games/12-murmuration/.build-golden/out/Intermediates.noindex/MUAI.build/Release/MUAI-t.build/Objects-normal/arm64/GentleRival.bc",
+    "object" : "/Users/agent/.hermes/profiles/geist/work/Geist/games/12-murmuration/.build-golden/out/Intermediates.noindex/MUAI.build/Release/MUAI-t.build/Objects-normal/arm64/GentleRival.o"
+  },
+  "/Users/agent/.hermes/profiles/geist/work/Geist/games/12-murmuration/Packages/MUAI/Sources/MUAI/MUAI.swift" : {
+    "index-unit-output-path" : "/MUAI.build/Release/MUAI-t.build/Objects-normal/arm64/MUAI.o",
+    "llvm-bc" : "/Users/agent/.hermes/profiles/geist/work/Geist/games/12-murmuration/.build-golden/out/Intermediates.noindex/MUAI.build/Release/MUAI-t.build/Objects-normal/arm64/MUAI.bc",
+    "object" : "/Users/agent/.hermes/profiles/geist/work/Geist/games/12-murmuration/.build-golden/out/Intermediates.noindex/MUAI.build/Release/MUAI-t.build/Objects-normal/arm64/MUAI.o"
+  },
+  "/Users/agent/.hermes/profiles/geist/work/Geist/games/12-murmuration/Packages/MUAI/Sources/MUAI/TutorialDriver.swift" : {
+    "index-unit-output-path" : "/MUAI.build/Release/MUAI-t.build/Objects-normal/arm64/TutorialDriver.o",
+    "llvm-bc" : "/Users/agent/.hermes/profiles/geist/work/Geist/games/12-murmuration/.build-golden/out/Intermediates.noindex/MUAI.build/Release/MUAI-t.build/Objects-normal/arm64/TutorialDriver.bc",
+    "object" : "/Users/agent/.hermes/profiles/geist/work/Geist/games/12-murmuration/.build-golden/out/Intermediates.noindex/MUAI.build/Release/MUAI-t.build/Objects-normal/arm64/TutorialDriver.o"
+  }
+}

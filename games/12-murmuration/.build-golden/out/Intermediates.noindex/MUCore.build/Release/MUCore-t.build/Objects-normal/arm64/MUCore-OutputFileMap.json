@@ -1,0 +1,91 @@
+{
+  "" : {
+    "const-values" : "/Users/agent/.hermes/profiles/geist/work/Geist/games/12-murmuration/.build-golden/out/Intermediates.noindex/MUCore.build/Release/MUCore-t.build/Objects-normal/arm64/MUCore-primary.swiftconstvalues",
+    "dependencies" : "/Users/agent/.hermes/profiles/geist/work/Geist/games/12-murmuration/.build-golden/out/Intermediates.noindex/MUCore.build/Release/MUCore-t.build/Objects-normal/arm64/MUCore-primary.d",
+    "diagnostics" : "/Users/agent/.hermes/profiles/geist/work/Geist/games/12-murmuration/.build-golden/out/Intermediates.noindex/MUCore.build/Release/MUCore-t.build/Objects-normal/arm64/MUCore-primary.dia",
+    "emit-module-dependencies" : "/Users/agent/.hermes/profiles/geist/work/Geist/games/12-murmuration/.build-golden/out/Intermediates.noindex/MUCore.build/Release/MUCore-t.build/Objects-normal/arm64/MUCore-primary-emit-module.d",
+    "emit-module-diagnostics" : "/Users/agent/.hermes/profiles/geist/work/Geist/games/12-murmuration/.build-golden/out/Intermediates.noindex/MUCore.build/Release/MUCore-t.build/Objects-normal/arm64/MUCore-primary-emit-module.dia",
+    "pch" : "/Users/agent/.hermes/profiles/geist/work/Geist/games/12-murmuration/.build-golden/out/Intermediates.noindex/MUCore.build/Release/MUCore-t.build/Objects-normal/arm64/MUCore-primary-Bridging-header.pch",
+    "swift-dependencies" : "/Users/agent/.hermes/profiles/geist/work/Geist/games/12-murmuration/.build-golden/out/Intermediates.noindex/MUCore.build/Release/MUCore-t.build/Objects-normal/arm64/MUCore-primary.swiftdeps"
+  },
+  "/Users/agent/.hermes/profiles/geist/work/Geist/games/12-murmuration/Packages/MUCore/Sources/MUCore/Foundation/Fixed.swift" : {
+    "index-unit-output-path" : "/MUCore.build/Release/MUCore-t.build/Objects-normal/arm64/Fixed.o",
+    "llvm-bc" : "/Users/agent/.hermes/profiles/geist/work/Geist/games/12-murmuration/.build-golden/out/Intermediates.noindex/MUCore.build/Release/MUCore-t.build/Objects-normal/arm64/Fixed.bc",
+    "object" : "/Users/agent/.hermes/profiles/geist/work/Geist/games/12-murmuration/.build-golden/out/Intermediates.noindex/MUCore.build/Release/MUCore-t.build/Objects-normal/arm64/Fixed.o"
+  },
+  "/Users/agent/.hermes/profiles/geist/work/Geist/games/12-murmuration/Packages/MUCore/Sources/MUCore/Foundation/IntTrig.swift" : {
+    "index-unit-output-path" : "/MUCore.build/Release/MUCore-t.build/Objects-normal/arm64/IntTrig.o",
+    "llvm-bc" : "/Users/agent/.hermes/profiles/geist/work/Geist/games/12-murmuration/.build-golden/out/Intermediates.noindex/MUCore.build/Release/MUCore-t.build/Objects-normal/arm64/IntTrig.bc",
+    "object" : "/Users/agent/.hermes/profiles/geist/work/Geist/games/12-murmuration/.build-golden/out/Intermediates.noindex/MUCore.build/Release/MUCore-t.build/Objects-normal/arm64/IntTrig.o"
+  },
+  "/Users/agent/.hermes/profiles/geist/work/Geist/games/12-murmuration/Packages/MUCore/Sources/MUCore/Foundation/SeededRNG.swift" : {
+    "index-unit-output-path" : "/MUCore.build/Release/MUCore-t.build/Objects-normal/arm64/SeededRNG.o",
+    "llvm-bc" : "/Users/agent/.hermes/profiles/geist/work/Geist/games/12-murmuration/.build-golden/out/Intermediates.noindex/MUCore.build/Release/MUCore-t.build/Objects-normal/arm64/SeededRNG.bc",
+    "object" : "/Users/agent/.hermes/profiles/geist/work/Geist/games/12-murmuration/.build-golden/out/Intermediates.noindex/MUCore.build/Release/MUCore-t.build/Objects-normal/arm64/SeededRNG.o"
+  },
+  "/Users/agent/.hermes/profiles/geist/work/Geist/games/12-murmuration/Packages/MUCore/Sources/MUCore/MUCore.swift" : {
+    "index-unit-output-path" : "/MUCore.build/Release/MUCore-t.build/Objects-normal/arm64/MUCore.o",
+    "llvm-bc" : "/Users/agent/.hermes/profiles/geist/work/Geist/games/12-murmuration/.build-golden/out/Intermediates.noindex/MUCore.build/Release/MUCore-t.build/Objects-normal/arm64/MUCore.bc",
+    "object" : "/Users/agent/.hermes/profiles/geist/work/Geist/games/12-murmuration/.build-golden/out/Intermediates.noindex/MUCore.build/Release/MUCore-t.build/Objects-normal/arm64/MUCore.o"
+  },
+  "/Users/agent/.hermes/profiles/geist/work/Geist/games/12-murmuration/Packages/MUCore/Sources/MUCore/Replay.swift" : {
+    "index-unit-output-path" : "/MUCore.build/Release/MUCore-t.build/Objects-normal/arm64/Replay.o",
+    "llvm-bc" : "/Users/agent/.hermes/profiles/geist/work/Geist/games/12-murmuration/.build-golden/out/Intermediates.noindex/MUCore.build/Release/MUCore-t.build/Objects-normal/arm64/Replay.bc",
+    "object" : "/Users/agent/.hermes/profiles/geist/work/Geist/games/12-murmuration/.build-golden/out/Intermediates.noindex/MUCore.build/Release/MUCore-t.build/Objects-normal/arm64/Replay.o"
+  },
+  "/Users/agent/.hermes/profiles/geist/work/Geist/games/12-murmuration/Packages/MUCore/Sources/MUCore/Sim/Bird.swift" : {
+    "index-unit-output-path" : "/MUCore.build/Release/MUCore-t.build/Objects-normal/arm64/Bird.o",
+    "llvm-bc" : "/Users/agent/.hermes/profiles/geist/work/Geist/games/12-murmuration/.build-golden/out/Intermediates.noindex/MUCore.build/Release/MUCore-t.build/Objects-normal/arm64/Bird.bc",
+    "object" : "/Users/agent/.hermes/profiles/geist/work/Geist/games/12-murmuration/.build-golden/out/Intermediates.noindex/MUCore.build/Release/MUCore-t.build/Objects-normal/arm64/Bird.o"
+  },
+  "/Users/agent/.hermes/profiles/geist/work/Geist/games/12-murmuration/Packages/MUCore/Sources/MUCore/Sim/Boids.swift" : {
+    "index-unit-output-path" : "/MUCore.build/Release/MUCore-t.build/Objects-normal/arm64/Boids.o",
+    "llvm-bc" : "/Users/agent/.hermes/profiles/geist/work/Geist/games/12-murmuration/.build-golden/out/Intermediates.noindex/MUCore.build/Release/MUCore-t.build/Objects-normal/arm64/Boids.bc",
+    "object" : "/Users/agent/.hermes/profiles/geist/work/Geist/games/12-murmuration/.build-golden/out/Intermediates.noindex/MUCore.build/Release/MUCore-t.build/Objects-normal/arm64/Boids.o"
+  },
+  "/Users/agent/.hermes/profiles/geist/work/Geist/games/12-murmuration/Packages/MUCore/Sources/MUCore/Sim/Energy.swift" : {
+    "index-unit-output-path" : "/MUCore.build/Release/MUCore-t.build/Objects-normal/arm64/Energy.o",
+    "llvm-bc" : "/Users/agent/.hermes/profiles/geist/work/Geist/games/12-murmuration/.build-golden/out/Intermediates.noindex/MUCore.build/Release/MUCore-t.build/Objects-normal/arm64/Energy.bc",
+    "object" : "/Users/agent/.hermes/profiles/geist/work/Geist/games/12-murmuration/.build-golden/out/Intermediates.noindex/MUCore.build/Release/MUCore-t.build/Objects-normal/arm64/Energy.o"
+  },
+  "/Users/agent/.hermes/profiles/geist/work/Geist/games/12-murmuration/Packages/MUCore/Sources/MUCore/Sim/Falcon.swift" : {
+    "index-unit-output-path" : "/MUCore.build/Release/MUCore-t.build/Objects-normal/arm64/Falcon.o",
+    "llvm-bc" : "/Users/agent/.hermes/profiles/geist/work/Geist/games/12-murmuration/.build-golden/out/Intermediates.noindex/MUCore.build/Release/MUCore-t.build/Objects-normal/arm64/Falcon.bc",
+    "object" : "/Users/agent/.hermes/profiles/geist/work/Geist/games/12-murmuration/.build-golden/out/Intermediates.noindex/MUCore.build/Release/MUCore-t.build/Objects-normal/arm64/Falcon.o"
+  },
+  "/Users/agent/.hermes/profiles/geist/work/Geist/games/12-murmuration/Packages/MUCore/Sources/MUCore/Sim/GameState.swift" : {
+    "index-unit-output-path" : "/MUCore.build/Release/MUCore-t.build/Objects-normal/arm64/GameState.o",
+    "llvm-bc" : "/Users/agent/.hermes/profiles/geist/work/Geist/games/12-murmuration/.build-golden/out/Intermediates.noindex/MUCore.build/Release/MUCore-t.build/Objects-normal/arm64/GameState.bc",
+    "object" : "/Users/agent/.hermes/profiles/geist/work/Geist/games/12-murmuration/.build-golden/out/Intermediates.noindex/MUCore.build/Release/MUCore-t.build/Objects-normal/arm64/GameState.o"
+  },
+  "/Users/agent/.hermes/profiles/geist/work/Geist/games/12-murmuration/Packages/MUCore/Sources/MUCore/Sim/LeaderPath.swift" : {
+    "index-unit-output-path" : "/MUCore.build/Release/MUCore-t.build/Objects-normal/arm64/LeaderPath.o",
+    "llvm-bc" : "/Users/agent/.hermes/profiles/geist/work/Geist/games/12-murmuration/.build-golden/out/Intermediates.noindex/MUCore.build/Release/MUCore-t.build/Objects-normal/arm64/LeaderPath.bc",
+    "object" : "/Users/agent/.hermes/profiles/geist/work/Geist/games/12-murmuration/.build-golden/out/Intermediates.noindex/MUCore.build/Release/MUCore-t.build/Objects-normal/arm64/LeaderPath.o"
+  },
+  "/Users/agent/.hermes/profiles/geist/work/Geist/games/12-murmuration/Packages/MUCore/Sources/MUCore/Sim/Reducer.swift" : {
+    "index-unit-output-path" : "/MUCore.build/Release/MUCore-t.build/Objects-normal/arm64/Reducer.o",
+    "llvm-bc" : "/Users/agent/.hermes/profiles/geist/work/Geist/games/12-murmuration/.build-golden/out/Intermediates.noindex/MUCore.build/Release/MUCore-t.build/Objects-normal/arm64/Reducer.bc",
+    "object" : "/Users/agent/.hermes/profiles/geist/work/Geist/games/12-murmuration/.build-golden/out/Intermediates.noindex/MUCore.build/Release/MUCore-t.build/Objects-normal/arm64/Reducer.o"
+  },
+  "/Users/agent/.hermes/profiles/geist/work/Geist/games/12-murmuration/Packages/MUCore/Sources/MUCore/Sim/RivalDifficulty.swift" : {
+    "index-unit-output-path" : "/MUCore.build/Release/MUCore-t.build/Objects-normal/arm64/RivalDifficulty.o",
+    "llvm-bc" : "/Users/agent/.hermes/profiles/geist/work/Geist/games/12-murmuration/.build-golden/out/Intermediates.noindex/MUCore.build/Release/MUCore-t.build/Objects-normal/arm64/RivalDifficulty.bc",
+    "object" : "/Users/agent/.hermes/profiles/geist/work/Geist/games/12-murmuration/.build-golden/out/Intermediates.noindex/MUCore.build/Release/MUCore-t.build/Objects-normal/arm64/RivalDifficulty.o"
+  },
+  "/Users/agent/.hermes/profiles/geist/work/Geist/games/12-murmuration/Packages/MUCore/Sources/MUCore/Sim/Roost.swift" : {
+    "index-unit-output-path" : "/MUCore.build/Release/MUCore-t.build/Objects-normal/arm64/Roost.o",
+    "llvm-bc" : "/Users/agent/.hermes/profiles/geist/work/Geist/games/12-murmuration/.build-golden/out/Intermediates.noindex/MUCore.build/Release/MUCore-t.build/Objects-normal/arm64/Roost.bc",
+    "object" : "/Users/agent/.hermes/profiles/geist/work/Geist/games/12-murmuration/.build-golden/out/Intermediates.noindex/MUCore.build/Release/MUCore-t.build/Objects-normal/arm64/Roost.o"
+  },
+  "/Users/agent/.hermes/profiles/geist/work/Geist/games/12-murmuration/Packages/MUCore/Sources/MUCore/Sim/SpatialHash.swift" : {
+    "index-unit-output-path" : "/MUCore.build/Release/MUCore-t.build/Objects-normal/arm64/SpatialHash.o",
+    "llvm-bc" : "/Users/agent/.hermes/profiles/geist/work/Geist/games/12-murmuration/.build-golden/out/Intermediates.noindex/MUCore.build/Release/MUCore-t.build/Objects-normal/arm64/SpatialHash.bc",
+    "object" : "/Users/agent/.hermes/profiles/geist/work/Geist/games/12-murmuration/.build-golden/out/Intermediates.noindex/MUCore.build/Release/MUCore-t.build/Objects-normal/arm64/SpatialHash.o"
+  },
+  "/Users/agent/.hermes/profiles/geist/work/Geist/games/12-murmuration/Packages/MUCore/Sources/MUCore/Sim/WorldFeatures.swift" : {
+    "index-unit-output-path" : "/MUCore.build/Release/MUCore-t.build/Objects-normal/arm64/WorldFeatures.o",
+    "llvm-bc" : "/Users/agent/.hermes/profiles/geist/work/Geist/games/12-murmuration/.build-golden/out/Intermediates.noindex/MUCore.build/Release/MUCore-t.build/Objects-normal/arm64/WorldFeatures.bc",
+    "object" : "/Users/agent/.hermes/profiles/geist/work/Geist/games/12-murmuration/.build-golden/out/Intermediates.noindex/MUCore.build/Release/MUCore-t.build/Objects-normal/arm64/WorldFeatures.o"
+  }
+}

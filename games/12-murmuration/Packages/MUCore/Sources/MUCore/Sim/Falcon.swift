@@ -160,14 +160,17 @@ public func computeFalcons(state: inout GameState, rng: inout SeededRNG) -> [Fal
                     }
                     events.append(.diveResult(falconIndex: falconIdx, subFlock: hitSF, hit: true, kills: kills))
 
-                    // R-10: a dive whose path passes through the centroid
-                    // region forces a split.
+                    // R-10: a dive whose path passes through the flock's
+                    // core — within diveRadius of the stoop segment —
+                    // forces a split (ADR-0035 tightens ADR-0034's 2×
+                    // catchment, which turned every edge-grazing hit into
+                    // a minted second flock).
                     let (cx, cy) = centroidOfFlock(birds: state.birds, assignments: state.subFlockAssignments, subFlock: UInt8(bestSF))
                     let centroidD2 = distanceToSegment2(
                         (Int64(falcon.currentX), Int64(falcon.currentY)),
                         (pathEnd.x, pathEnd.y),
                         (Int64(cx), Int64(cy)))
-                    if centroidD2 <= pathRadius2 * 4 {
+                    if centroidD2 <= pathRadius2 {
                         forceSplit(state: &state, from: UInt8(bestSF))
                         events.append(.forcedSplit(subFlock: UInt8(bestSF)))
                     }

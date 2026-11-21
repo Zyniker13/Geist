@@ -148,7 +148,11 @@ public struct GameState: Codable, Sendable, Equatable {
     /// of the falcon→target→2×diveRadius segment instead of the dive point,
     /// the grab budget scales with the target flock's size, and the
     /// centroid split check runs against the path.
-    public static let replayContentVersion = 14
+    /// v15: ADR-0035 retune — the forced-split trigger tightens to
+    /// `diveRadius` around the stoop path (the 2× catchment minted a
+    /// second flock on nearly every hit), and the rival dusk tunables
+    /// (`claimGate`/`contestRatio`/`splitMinBirds`) join the pilot.
+    public static let replayContentVersion = 15
 
     /// R-10 grab budget: successful-dive kills per 1,000 birds of the target
     /// flock (ADR-0034). Tuning constant — the balance harness overrides it

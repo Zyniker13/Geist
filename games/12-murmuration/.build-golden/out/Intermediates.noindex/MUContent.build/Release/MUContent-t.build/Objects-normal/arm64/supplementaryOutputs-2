@@ -1,0 +1,12 @@
+{
+  "/Users/agent/.hermes/profiles/geist/work/Geist/games/12-murmuration/Packages/MUContent/Sources/MUContent/MUContent.swift" : {
+    "abi-baseline-json" : "/Users/agent/.hermes/profiles/geist/work/Geist/games/12-murmuration/.build-golden/out/Intermediates.noindex/MUContent.build/Release/MUContent-t.build/Objects-normal/arm64/MUContent.abi.json",
+    "const-values" : "/Users/agent/.hermes/profiles/geist/work/Geist/games/12-murmuration/.build-golden/out/Intermediates.noindex/MUContent.build/Release/MUContent-t.build/Objects-normal/arm64/MUContent-primary.swiftconstvalues",
+    "dependencies" : "/Users/agent/.hermes/profiles/geist/work/Geist/games/12-murmuration/.build-golden/out/Intermediates.noindex/MUContent.build/Release/MUContent-t.build/Objects-normal/arm64/MUContent-primary.d",
+    "diagnostics" : "/Users/agent/.hermes/profiles/geist/work/Geist/games/12-murmuration/.build-golden/out/Intermediates.noindex/MUContent.build/Release/MUContent-t.build/Objects-normal/arm64/MUContent-primary.dia",
+    "objc-header" : "/Users/agent/.hermes/profiles/geist/work/Geist/games/12-murmuration/.build-golden/out/Intermediates.noindex/MUContent.build/Release/MUContent-t.build/Objects-normal/arm64/MUContent-Swift.h",
+    "swiftdoc" : "/Users/agent/.hermes/profiles/geist/work/Geist/games/12-murmuration/.build-golden/out/Intermediates.noindex/MUContent.build/Release/MUContent-t.build/Objects-normal/arm64/MUContent.swiftdoc",
+    "swiftmodule" : "/Users/agent/.hermes/profiles/geist/work/Geist/games/12-murmuration/.build-golden/out/Intermediates.noindex/MUContent.build/Release/MUContent-t.build/Objects-normal/arm64/MUContent.swiftmodule",
+    "swiftsourceinfo" : "/Users/agent/.hermes/profiles/geist/work/Geist/games/12-murmuration/.build-golden/out/Intermediates.noindex/MUContent.build/Release/MUContent-t.build/Objects-normal/arm64/MUContent.swiftsourceinfo"
+  }
+}

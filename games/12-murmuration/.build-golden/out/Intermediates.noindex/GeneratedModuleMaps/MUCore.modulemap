@@ -1,0 +1,4 @@
+module MUCore {
+header "MUCore-Swift.h"
+export *
+}

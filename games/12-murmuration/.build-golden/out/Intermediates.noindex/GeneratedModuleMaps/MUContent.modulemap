@@ -1,0 +1,4 @@
+module MUContent {
+header "MUContent-Swift.h"
+export *
+}

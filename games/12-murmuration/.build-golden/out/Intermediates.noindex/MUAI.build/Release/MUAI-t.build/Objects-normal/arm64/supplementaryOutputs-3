@@ -1,0 +1,12 @@
+{
+  "/Users/agent/.hermes/profiles/geist/work/Geist/games/12-murmuration/Packages/MUAI/Sources/MUAI/Autoplayer.swift" : {
+    "abi-baseline-json" : "/Users/agent/.hermes/profiles/geist/work/Geist/games/12-murmuration/.build-golden/out/Intermediates.noindex/MUAI.build/Release/MUAI-t.build/Objects-normal/arm64/MUAI.abi.json",
+    "const-values" : "/Users/agent/.hermes/profiles/geist/work/Geist/games/12-murmuration/.build-golden/out/Intermediates.noindex/MUAI.build/Release/MUAI-t.build/Objects-normal/arm64/MUAI-primary.swiftconstvalues",
+    "dependencies" : "/Users/agent/.hermes/profiles/geist/work/Geist/games/12-murmuration/.build-golden/out/Intermediates.noindex/MUAI.build/Release/MUAI-t.build/Objects-normal/arm64/MUAI-primary.d",
+    "diagnostics" : "/Users/agent/.hermes/profiles/geist/work/Geist/games/12-murmuration/.build-golden/out/Intermediates.noindex/MUAI.build/Release/MUAI-t.build/Objects-normal/arm64/MUAI-primary.dia",
+    "objc-header" : "/Users/agent/.hermes/profiles/geist/work/Geist/games/12-murmuration/.build-golden/out/Intermediates.noindex/MUAI.build/Release/MUAI-t.build/Objects-normal/arm64/MUAI-Swift.h",
+    "swiftdoc" : "/Users/agent/.hermes/profiles/geist/work/Geist/games/12-murmuration/.build-golden/out/Intermediates.noindex/MUAI.build/Release/MUAI-t.build/Objects-normal/arm64/MUAI.swiftdoc",
+    "swiftmodule" : "/Users/agent/.hermes/profiles/geist/work/Geist/games/12-murmuration/.build-golden/out/Intermediates.noindex/MUAI.build/Release/MUAI-t.build/Objects-normal/arm64/MUAI.swiftmodule",
+    "swiftsourceinfo" : "/Users/agent/.hermes/profiles/geist/work/Geist/games/12-murmuration/.build-golden/out/Intermediates.noindex/MUAI.build/Release/MUAI-t.build/Objects-normal/arm64/MUAI.swiftsourceinfo"
+  }
+}
