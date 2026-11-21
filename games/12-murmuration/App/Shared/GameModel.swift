@@ -171,7 +171,9 @@ final class GameModel: ObservableObject {
             // 30 ticks — merging the two players in versus, or absorbing
             // the rival's flock into the player's in rival mode (MU-P4.1).
             state.versusMergeSuppressed = versus || region.hasRival
-            for action in RegionStarter.startingActions(for: region) {
+            for action in RegionStarter.startingActions(
+                for: region, difficulty: rivalDifficulty
+            ) {
                 apply(action)
             }
             MUTrace.log(

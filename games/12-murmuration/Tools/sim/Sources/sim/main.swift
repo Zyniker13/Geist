@@ -189,7 +189,7 @@ func runBalanceDay(region: Region, tier: RivalDifficulty, day: UInt64) -> String
             ? [.spawnRival(ratio: Double(rivalStartOverride) / 1000.0)]
             : []
     } else {
-        starterActions = RegionStarter.startingActions(for: seeded)
+        starterActions = RegionStarter.startingActions(for: seeded, difficulty: tier)
     }
     for action in starterActions {
         let (applied, _) = applyAction(action, to: state)

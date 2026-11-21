@@ -127,8 +127,8 @@ final class ForageTests: XCTestCase {
             [.setLeaderPath(subFlock: 0, waypoints: [Waypoint(x: 1024, y: 768)])],
             to: state)
         var rival = GentleRival(difficulty: .gentle)
-        rival.lastTarget = Waypoint(x: 1560, y: 1060)
-        rival.lastForageTick = state.tick // forage interval not elapsed
+        rival.lastTargetByFlock[1] = Waypoint(x: 1560, y: 1060)
+        rival.lastForageTickByFlock[1] = state.tick // interval not elapsed
         spend(&state, field: 1, ramped: false)
         guard case .setLeaderPath(let sf, let waypoints)? = rival.action(for: state) else {
             return XCTFail("expected the rival to leave its spent field at once")

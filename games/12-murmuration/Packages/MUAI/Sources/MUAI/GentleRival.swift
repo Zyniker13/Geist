@@ -20,6 +20,9 @@
 
 import MUCore
 
+/// The multi-point forage avoid anchor (ADR-0035); lives in `ForageScoring`.
+typealias AvoidPoint = ForageScoring.AvoidPoint
+
 /// The rival pilot for sub-flock 1 (and 2 when a hard-tier split is active).
 /// Value type, `Codable` for save/resume.
 public struct GentleRival: Equatable, Sendable {
@@ -47,23 +50,34 @@ public struct GentleRival: Equatable, Sendable {
     /// The minimum birds the hard tier needs before it spends a split on
     /// contesting two roosts (MU-P4.1: "splits to contest two roosts").
     public var splitMinBirds: Int
+    /// The minimum birds for a day-start sustainability split (ADR-0035):
+    /// a fat single flock splits once per day into two halves that strip
+    /// different fields, so a side's growth is limited by the fields, not
+    /// by its own flocking. 0 disables it (gentle/normal default).
+    public var sustainSplit: Int
     /// The pilot's difficulty tier (P4.1).
     public var difficulty: RivalDifficulty
 
-    var lastForageTick: Int
+    /// Per-flock forage memory (ADR-0035): every flock the pilot steers
+    /// re-decides forage independently, with its own last-issued target
+    /// (commitment hysteresis) and standoff parking spot.
+    var lastForageTickByFlock: [UInt8: Int]
     var lastFleeCheckTick: Int
-    /// The waypoint of the last issued path, if any.
-    var lastTarget: Waypoint?
-    /// The flock's standoff waypoint while it waits for fields to re-arm,
-    /// if any.
-    var lastStandoff: Waypoint?
+    var lastTargetByFlock: [UInt8: Waypoint]
+    var lastStandoffByFlock: [UInt8: Waypoint]
     /// Whether this dusk already received its roost or standoff plan.
     var issuedDuskPlan: Bool
-    /// Hard-tier split plan progress: 0 = none, 1 = split issued (route flock
-    /// 1 to roost A next), 2 = flock 1 routed (route flock 2 to roost B next).
+    /// Split routing progress (the hard-tier dusk split and the ADR-0035
+    /// sustainability split share it): 0 = none, 1 = split issued (route
+    /// flock 1 next), 2 = flock 1 routed (route flock 2 next).
     var splitStage: Int
     var splitTargetA: Waypoint?
     var splitTargetB: Waypoint?
+    /// Whether this day already spent its sustainability split (reset at
+    /// each dawn).
+    var sustainSplitDone: Bool
+    /// The day number whose per-day flags were last reset.
+    var lastResetDay: Int
 
     public init(difficulty: RivalDifficulty = .gentle) {
         self.init(
@@ -71,6 +85,7 @@ public struct GentleRival: Equatable, Sendable {
             fleeInterval: Self.cadence(difficulty).flee,
             fleeRadius: Self.cadence(difficulty).fleeRadius,
             standoffDistance: Self.cadence(difficulty).standoff,
+            sustainSplit: Self.cadence(difficulty).sustain,
             difficulty: difficulty
         )
     }
@@ -80,6 +95,7 @@ public struct GentleRival: Equatable, Sendable {
         fleeInterval: Int,
         fleeRadius: Int,
         standoffDistance: Int,
+        sustainSplit: Int = 0,
         difficulty: RivalDifficulty = .gentle
     ) {
         self.forageInterval = forageInterval
@@ -89,29 +105,34 @@ public struct GentleRival: Equatable, Sendable {
         self.claimGate = Self.cadence(difficulty).claimGate
         self.contestRatio = Self.cadence(difficulty).contestRatio
         self.splitMinBirds = Self.cadence(difficulty).splitMinBirds
+        self.sustainSplit = sustainSplit
         self.difficulty = difficulty
-        self.lastForageTick = Autoplayer.noTick
+        self.lastForageTickByFlock = [:]
         self.lastFleeCheckTick = Autoplayer.noTick
-        self.lastTarget = nil
-        self.lastStandoff = nil
+        self.lastTargetByFlock = [:]
+        self.lastStandoffByFlock = [:]
         self.issuedDuskPlan = false
         self.splitStage = 0
         self.splitTargetA = nil
         self.splitTargetB = nil
+        self.sustainSplitDone = false
+        self.lastResetDay = 0
     }
 
     /// Per-tier cadence, standoff, and dusk-aggression tunables. The default
     /// `claimGate` equals the tier's field standoff for gentle/normal (the
     /// pre-ADR-0035 behavior, where one dial served both) and 0 for hard
-    /// (contest regardless of the player's position).
+    /// (contest regardless of the player's position). `sustain` is the
+    /// ADR-0035 sustainability-split threshold (0 = disabled).
     static func cadence(_ difficulty: RivalDifficulty)
         -> (forage: Int, flee: Int, fleeRadius: Int, standoff: Int,
-            claimGate: Int, contestRatio: Int, splitMinBirds: Int)
+            claimGate: Int, contestRatio: Int, splitMinBirds: Int,
+            sustain: Int)
     {
         switch difficulty {
-        case .gentle: return (480, 60, 320, 640, 640, 2, 500)
-        case .normal: return (300, 45, 360, 520, 520, 2, 500)
-        case .hard: return (240, 30, 400, 380, 0, 2, 500)
+        case .gentle: return (480, 60, 320, 640, 640, 2, 500, 0)
+        case .normal: return (300, 45, 360, 520, 520, 2, 500, 0)
+        case .hard: return (240, 30, 400, 380, 0, 2, 500, 750)
         }
     }
 
@@ -123,14 +144,24 @@ public struct GentleRival: Equatable, Sendable {
             countBirdsInFlock(assignments: state.subFlockAssignments, subFlock: 0) > 0
         else { return nil }
 
-        // A fresh day's state starts at tick 0; reset the per-day flags.
+        // Reset the per-day flags once per day. Split routing spans ticks
+        // within a day (one action per tick), so a per-tick reset would
+        // strand the follow-up routing calls — reset only when the day
+        // number advances.
         if state.tick < GameState.duskStart {
-            issuedDuskPlan = false
-            splitStage = 0
-            splitTargetA = nil
-            splitTargetB = nil
-            if lastForageTick > state.tick { lastForageTick = Autoplayer.noTick }
-            if lastFleeCheckTick > state.tick { lastFleeCheckTick = Autoplayer.noTick }
+            let day = state.tick / GameState.dayTicks
+            if day != lastResetDay {
+                lastResetDay = day
+                issuedDuskPlan = false
+                splitStage = 0
+                splitTargetA = nil
+                splitTargetB = nil
+                sustainSplitDone = false
+                for (flock, tick) in lastForageTickByFlock where tick > state.tick {
+                    lastForageTickByFlock[flock] = Autoplayer.noTick
+                }
+                if lastFleeCheckTick > state.tick { lastFleeCheckTick = Autoplayer.noTick }
+            }
         }
 
         if state.isDusk {
@@ -142,6 +173,8 @@ public struct GentleRival: Equatable, Sendable {
     // MARK: - Daytime
 
     private mutating func dayAction(_ state: GameState) -> GameAction? {
+        if let sustain = sustainIfNeeded(state) { return sustain }
+        if splitStage > 0 { return continueSustainRouting(state) }
         if let flee = fleeIfNeeded(state) { return flee }
         return forageIfNeeded(state)
     }
@@ -303,7 +336,7 @@ public struct GentleRival: Equatable, Sendable {
                 splitStage = 0
                 return nil
             }
-            lastTarget = target
+            lastTargetByFlock[1] = target
             return .setLeaderPath(subFlock: 1, waypoints: [target])
         case 2:
             splitStage = 0
@@ -318,12 +351,6 @@ public struct GentleRival: Equatable, Sendable {
     }
 
     // MARK: - Shared decisions
-
-    /// The rival flocks this pilot steers: flock 1 always, flock 2 when a
-    /// hard-tier split created one.
-    private func rivalFlocks(of state: GameState) -> [UInt8] {
-        state.subFlockCount >= 3 ? [1, 2] : [1]
-    }
 
     /// Flee when the closest rival-flock centroid drifts too close to the
     /// player's centroid (checked every `fleeInterval` ticks). Returns the
@@ -353,8 +380,8 @@ public struct GentleRival: Equatable, Sendable {
         let target = standoffPoint(
             state, fromX: rcx, fromY: rcy, awayFromX: pcx, awayFromY: pcy
         )
-        if target == lastTarget { return nil }
-        lastTarget = target
+        if target == lastTargetByFlock[flock] { return nil }
+        lastTargetByFlock[flock] = target
         return .setLeaderPath(subFlock: flock, waypoints: [target])
     }
 
@@ -375,73 +402,60 @@ public struct GentleRival: Equatable, Sendable {
         }
         // Re-decide every tick through the shared directive: it flies to
         // any field worth a strip trip, and stands off from regrowing
-        // fields (whose ramp any grazer restarts) until one re-arms.
-        let (cx, cy) = centroid(state, subFlock: 1)
-        let birds = countBirdsInFlock(
-            assignments: state.subFlockAssignments, subFlock: 1
-        )
+        // fields (whose ramp any grazer restarts) until one re-arms. For
+        // ADR-0035 splits, each flock plans its OWN forage, and every
+        // avoid set holds the player's leader point plus this side's other
+        // flocks' centroids — so the halves strip different fields instead
+        // of re-correlating on one field and starving via R-8.
         let (pcx, pcy) = playerLeaderPoint(state)
-        switch ForageScoring.directive(
-            state,
-            bank: state.energy[1],
-            flock: (x: cx, y: cy, birds: birds),
-            pilot: .init(current: lastTarget, standoff: lastStandoff),
-            avoid: (x: pcx, y: pcy, distance: standoffDistance)
-        ) {
-        case .hold:
-            return nil
-        case .standoff(let point):
-            lastForageTick = state.tick
-            lastStandoff = point
-            if point == lastTarget { return nil }
-            lastTarget = point
-            return .setLeaderPath(subFlock: 1, waypoints: [point])
-        case .forage(let point):
-            lastForageTick = state.tick
-            lastStandoff = nil
-            if point == lastTarget { return nil }
-            lastTarget = point
-            return .setLeaderPath(subFlock: 1, waypoints: [point])
-        }
-    }
-
-    /// A point `standoffDistance` (Chebyshev) away from the player centroid,
-    /// in the direction from the player through the rival, clamped into the
-    /// world with a margin. Q16.16 fixed-point intermediate math.
-    private func standoffPoint(
-        _ state: GameState, fromX: Int32, fromY: Int32,
-        awayFromX: Int32, awayFromY: Int32
-    ) -> Waypoint {
-        let dx = Int64(fromX) - Int64(awayFromX)
-        let dy = Int64(fromY) - Int64(awayFromY)
-        let mag = max(abs(dx), abs(dy))
-        if mag < 64 {
-            // Near-coincident centroids (the day-start split leaves the
-            // clouds interleaved, so the centroid gap is scatter noise): the
-            // player-to-rival direction is meaningless, so stand off +x from
-            // the world center — where the day-start clouds are centered —
-            // deterministically for every seed.
-            let margin: Int32 = 64
-            return Waypoint(
-                x: min(max(state.worldWidth / 2 + Int32(standoffDistance), margin), state.worldWidth - margin),
-                y: min(max(state.worldHeight / 2, margin), state.worldHeight - margin)
+        let flocks = rivalFlocks(of: state)
+        for flock in flocks {
+            let id = Int(flock)
+            let (cx, cy) = centroid(state, subFlock: flock)
+            let birds = countBirdsInFlock(
+                assignments: state.subFlockAssignments, subFlock: flock
             )
+            var avoid = [AvoidPoint(x: pcx, y: pcy, distance: standoffDistance)]
+            let others = flocks.filter { $0 != flock }
+            if let other = others.first {
+                let (ox, oy) = centroid(state, subFlock: other)
+                avoid.append(AvoidPoint(x: ox, y: oy, distance: standoffDistance))
+            }
+            switch ForageScoring.directive(
+                state,
+                bank: state.energy[id],
+                flock: (x: cx, y: cy, birds: birds),
+                pilot: .init(
+                    current: lastTargetByFlock[flock],
+                    standoff: lastStandoffByFlock[flock]
+                ),
+                avoid: avoid
+            ) {
+            case .hold:
+                continue
+            case .standoff(let point):
+                lastForageTickByFlock[flock] = state.tick
+                lastStandoffByFlock[flock] = point
+                if point == lastTargetByFlock[flock] { continue }
+                lastTargetByFlock[flock] = point
+                return .setLeaderPath(subFlock: flock, waypoints: [point])
+            case .forage(let point):
+                lastForageTickByFlock[flock] = state.tick
+                lastStandoffByFlock[flock] = nil
+                if point == lastTargetByFlock[flock] { continue }
+                lastTargetByFlock[flock] = point
+                return .setLeaderPath(subFlock: flock, waypoints: [point])
+            }
         }
-        let scale = (Int64(standoffDistance) << 16) / mag
-        var tx = awayFromX + Int32(truncatingIfNeeded: (dx * scale) >> 16)
-        var ty = awayFromY + Int32(truncatingIfNeeded: (dy * scale) >> 16)
-        let margin: Int32 = 64
-        tx = min(max(tx, margin), state.worldWidth - margin)
-        ty = min(max(ty, margin), state.worldHeight - margin)
-        return Waypoint(x: tx, y: ty)
+        return nil
     }
 
     /// Route the main rival flock (flock 1) to a roost center. No-op when
     /// the pilot already sent that path.
     private mutating func route(to roost: RoostState) -> GameAction? {
         let target = Waypoint(x: roost.centerX, y: roost.centerY)
-        if target == lastTarget { return nil }
-        lastTarget = target
+        if target == lastTargetByFlock[1] { return nil }
+        lastTargetByFlock[1] = target
         return .setLeaderPath(subFlock: 1, waypoints: [target])
     }
 
@@ -451,8 +465,8 @@ public struct GentleRival: Equatable, Sendable {
         let target = standoffPoint(
             state, fromX: rx, fromY: ry, awayFromX: px, awayFromY: py
         )
-        if target != lastTarget {
-            lastTarget = target
+        if target != lastTargetByFlock[1] {
+            lastTargetByFlock[1] = target
             return .setLeaderPath(subFlock: 1, waypoints: [target])
         }
         return nil
@@ -465,32 +479,24 @@ public struct GentleRival: Equatable, Sendable {
         let dy = Int64(roost.centerY) - Int64(ly)
         return dx * dx + dy * dy
     }
-
-    private func playerLeaderPoint(_ state: GameState) -> (x: Int32, y: Int32) {
-        let path = state.leaderPaths[0]
-        return (path.currentX, path.currentY)
-    }
-
-    private func centroid(_ state: GameState, subFlock: UInt8) -> (x: Int32, y: Int32) {
-        centroidOfFlock(
-            birds: state.birds,
-            assignments: state.subFlockAssignments,
-            subFlock: subFlock
-        )
-    }
 }
 
 extension GentleRival: Codable {
     private enum CodingKeys: String, CodingKey {
         case forageInterval, fleeInterval, fleeRadius, standoffDistance, difficulty
-        case claimGate, contestRatio, splitMinBirds
-        case lastForageTick, lastFleeCheckTick, lastTarget, lastStandoff, issuedDuskPlan
-        case splitStage, splitTargetA, splitTargetB
+        case claimGate, contestRatio, splitMinBirds, sustainSplit
+        case lastForageTickByFlock, lastFleeCheckTick, lastTargetByFlock
+        case lastStandoffByFlock, issuedDuskPlan
+        case splitStage, splitTargetA, splitTargetB, sustainSplitDone, lastResetDay
+        // Legacy (pre-ADR-0035) scalar flock-1 memory; read only, never written.
+        case lastForageTick, lastTarget, lastStandoff
     }
 
     /// Legacy saves (pre-P4.1) have no `difficulty` or split-plan fields;
     /// decode them as gentle / unset. The ADR-0035 tunables default to the
     /// decoded tier's table values so legacy saves keep that tier's behavior.
+    /// A pre-ADR-0035 save's scalar flock-1 memory migrates into the
+    /// per-flock dicts.
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         difficulty = try container.decodeIfPresent(RivalDifficulty.self, forKey: .difficulty) ?? .gentle
@@ -502,14 +508,29 @@ extension GentleRival: Codable {
         claimGate = try container.decodeIfPresent(Int.self, forKey: .claimGate) ?? table.claimGate
         contestRatio = try container.decodeIfPresent(Int.self, forKey: .contestRatio) ?? table.contestRatio
         splitMinBirds = try container.decodeIfPresent(Int.self, forKey: .splitMinBirds) ?? table.splitMinBirds
-        lastForageTick = try container.decodeIfPresent(Int.self, forKey: .lastForageTick) ?? Autoplayer.noTick
+        sustainSplit = try container.decodeIfPresent(Int.self, forKey: .sustainSplit) ?? table.sustain
+        lastForageTickByFlock = try container.decodeIfPresent([UInt8: Int].self, forKey: .lastForageTickByFlock) ?? [:]
         lastFleeCheckTick = try container.decodeIfPresent(Int.self, forKey: .lastFleeCheckTick) ?? Autoplayer.noTick
-        lastTarget = try container.decodeIfPresent(Waypoint.self, forKey: .lastTarget)
-        lastStandoff = try container.decodeIfPresent(Waypoint.self, forKey: .lastStandoff)
+        lastTargetByFlock = try container.decodeIfPresent([UInt8: Waypoint].self, forKey: .lastTargetByFlock) ?? [:]
+        lastStandoffByFlock = try container.decodeIfPresent([UInt8: Waypoint].self, forKey: .lastStandoffByFlock) ?? [:]
         issuedDuskPlan = try container.decodeIfPresent(Bool.self, forKey: .issuedDuskPlan) ?? false
         splitStage = try container.decodeIfPresent(Int.self, forKey: .splitStage) ?? 0
         splitTargetA = try container.decodeIfPresent(Waypoint.self, forKey: .splitTargetA)
         splitTargetB = try container.decodeIfPresent(Waypoint.self, forKey: .splitTargetB)
+        sustainSplitDone = try container.decodeIfPresent(Bool.self, forKey: .sustainSplitDone) ?? false
+        lastResetDay = try container.decodeIfPresent(Int.self, forKey: .lastResetDay) ?? 0
+        if lastTargetByFlock[1] == nil,
+            let legacyTarget = try container.decodeIfPresent(Waypoint.self, forKey: .lastTarget) {
+            lastTargetByFlock[1] = legacyTarget
+        }
+        if lastStandoffByFlock[1] == nil,
+            let legacyStandoff = try container.decodeIfPresent(Waypoint.self, forKey: .lastStandoff) {
+            lastStandoffByFlock[1] = legacyStandoff
+        }
+        if lastForageTickByFlock[1] == nil,
+            let legacyTick = try container.decodeIfPresent(Int.self, forKey: .lastForageTick) {
+            lastForageTickByFlock[1] = legacyTick
+        }
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -522,13 +543,16 @@ extension GentleRival: Codable {
         try container.encode(claimGate, forKey: .claimGate)
         try container.encode(contestRatio, forKey: .contestRatio)
         try container.encode(splitMinBirds, forKey: .splitMinBirds)
-        try container.encode(lastForageTick, forKey: .lastForageTick)
+        try container.encode(sustainSplit, forKey: .sustainSplit)
+        try container.encode(lastForageTickByFlock, forKey: .lastForageTickByFlock)
         try container.encode(lastFleeCheckTick, forKey: .lastFleeCheckTick)
-        try container.encode(lastTarget, forKey: .lastTarget)
-        try container.encodeIfPresent(lastStandoff, forKey: .lastStandoff)
+        try container.encode(lastTargetByFlock, forKey: .lastTargetByFlock)
+        try container.encode(lastStandoffByFlock, forKey: .lastStandoffByFlock)
         try container.encode(issuedDuskPlan, forKey: .issuedDuskPlan)
         try container.encode(splitStage, forKey: .splitStage)
         try container.encode(splitTargetA, forKey: .splitTargetA)
         try container.encode(splitTargetB, forKey: .splitTargetB)
+        try container.encode(sustainSplitDone, forKey: .sustainSplitDone)
+        try container.encode(lastResetDay, forKey: .lastResetDay)
     }
 }

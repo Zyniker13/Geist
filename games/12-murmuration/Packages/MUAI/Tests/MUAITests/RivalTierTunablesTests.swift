@@ -186,6 +186,28 @@ final class RivalTierTunablesTests: XCTestCase {
         XCTAssertEqual(secondWaypoints, [Waypoint(x: 400, y: 400)], "the near roost")
     }
 
+    func testStartScaleScalesTheRivalShare() throws {
+        // ADR-0035: harder tiers carve a larger rival share off the day-one
+        // flock; gentle keeps the region's raw share. Counts carry ±1 of
+        // float rounding in the carve.
+        let region = makeTestRegion(birdCount: 1400) // rivalStartBirds = 600
+        func rivalBirds(_ difficulty: RivalDifficulty?) -> Int {
+            var state = region.makeGameState()
+            for action in RegionStarter.startingActions(for: region, difficulty: difficulty) {
+                state = apply([action], to: state)
+            }
+            return state.subFlockAssignments.filter { $0 == 1 }.count
+        }
+        func assertNear(_ value: Int, _ expected: Double, _ message: String) {
+            XCTAssertLessThanOrEqual(abs(Double(value) - expected), 1.0, message)
+        }
+        XCTAssertEqual(rivalBirds(nil), 600)
+        XCTAssertEqual(rivalBirds(.gentle), 600)
+        assertNear(rivalBirds(.normal), 750, "normal ≈ 600 × 1.25")   // 749/750
+        assertNear(rivalBirds(.hard), 900, "hard ≈ 600 × 1.5")        // 899/900
+        XCTAssertGreaterThan(rivalBirds(.hard), rivalBirds(.normal))
+    }
+
     func testLegacyDecodeDefaultsADR0035TunablesToTierTable() throws {
         // A pre-ADR-0035 save (no claimGate/contestRatio/splitMinBirds keys)
         // decodes each tunable to its tier's table value.

@@ -27,6 +27,23 @@ enum ForageDirective: Equatable, Sendable {
 
 /// Regrowth-aware field choice shared by the autoplayer and the rivals.
 enum ForageScoring {
+    /// A soft-avoid anchor for forage scoring: fields inside `distance` of
+    /// this point lose up to `avoidMaxPenalty` score, scaled by proximity.
+    /// The rivals avoid the player's leader point; a side's split flocks
+    /// avoid each other's centroids so the halves strip different fields
+    /// instead of re-correlating on one and starving (ADR-0035).
+    struct AvoidPoint: Equatable, Sendable {
+        let x: Int32
+        let y: Int32
+        let distance: Int
+
+        init(x: Int32, y: Int32, distance: Int) {
+            self.x = x
+            self.y = y
+            self.distance = distance
+        }
+    }
+
     /// The pilot's last forage decision, feeding the directive's
     /// commitment hysteresis: `current` is the waypoint of the last
     /// issued path (a field center or a standoff point), `standoff` the
@@ -201,13 +218,14 @@ enum ForageScoring {
     ///   - flock: the flock's centroid and bird count (the count sizes
     ///     the trip's drain cost).
     ///   - pilot: the pilot's last issued decision (hysteresis).
-    ///   - avoid: optional soft penalty applied to forage choices.
+    /// - avoid: soft penalties applied to forage choices (defaults to
+    ///     none).
     static func directive(
         _ state: GameState,
         bank: Int,
         flock: (x: Int32, y: Int32, birds: Int),
         pilot: PilotPrior,
-        avoid: (x: Int32, y: Int32, distance: Int)? = nil
+        avoid: [AvoidPoint] = []
     ) -> ForageDirective {
         let nearX = flock.x
         let nearY = flock.y
@@ -282,8 +300,9 @@ enum ForageScoring {
     /// A field still under its regrowth ramp scores only what food it has
     /// left; a spent field that has ramped scores its expected regrowth by
     /// the time the flock arrives. The current target keeps a small
-    /// hysteresis bonus. `avoid` optionally penalizes fields inside a
-    /// radius of a point (the rivals avoid the player's position). Ties
+    /// bonus. `avoid` penalizes fields inside a radius of points (the
+    /// rivals avoid the player's position, and split flocks avoid each
+    /// other's centroids). Ties
     /// break toward the nearer field, then field order, deterministically.
     static func bestField(
         _ state: GameState,
@@ -291,7 +310,7 @@ enum ForageScoring {
         nearY: Int32,
         birds: Int,
         current: Waypoint?,
-        avoid: (x: Int32, y: Int32, distance: Int)? = nil
+        avoid: [AvoidPoint] = []
     ) -> FieldState? {
         bestField(
             in: state.fields, nearX: nearX, nearY: nearY, birds: birds,
@@ -307,7 +326,7 @@ enum ForageScoring {
         nearY: Int32,
         birds: Int,
         current: Waypoint?,
-        avoid: (x: Int32, y: Int32, distance: Int)? = nil
+        avoid: [AvoidPoint] = []
     ) -> FieldState? {
         var best: FieldState?
         var bestScore = Int64.min
@@ -332,19 +351,20 @@ enum ForageScoring {
             {
                 score += stayBonus
             }
-            if let avoid {
+            for point in avoid {
                 // Soft proximity penalty: the closer the field is to the
                 // avoided point, the more its score drops, so among fields
                 // inside the radius the flock still prefers the one
                 // farthest from the point. Scaled to food units (at most
-                // `avoidMaxPenalty`): the rivals must still eat, and a full
-                // field near the player beats a spent field far away.
-                let adx = Int64(field.centerX) - Int64(avoid.x)
-                let ady = Int64(field.centerY) - Int64(avoid.y)
+                // `avoidMaxPenalty` per point): the rivals must still eat,
+                // and a full field near an avoided point beats a spent
+                // field far away.
+                let adx = Int64(field.centerX) - Int64(point.x)
+                let ady = Int64(field.centerY) - Int64(point.y)
                 let adist = isqrt64(UInt64(max(0, adx * adx + ady * ady)))
-                if adist < Int64(avoid.distance) {
-                    let closeness = Int64(avoid.distance) - adist
-                    score -= avoidMaxPenalty * closeness / Int64(avoid.distance)
+                if adist < Int64(point.distance) {
+                    let closeness = Int64(point.distance) - adist
+                    score -= avoidMaxPenalty * closeness / Int64(point.distance)
                 }
             }
             if score > bestScore
