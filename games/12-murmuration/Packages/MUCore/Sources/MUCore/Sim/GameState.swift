@@ -150,6 +150,12 @@ public struct GameState: Codable, Sendable, Equatable {
     /// centroid split check runs against the path.
     public static let replayContentVersion = 14
 
+    /// R-10 grab budget: successful-dive kills per 1,000 birds of the target
+    /// flock (ADR-0034). Tuning constant — the balance harness overrides it
+    /// with `--falcon-budget` when sweeping falcon pressure; production code
+    /// reads it only at the dive site.
+    nonisolated(unsafe) public static var falconGrabPerThousand = 8
+
     /// Content version for golden replays.
     public let contentVersion: Int
 

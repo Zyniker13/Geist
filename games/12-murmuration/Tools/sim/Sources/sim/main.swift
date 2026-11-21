@@ -52,6 +52,9 @@ let rivalStandoffOverride = argument("--rival-standoff", default: -1)
 let rivalGateOverride = argument("--rival-gate", default: -1)
 let rivalRatioOverride = argument("--rival-ratio", default: -1)
 let rivalSplitMinOverride = argument("--rival-splitmin", default: -1)
+// Falcon grab-budget override (tuning probe; <0 keeps the engine constant).
+let falconBudgetOverride = argument("--falcon-budget", default: -1)
+if falconBudgetOverride >= 0 { GameState.falconGrabPerThousand = falconBudgetOverride }
 
 let worldWidth: Int32 = 2048
 let worldHeight: Int32 = 1536

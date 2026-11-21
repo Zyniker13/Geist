@@ -115,13 +115,16 @@ final class MUGateTests: XCTestCase {
     /// MU-P3.3: local two-flock versus on one iPad. Each player owns the
     /// touches nearest their flock's color. This test verifies (1) the
     /// day-start split creates two flocks, and (2) a touch near flock 0
-    /// steers flock 0 while a touch near flock 1 steers flock 1.
+    /// steers flock 0 while a touch near flock 1 steers flock 1. The fixture
+    /// runs falcon-free (`-uitest-falcons 0`): a falcon dive legitimately
+    /// mints a third flock (ADR-0033), which is not what this test measures.
     func testVersusTwoFlockRouting() throws {
         let app = XCUIApplication()
         GameUITest.launch(
             app: app,
             region: "meadow",
             days: 1,
+            falcons: 0,
             versus: true,
             autoplay: false
         )

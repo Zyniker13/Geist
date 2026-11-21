@@ -264,10 +264,18 @@ public struct GentleRival: Equatable, Sendable {
             return holdStandoff(state)
         }
 
-        // Two roosts and a fighting flock: contest both top roosts.
+        // Two roosts and a fighting flock: contest both top roosts. When the
+        // side already fields two flocks (a falcon forcedSplit mints on the
+        // struck flock's own side, ADR-0033), the day-start split action is
+        // rejected by the per-side cap — route the existing flocks instead
+        // of spending the dusk plan on a split that cannot apply (ADR-0035).
         if ranked.count >= 2, rivalBirds >= splitMinBirds {
             splitTargetA = Waypoint(x: ranked[0].centerX, y: ranked[0].centerY)
             splitTargetB = Waypoint(x: ranked[1].centerX, y: ranked[1].centerY)
+            if rivalFlocks(of: state).count >= 2 {
+                splitStage = 1
+                return nil
+            }
             splitStage = 1
             return .splitFlock(from: 1, ratio: 0.5)
         }

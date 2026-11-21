@@ -98,16 +98,19 @@ final class FalconStoopTests: XCTestCase {
     func testR10KillBudgetScalesWithFlockSize() {
         // The grab budget scales with flock size so losses stay a stable
         // fraction of the flock (G4 falcon-loss metric) and is throttled in
-        // dense areas (R-10), floored at one bird.
-        XCTAssertEqual(falconKillBudget(flockSize: 50, edgeDensity: 0), 1)
-        XCTAssertEqual(falconKillBudget(flockSize: 500, edgeDensity: 0), 4)
-        XCTAssertEqual(falconKillBudget(flockSize: 1400, edgeDensity: 0), 11)
-        XCTAssertEqual(falconKillBudget(flockSize: 1400, edgeDensity: 128), 5)
-        XCTAssertEqual(falconKillBudget(flockSize: 2500, edgeDensity: 128), 10)
+        // dense areas (R-10), floored at one bird. The budget constant is
+        // passed explicitly (the production site reads
+        // GameState.falconGrabPerThousand) so the test pins no global.
+        XCTAssertEqual(falconKillBudget(flockSize: 50, edgeDensity: 0, perThousand: 8), 1)
+        XCTAssertEqual(falconKillBudget(flockSize: 500, edgeDensity: 0, perThousand: 8), 4)
+        XCTAssertEqual(falconKillBudget(flockSize: 1400, edgeDensity: 0, perThousand: 8), 11)
+        XCTAssertEqual(falconKillBudget(flockSize: 1400, edgeDensity: 128, perThousand: 8), 5)
+        XCTAssertEqual(falconKillBudget(flockSize: 2500, edgeDensity: 128, perThousand: 8), 10)
+        XCTAssertEqual(falconKillBudget(flockSize: 1400, edgeDensity: 0, perThousand: 32), 44)
         // Dense areas never get a larger budget than sparse ones (R-10).
         XCTAssertLessThanOrEqual(
-            falconKillBudget(flockSize: 1400, edgeDensity: 128),
-            falconKillBudget(flockSize: 1400, edgeDensity: 0))
+            falconKillBudget(flockSize: 1400, edgeDensity: 128, perThousand: 8),
+            falconKillBudget(flockSize: 1400, edgeDensity: 0, perThousand: 8))
     }
 
     func testR10DiveKillsAlongPath() {

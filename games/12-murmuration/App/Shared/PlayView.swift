@@ -26,6 +26,10 @@ struct GameLaunchConfig {
     /// The rival pilot's difficulty tier (MU-P4.1); nil keeps the region
     /// default.
     var rivalDifficulty: RivalDifficulty?
+    /// Falcon-count override for test fixtures; nil keeps the region
+    /// default. The versus routing test pins a two-flock stage and runs
+    /// falcon-free (`-uitest-falcons 0`).
+    var falconOverride: Int?
 
     /// Parse the effective UI-test flags (file config on macOS, else argv).
     static func resolved() -> GameLaunchConfig {
@@ -51,6 +55,9 @@ struct GameLaunchConfig {
             config.rivalDifficulty = tier
         }
         if let seed = value("-uitest-seed"), let n = UInt64(seed) { config.seed = n }
+        if let falcons = value("-uitest-falcons"), let n = Int(falcons) {
+            config.falconOverride = max(n, 0)
+        }
         return config
     }
 }
@@ -92,6 +99,9 @@ struct PlayView: View {
             adjusted = base.reseeded(seed)
         } else {
             adjusted = base
+        }
+        if let falcons = config.falconOverride {
+            adjusted = adjusted.withFalconCount(falcons)
         }
         _model = StateObject(
             wrappedValue: GameModel(

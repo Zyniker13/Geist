@@ -20,6 +20,7 @@ enum GameUITest {
         fast: Int? = nil,
         pauseAt: Int? = nil,
         birds: Int? = nil,
+        falcons: Int? = nil,
         hash: Bool = false,
         tutorial: Bool = false,
         versus: Bool = false,
@@ -54,6 +55,9 @@ enum GameUITest {
         }
         if let birds {
             args += ["-uitest-birds", String(birds)]
+        }
+        if let falcons {
+            args += ["-uitest-falcons", String(falcons)]
         }
         if hash {
             args += ["-uitest-hash"]

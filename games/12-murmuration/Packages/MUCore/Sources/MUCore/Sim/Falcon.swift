@@ -137,7 +137,8 @@ public func computeFalcons(state: inout GameState, rng: inout SeededRNG) -> [Fal
                     let pathRadius2 = Int64(GameState.diveRadius) * Int64(GameState.diveRadius)
                     let grabBudget = falconKillBudget(
                         flockSize: state.subFlockAssignments.filter { $0 == UInt8(bestSF) }.count,
-                        edgeDensity: bestDensity)
+                        edgeDensity: bestDensity,
+                        perThousand: GameState.falconGrabPerThousand)
                     var candidates: [(d2: Int64, idx: Int)] = []
                     for i in 0..<state.birds.count {
                         let d2 = distanceToSegment2(
@@ -251,12 +252,12 @@ func divePathEnd(
 }
 
 /// R-10 grab budget for one successful dive: proportional to the target
-/// flock's size (8 birds per 1,000) so losses stay a stable fraction of the
-/// flock, throttled by the edge density (fewer kills in dense areas) down to
-/// half, floored at one bird.
-func falconKillBudget(flockSize: Int, edgeDensity: Int) -> Int {
+/// flock's size (`perThousand` birds per 1,000) so losses stay a stable
+/// fraction of the flock, throttled by the edge density (fewer kills in
+/// dense areas) down to half, floored at one bird.
+func falconKillBudget(flockSize: Int, edgeDensity: Int, perThousand: Int) -> Int {
     let denseThrottle = 256 - min(edgeDensity, 128)
-    return max(1, flockSize * 8 * denseThrottle / (1000 * 256))
+    return max(1, flockSize * perThousand * denseThrottle / (1000 * 256))
 }
 
 /// Average same-flock neighbor count within the alignment radius for a
