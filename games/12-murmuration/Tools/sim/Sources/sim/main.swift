@@ -52,6 +52,7 @@ let rivalStandoffOverride = argument("--rival-standoff", default: -1)
 let rivalGateOverride = argument("--rival-gate", default: -1)
 let rivalRatioOverride = argument("--rival-ratio", default: -1)
 let rivalSplitMinOverride = argument("--rival-splitmin", default: -1)
+let rivalStartOverride = argument("--rival-start", default: -1)
 // Falcon grab-budget override (tuning probe; <0 keeps the engine constant).
 let falconBudgetOverride = argument("--falcon-budget", default: -1)
 if falconBudgetOverride >= 0 { GameState.falconGrabPerThousand = falconBudgetOverride }
@@ -179,7 +180,18 @@ func runBalanceDay(region: Region, tier: RivalDifficulty, day: UInt64) -> String
     // Mirror GameModel: versus and rival modes suppress the R-5 auto-merge
     // (the day-start split starts both flocks coincident).
     state.versusMergeSuppressed = seeded.hasRival
-    for action in RegionStarter.startingActions(for: seeded) {
+    let starterActions: [GameAction]
+    if rivalStartOverride >= 0 {
+        // Tuning probe: start the rival at a different fraction of the
+        // region's flock (--rival-start N = N birds per 1,000; <0 keeps the
+        // region's rivalStartBirds).
+        starterActions = seeded.hasRival
+            ? [.spawnRival(ratio: Double(rivalStartOverride) / 1000.0)]
+            : []
+    } else {
+        starterActions = RegionStarter.startingActions(for: seeded)
+    }
+    for action in starterActions {
         let (applied, _) = applyAction(action, to: state)
         state = applied
     }

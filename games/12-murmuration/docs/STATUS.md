@@ -942,6 +942,31 @@ sweep counts birds taken. `FalconStoopTests` (5 tests) added; the three
 R-10 tests moved out of `RulesEngineTests`. MUCore full suite green
 (131 tests, 0 failures, EXIT=0 at 00:55); sim tool rebuilds clean.
 
+**ADR-0035 probe round 1 (2026-11-21, scratch `p2_*`, hard tier,
+30 days × commons+meadow):** no dusk-tunable cell moves the win rate
+toward the 35% target — commons stays 73–87% player wins across
+`contestRatio` 2–6, standoff 380–640, splitmin 200–500; meadow stays
+100% in every cell. Two structural findings: (1) `planHard`'s dusk split
+is rejected by the ADR-0033 per-side cap whenever a falcon forcedSplit
+already minted a second rival flock during the day — the dusk plan is
+spent with neither flock routed, and the trace shows both rival flocks
+contesting the SAME roost (`claim r0 sf1` → `claim r0 sf2` flips). Fixed:
+planHard routes the two existing flocks to the two top roosts instead of
+issuing a split that cannot apply (regression test
+`testHardRoutesTwoExistingFlocksToTwoRoosts`). (2) The third leader in
+`testVersusTwoFlockRouting` on CI is the same mechanism on the player
+side — a legitimate ADR-0033 mint, not the subject of that test — so the
+versus fixture now runs falcon-free via a new `-uitest-falcons` launch
+override (`Region.withFalconCount`).
+
+The CI run on 130fc90 also caught two lint violations in the new test
+code (class body >400 lines; non-optional `Data` conversion): the tier
+tunable tests moved to `RivalTierTunablesTests.swift`. MUAI 58/58 green.
+`--falcon-budget` and `--rival-start` probe overrides added to the sim
+harness; the grab-budget constant is now `GameState.falconGrabPerThousand`
+(read only at the dive site, tests pass it explicitly). Probe round 2
+(gate cells + falcon-pressure cells, fresh binary) running.
+
 **Tier-table inversion found (2026-11-20, in progress):** the sweep's
  first two tiers finished and inverted the intended difficulty
 ordering: gentle 57.3% player wins (target 85), normal 72.2%

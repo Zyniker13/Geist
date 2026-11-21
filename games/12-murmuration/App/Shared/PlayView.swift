@@ -92,7 +92,7 @@ struct PlayView: View {
                 base = soloRegion
             }
         }
-        let adjusted: Region
+        var adjusted: Region
         if let birds = config.birdOverride {
             adjusted = base.withBirdCount(birds)
         } else if let seed = config.seed {
