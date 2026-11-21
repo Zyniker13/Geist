@@ -1,6 +1,7 @@
 # Build artifacts
 .build/
 .build-probe/
+.build-golden/
 DerivedData/
 dist/
 

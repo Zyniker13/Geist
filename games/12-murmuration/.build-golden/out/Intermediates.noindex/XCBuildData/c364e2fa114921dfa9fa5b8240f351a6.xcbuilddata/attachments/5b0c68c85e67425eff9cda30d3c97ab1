@@ -1,4 +1,0 @@
-module MUAI {
-header "MUAI-Swift.h"
-export *
-}
