@@ -193,6 +193,8 @@ func runBalanceDay(region: Region, tier: RivalDifficulty, day: UInt64) -> String
     var rivalDusk = -1
     var playerFalconLosses = 0
     var rivalFalconLosses = 0
+    var playerRoosts = -1
+    var rivalRoosts = -1
     var autoplayerUsTotal: UInt64 = 0
     var rivalUsTotal: UInt64 = 0
     let trace = balanceTrace > 0
@@ -226,6 +228,9 @@ func runBalanceDay(region: Region, tier: RivalDifficulty, day: UInt64) -> String
                 winner = who
             case .falcon(.diveResult(_, let flock, let hit)) where hit:
                 if flock == 0 { playerFalconLosses += 1 } else { rivalFalconLosses += 1 }
+            case .roost(.dayEnd(let p, let rv)):
+                playerRoosts = p
+                rivalRoosts = rv
             default:
                 break
             }
@@ -242,7 +247,10 @@ func runBalanceDay(region: Region, tier: RivalDifficulty, day: UInt64) -> String
                 case .birdCountChange(let d): line = "t\(state.tick) count \(d > 0 ? "+" : "")\(d)"
                 case .roost(.claim(let r, let f)): line = "t\(state.tick) claim r\(r) sf\(f)"
                 case .roost(.won(let r, let f)): line = "t\(state.tick) WON r\(r) sf\(f)"
-                case .roost(.dayEnd(let p, let rv)): line = "t\(state.tick) dayEnd p=\(p) r=\(rv)"
+                case .roost(.dayEnd(let p, let rv)):
+                    line = "t\(state.tick) dayEnd p=\(p) r=\(rv)"
+                    playerRoosts = p
+                    rivalRoosts = rv
                 case .roost(.soloDayEnd(let s, let t)): line = "t\(state.tick) soloDayEnd settled=\(s) target=\(t)"
                 case .roost(.victory(let w)): line = "t\(state.tick) victory sf\(w)"
                 case .condense(let sf, let active): line = "t\(state.tick) condense sf\(sf) \(active ? "on" : "off")"
@@ -318,6 +326,8 @@ func runBalanceDay(region: Region, tier: RivalDifficulty, day: UInt64) -> String
     row.append(String(rivalDusk))
     row.append(String(playerFalconLosses))
     row.append(String(rivalFalconLosses))
+    row.append(String(playerRoosts))
+    row.append(String(rivalRoosts))
     row.append(autoplayerUs)
     row.append(rivalUs)
     row.append(ticks)
@@ -347,7 +357,7 @@ if let balanceTierName = balanceTier {
     let ids = balanceRegions.map { $0.split(separator: ",").map(String.init) } ?? catalog.ids
     let regions = ids.compactMap { catalog.region(id: $0) }
     precondition(regions.count == ids.count, "unknown region id in \(ids)")
-    var rows = ["region,tier,day,winner,playerBirds,rivalBirds,playerPeak,rivalPeak,playerDusk,rivalDusk,falconLossPlayer,falconLossRival,autoplayerNsPerTick,rivalNsPerTick,ticks"]
+    var rows = ["region,tier,day,winner,playerBirds,rivalBirds,playerPeak,rivalPeak,playerDusk,rivalDusk,falconLossPlayer,falconLossRival,playerRoosts,rivalRoosts,autoplayerNsPerTick,rivalNsPerTick,ticks"]
     for region in regions {
         for day in 1...max(balanceDays, 1) {
             rows.append(runBalanceDay(region: region, tier: tier, day: UInt64(day)))

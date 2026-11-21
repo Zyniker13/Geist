@@ -234,15 +234,39 @@ func averageNeighborDensity(state: GameState, subFlock: UInt8) -> Int {
 }
 
 /// R-10 forced split: reassign every other member of `from` (by index order)
-/// to the other sub-flock, creating it if needed (capped at 2 sub-flocks).
-func forceSplit(state: inout GameState, from: UInt8) {
-    let to: UInt8 = from == 0 ? 1 : 0
-    if Int(to) >= state.subFlockCount {
+/// to another sub-flock on the SAME side (ADR-0033), creating one if the side
+/// has no second flock yet. Returns the target sub-flock index; the caller
+/// appends the matching `.split` event. The forced split moves birds in both
+/// `subFlockAssignments` (game logic) and `birds.subFlock` (steering) so the
+/// two stay consistent.
+func forceSplit(state: inout GameState, from: UInt8) -> UInt8 {
+    let owner = state.subFlockOwners[Int(from)]
+    // Target: another sub-flock on the same side (smallest index first).
+    var to: Int = -1
+    for (idx, o) in state.subFlockOwners.enumerated() where o == owner && idx != Int(from) {
+        to = idx
+        break
+    }
+    if to < 0 {
+        // The side has no second flock: create one.
+        to = state.subFlockOwners.count
+        state.subFlockOwners.append(owner)
         state.energy.append(GameState.maxEnergy / 2 + 200) // new flock starts at 700
+        for idx in state.roostClaims.indices {
+            state.roostClaims[idx].append(0)
+        }
+        let (cx, cy) = centroidOfFlock(
+            birds: state.birds, assignments: state.subFlockAssignments, subFlock: from
+        )
+        state.leaderPaths.append(LeaderPath(points: [Waypoint(x: cx, y: cy)]))
     }
     var toggle = false
     for i in 0..<state.subFlockAssignments.count where state.subFlockAssignments[i] == from {
-        if toggle { state.subFlockAssignments[i] = to }
+        if toggle {
+            state.subFlockAssignments[i] = UInt8(to)
+            state.birds.subFlock[i] = UInt8(to)
+        }
         toggle.toggle()
     }
+    return UInt8(to)
 }

@@ -265,7 +265,11 @@ final class MUAITests: XCTestCase {
                 return XCTFail("the rival merged within 60 ticks")
             }
         }
-        XCTAssertEqual(state.subFlockCount, 2)
+        // ADR-0033: a qualifying falcon dive mints a second flock on the
+        // struck flock's own side, so the count may exceed 2. The invariant
+        // under test is: no merge, and the rival's flock still has birds.
+        XCTAssertGreaterThanOrEqual(state.subFlockCount, 2)
+        XCTAssertLessThanOrEqual(state.subFlockCount, 4)
         XCTAssertGreaterThan(count(state, subFlock: 1), 0, "the rival is still alive")
     }
 

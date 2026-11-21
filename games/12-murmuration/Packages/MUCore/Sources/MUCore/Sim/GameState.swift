@@ -33,6 +33,14 @@ public struct GameState: Codable, Sendable, Equatable {
     /// Sub-flock assignments for each bird (index-aligned with BirdSoA).
     public var subFlockAssignments: [UInt8]
 
+    /// Side owner of each sub-flock: 0 = player side, 1 = rival side (ADR-0033).
+    /// Index-aligned with `leaderPaths`, `energy` and the roost-claims rows.
+    /// Every mechanism that creates or reassigns a sub-flock must respect
+    /// this: a falcon forced split moves birds only within their side, a
+    /// split only extends its own side, and the day-end roost tally counts
+    /// claims by this table instead of by flock index.
+    public var subFlockOwners: [UInt8]
+
     /// Energy per sub-flock (R-8).
     public var energy: [Int]
 
@@ -133,7 +141,10 @@ public struct GameState: Codable, Sendable, Equatable {
     /// uses divisor 7 instead of 10, and the energy drain applies only while
     /// the sub-flock is in flight (R-8 "while flying"), so flocks no longer
     /// starve through the 900-tick dusk on roosts that overlap no field.
-    public static let replayContentVersion = 12
+    /// v13: versus sub-flock side ownership (ADR-0033) — `spawnRival`
+    /// replaces the starter split, `subFlockOwners` gates forced splits,
+    /// scripted splits, and the day-end roost tally.
+    public static let replayContentVersion = 13
 
     /// Content version for golden replays.
     public let contentVersion: Int
@@ -293,6 +304,7 @@ public struct GameState: Codable, Sendable, Equatable {
         self.leaderPaths[0].currentX = centerX
         self.leaderPaths[0].currentY = centerY
         self.subFlockAssignments = subFlockAssignments
+        self.subFlockOwners = [0] // ADR-0033: one player-side flock at start.
         self.energy = Array(repeating: 800, count: 1) // start at 800 energy
         self.initialBirdCount = birdCount
 
@@ -319,10 +331,10 @@ public struct GameState: Codable, Sendable, Equatable {
                 centerX: roostCenterX[i],
                 centerY: roostCenterY[i],
                 radius: Int32(roostRadius[i]),
-                claims: [0, 0],
+                claims: [0],
                 claimant: -1
             ))
-            roostClaims.append([0, 0]) // [player flock, rival flock]
+            roostClaims.append([0]) // One row per roost, one slot per flock.
         }
         self.roosts = roosts
         self.roostClaims = roostClaims

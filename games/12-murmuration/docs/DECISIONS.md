@@ -743,3 +743,45 @@ Architecture decision records. Every deviation from the roadmap is recorded here
   re-sweep still misses the dusk-flock window, the next levers are
   the grazing radius/geometry, not the drain rule, which stays
   pinned to R-8's wording.
+
+## ADR-0033: Sub-flock side ownership — versus flocks never cross sides (2026-11-20)
+
+- **Context:** In versus mode, flock 1 was "the rival" purely by index
+  convention. Two defects followed. (1) `RegionStarter` created the rival
+  with `.splitFlock(from: 0, ...)`, so the rival's flock was a player-side
+  split. (2) `forceSplit` (the R-10 falcon-dive response) reassigned every
+  other bird of the struck flock to `sf == 0 ? 1 : 0` — a dive on the
+  player's flock moved half the player's birds into the rival's flock, and
+  vice versa. It also updated `subFlockAssignments` (game logic) but not
+  `birds.subFlock` (steering), so the two arrays desynced. Measured impact
+  (pre-fix G4 sweep, commons): the rival banked two roosts on 22 of 30
+  days (en-route claims from stolen birds), the autoplayer lost to every
+  probed rival configuration (≤37% wins), and the tier order inverted
+  (Gentle 57.3% < Normal 72.2% player win rate) because Gentle's slow
+  forage cadence let the rival's stolen-bird flock grow bigger.
+- **Decision:** Side ownership is explicit state, not an index convention.
+  (a) `GameState.subFlockOwners: [UInt8]` — one entry per sub-flock,
+  0 = player side, 1 = rival side; solo games are all 0. (b) New action
+  `.spawnRival(ratio:)` mints the rival's flock with owner 1 and full
+  bookkeeping (energy, claim rows, leader path); `RegionStarter` uses it
+  instead of a split. (c) `splitFlock` appends the source flock's owner to
+  the new flock; the per-side cap is enforced as "a side may split only
+  while it has exactly one flock" (max 2 flocks per side, 4 total).
+  (d) `forceSplit` targets another sub-flock on the same side (smallest
+  index) or mints one on that side, and updates both
+  `subFlockAssignments` and `birds.subFlock` so they stay in sync.
+  (e) The roost tally and the R-13 tiebreak count by `subFlockOwners`,
+  not by index. (f) `roostClaims` rows start one-wide and widen as flocks
+  are minted. `replayContentVersion` bumps to 13; goldens regenerated.
+- **Tests:** New `VersusOwnershipTests` (7 tests): spawnRival ownership,
+  split inherits the source owner, forceSplit stays same-side with the
+  side total preserved, roost tally by ownership, R-13 tiebreak by
+  ownership, claim-row widening, no cross-side movement. R-12 rewritten
+  for versus mode (a third flock mints a claim row). R-13 and solo
+  fixtures that fabricate two-flock rows now set
+  `subFlockOwners = [0, 1]`.
+- **Consequences:** A falcon dive can no longer hand birds to the
+  opponent; a player second flock minted by a dive counts for the player.
+  The pre-fix G4 numbers (Gentle 57.3%, Normal 72.2%) are superseded —
+  the sweep reruns on this engine. The autoplayer's nearest-roost dusk
+  strategy is the remaining known weakness and a legitimate tuning target.

@@ -165,7 +165,13 @@ public func checkVictory(state: inout GameState) -> ([RoostEvent], RoostEvent?) 
     var playerWon = 0
     var rivalWon = 0
     for roost in state.roosts where roost.claimant >= 0 {
-        if roost.claimant == 0 { playerWon += 1 } else { rivalWon += 1 }
+        // ADR-0033: the claimant is a flock index; tally by that flock's
+        // side owner, not by index convention.
+        if state.subFlockOwners[roost.claimant] == 0 {
+            playerWon += 1
+        } else {
+            rivalWon += 1
+        }
     }
     events.append(.dayEnd(playerFlocksWon: playerWon, rivalFlocksWon: rivalWon))
 
@@ -179,9 +185,17 @@ public func checkVictory(state: inout GameState) -> ([RoostEvent], RoostEvent?) 
         return (events, .victory(winner: 1))
     }
     // R-13 tiebreak: more birds alive takes the day (exact ties go to the
-    // rival — P4 ships the rival flock, so ties are counted per flock).
-    let playerBirds = state.subFlockAssignments.reduce(0) { $0 + ($1 == 0 ? 1 : 0) }
-    let rivalBirds = state.subFlockAssignments.count - playerBirds
+    // rival). ADR-0033: birds alive counts by side — a player-owned second
+    // flock's birds belong to the player's total.
+    var playerBirds = 0
+    var rivalBirds = 0
+    for i in 0..<state.subFlockAssignments.count {
+        if state.subFlockOwners[Int(state.subFlockAssignments[i])] == 0 {
+            playerBirds += 1
+        } else {
+            rivalBirds += 1
+        }
+    }
     if playerBirds > rivalBirds {
         return (events, .victory(winner: 0))
     }

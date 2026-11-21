@@ -404,21 +404,22 @@ final class RulesEngineTests: XCTestCase {
         XCTAssertEqual(state.roostClaims[0][0], 3)
     }
 
-    /// MU-P4.1 regression: a rival split mints a third sub-flock, but roost
-    /// claim rows were sized [player, rival] at state creation; accruing a
-    /// dusk claim for the split flock trapped with "Index out of range"
-    /// (seen as exit 133 in the G4 hard-tier balance sweep).
+    /// MU-P4.1 regression: minting a third sub-flock (here: the player's
+    /// split in versus) must widen the roost claim rows; accruing a dusk
+    /// claim for the new flock used to trap with "Index out of range" (seen
+    /// as exit 133 in the G4 hard-tier balance sweep).
     func testR12ThirdFlockClaimsDoNotTrapAfterSplit() {
-        var state = makeState(birdCount: 60)
+        var state = makeState(birdCount: 60, hasRival: true)
+        state.versusMergeSuppressed = true
+        let (spawn, _) = applyAction(.spawnRival(ratio: 0.3), to: state)
+        state = spawn
+        XCTAssertEqual(state.subFlockCount, 2)
         let (firstSplit, _) = applyAction(.splitFlock(from: 0, ratio: 0.4), to: state)
         state = firstSplit
-        XCTAssertEqual(state.subFlockCount, 2)
-        let (secondSplit, _) = applyAction(.splitFlock(from: 1, ratio: 0.5), to: state)
-        state = secondSplit
-        XCTAssertEqual(state.subFlockCount, 3)
+        XCTAssertEqual(state.subFlockCount, 3, "the player side splits to its second flock")
         XCTAssertEqual(state.roostClaims.count, state.roosts.count)
-        // Claim rows start [0, 0] and gain one slot per split, so they stay
-        // at least as wide as the sub-flock count; every new slot starts 0.
+        // Claim rows gain one slot per minted flock, so they stay at least
+        // as wide as the sub-flock count; every new slot starts 0.
         for row in state.roostClaims {
             XCTAssertGreaterThanOrEqual(row.count, 3, "claim row must index the new sub-flock")
             XCTAssertEqual(row[2], 0, "the split flock starts with no claims")
@@ -444,6 +445,8 @@ final class RulesEngineTests: XCTestCase {
 
     func testR13WinnerHoldsMoreRoosts() {
         var state = makeState(birdCount: 10, hasRival: false, roostCount: 3)
+        // The fabricated rows imply two flocks: 0 = player, 1 = rival (ADR-0033).
+        state.subFlockOwners = [0, 1]
         state.roostClaims = [[5, 0], [5, 0], [0, 5]]
         let (_, victory) = checkVictory(state: &state)
         guard case .victory(let winner)? = victory else { return XCTFail("expected victory") }
@@ -454,6 +457,8 @@ final class RulesEngineTests: XCTestCase {
 
     func testR13TieGoesToMoreBirdsAlive() {
         var state = makeState(birdCount: 10, roostCount: 2)
+        // The fabricated rows imply two flocks: 0 = player, 1 = rival (ADR-0033).
+        state.subFlockOwners = [0, 1]
         state.roostClaims = [[5, 0], [0, 5]]
         let (_, victory) = checkVictory(state: &state)
         guard case .victory(let winner)? = victory else { return XCTFail("expected victory") }
@@ -462,6 +467,8 @@ final class RulesEngineTests: XCTestCase {
 
     func testR13TieGoesToRivalWhenRivalHasMoreBirds() {
         var state = makeState(birdCount: 10, roostCount: 2)
+        // The fabricated rows imply two flocks: 0 = player, 1 = rival (ADR-0033).
+        state.subFlockOwners = [0, 1]
         state.roostClaims = [[5, 0], [0, 5]]
         for i in 0..<state.subFlockAssignments.count {
             state.subFlockAssignments[i] = i < 4 ? 0 : 1

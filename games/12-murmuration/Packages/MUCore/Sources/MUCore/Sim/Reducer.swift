@@ -12,6 +12,9 @@ public enum GameAction: Codable, Sendable, Equatable {
     case setLeaderPath(subFlock: UInt8, waypoints: [Waypoint])
     /// Split a sub-flock into two (R-3, R-4).
     case splitFlock(from: UInt8, ratio: Double)
+    /// Create the rival's side at the start of a versus day (ADR-0033).
+    /// Unlike a split, the new sub-flock belongs to the rival side.
+    case spawnRival(ratio: Double)
     /// Condense a sub-flock (R-4).
     case condense(subFlock: UInt8)
     /// Release condense (R-4).
@@ -287,10 +290,42 @@ public func applyAction(_ action: GameAction, to state: GameState) -> (GameState
         state.leaderPaths[Int(sf)] = LeaderPath(points: waypoints)
         events.append(.leaderPath(subFlock: sf, waypointReached: -1))
 
+    case .spawnRival(let ratio):
+        // Create the rival's side: a second sub-flock owned by the rival
+        // (ADR-0033). Same bookkeeping as a split — claims rows widen, an
+        // energy bucket appears, the leader path anchors at the new flock's
+        // centroid — but the new sub-flock's owner is the rival.
+        guard state.subFlockOwners.count == 1 else { return (state, events) }
+        let newSF = UInt8(1)
+        state.energy.append(800)
+        for idx in state.roostClaims.indices {
+            state.roostClaims[idx].append(0)
+        }
+        var reassigned = 0
+        let fromCount = state.subFlockAssignments.count
+        let targetCount = Int(Double(fromCount) * ratio)
+        for i in 0..<state.subFlockAssignments.count {
+            if state.subFlockAssignments[i] == 0 && reassigned < targetCount {
+                state.subFlockAssignments[i] = newSF
+                state.birds.subFlock[i] = newSF
+                reassigned += 1
+            }
+        }
+        let (cx, cy) = centroidOfFlock(
+            birds: state.birds, assignments: state.subFlockAssignments, subFlock: newSF
+        )
+        state.leaderPaths.append(LeaderPath(points: [Waypoint(x: cx, y: cy)]))
+        state.subFlockOwners.append(1)
+        events.append(.split(from: 0, into: newSF))
+
     case .splitFlock(let from, let ratio):
-        // Split sub-flock `from` into two.
-        guard state.subFlockCount <= 2 else { return (state, events) } // Max 2 sub-flocks.
-        let newSF = UInt8(state.subFlockCount)
+        // The new sub-flock stays on the splitting side (ADR-0033): each
+        // side may hold up to two flocks, so a side splits only while it
+        // still has exactly one flock.
+        let owner = state.subFlockOwners[Int(from)]
+        let sideCount = state.subFlockOwners.filter { $0 == owner }.count
+        guard sideCount == 1 else { return (state, events) } // Max 2 per side.
+        let newSF = UInt8(state.subFlockOwners.count)
         state.energy.append(800) // New sub-flock starts at 800 energy.
         // Every roost's claim row gains a slot for the new sub-flock (R-12):
         // rows are sized to the sub-flock count and a split adds one, or the
@@ -324,6 +359,7 @@ public func applyAction(_ action: GameAction, to state: GameState) -> (GameState
             birds: state.birds, assignments: state.subFlockAssignments, subFlock: newSF
         )
         state.leaderPaths.append(LeaderPath(points: [Waypoint(x: cx, y: cy)]))
+        state.subFlockOwners.append(owner)
         events.append(.split(from: from, into: newSF))
 
     case .condense(let sf):

@@ -63,6 +63,79 @@ final class EnergyRuleTests: XCTestCase {
         XCTAssertEqual(state.energy[0], 800)
     }
 
+    /// R-8 regression (ADR-0032): the drain applies only "while flying" — a
+    /// sub-flock settled at a roost (centroid inside the roost radius) must
+    /// not drain, otherwise every flock starves through the 900-tick dusk
+    /// because no region's roosts overlap feeding fields.
+    func testR8EnergyDrainSkippedWhenSettledAtRoost() {
+        let params = BoidsParams()
+        var state = GameState(
+            birdCount: 100,
+            worldWidth: 2048,
+            worldHeight: 1536,
+            boidsParams: params,
+            fieldRichness: [10],
+            fieldRadius: [128],
+            fieldCenterX: [1024],
+            fieldCenterY: [768],
+            roostCount: 1,
+            roostCenterX: [512],
+            roostCenterY: [768],
+            roostRadius: [128],
+            falconCount: 1,
+            hasRival: false,
+            windSeedOffset: 0,
+            seed: 42
+        )
+        // All 100 birds inside the roost radius → settled, no drain.
+        for i in 0..<state.birds.count {
+            state.birds.posX[i] = 512
+            state.birds.posY[i] = 768
+        }
+        state.energy = [800]
+
+        let drainEvents = computeEnergyDrain(state: &state)
+
+        XCTAssertEqual(drainEvents.count, 0, "a settled flock must not drain")
+        XCTAssertEqual(state.energy[0], 800)
+    }
+
+    /// R-8 (ADR-0032): the settled exemption is anchored on the sub-flock
+    /// centroid — a split flock whose settled half is at the roost still
+    /// drains its flying half, so the exemption cannot be exploited by
+    /// parking one bird at the roost while the flock forages.
+    func testR8EnergyDrainAppliesWhenCentroidOutsideRoost() {
+        let params = BoidsParams()
+        var state = GameState(
+            birdCount: 100,
+            worldWidth: 2048,
+            worldHeight: 1536,
+            boidsParams: params,
+            fieldRichness: [10],
+            fieldRadius: [128],
+            fieldCenterX: [1024],
+            fieldCenterY: [768],
+            roostCount: 1,
+            roostCenterX: [512],
+            roostCenterY: [768],
+            roostRadius: [128],
+            falconCount: 1,
+            hasRival: false,
+            windSeedOffset: 0,
+            seed: 42
+        )
+        // All birds far from the roost (centroid far outside 2× radius).
+        for i in 0..<state.birds.count {
+            state.birds.posX[i] = 1600
+            state.birds.posY[i] = 1200
+        }
+        state.energy = [800]
+
+        _ = computeEnergyDrain(state: &state)
+
+        XCTAssertEqual(state.energy[0], 799, "a flying flock of 100 drains 1/tick")
+    }
+
     /// R-8: birds inside a field's radius feed by field richness; the field
     /// depletes as it is fed.
     func testR8EnergyFeeding() {
@@ -289,14 +362,17 @@ final class EnergyRuleTests: XCTestCase {
         var rng = SeededRNG(seed: 1)
         let feedEvents = computeFeeding(state: &state, rng: &rng)
 
-        // gain = birdsInField * richness / 10 = 5 * 10 / 10 = 5
+        // gain = birdsInField * richness / 7 = 5 * 10 / 7 = 7 (ADR-0032: the
+        // feed divisor is engine tuning, not a roadmap-pinned rule; the /7
+        // rate keeps grazing ahead of flight drain so flocks can reach the
+        // G4 dusk-flock window).
         XCTAssertEqual(feedEvents.count, 1)
         guard case .feed(_, let amount, _) = feedEvents[0] else {
             return XCTFail("expected a feed event")
         }
-        XCTAssertEqual(amount, 5)
-        XCTAssertEqual(state.energy[0], 105)
-        XCTAssertEqual(state.fields[0].currentDepletion, 5)
+        XCTAssertEqual(amount, 7)
+        XCTAssertEqual(state.energy[0], 107)
+        XCTAssertEqual(state.fields[0].currentDepletion, 7)
     }
 
     /// Regrowth clock pin: a flock grazing a fully spent field gains nothing,
@@ -373,6 +449,7 @@ final class EnergyRuleTests: XCTestCase {
         // The feed resets the clock to 0; the same call's regrowth block then
         // increments it once, so a feed tick leaves the clock at 1.
         XCTAssertEqual(state.fields[0].ticksSinceFeed, 1, "a real feed restarts the regrowth clock")
-        XCTAssertEqual(state.fields[0].currentDepletion, 30)
+        // gain = 10 birds * richness 10 / 7 = 14 (ADR-0032 feed divisor)
+        XCTAssertEqual(state.fields[0].currentDepletion, 34)
     }
 }

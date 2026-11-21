@@ -923,3 +923,26 @@ grid on commons (30 days/cell) is running to re-derive the tier
 table; hard tier still running. Tier table retune + balance report
 will follow as ADR-0033, then golden regeneration (contentVersion
 12) and the full suite.
+
+**Root cause of the inversion: side-ownership bug (ADR-0033, fixed
+2026-11-20):** the tier inversion was not an AI-parameter problem.
+`forceSplit` (the R-10 falcon-dive response) reassigned every other
+bird of the struck flock to `sf == 0 ? 1 : 0` — a dive on the player's
+flock handed half the player's birds to the rival's flock (and vice
+versa), and it desynced `subFlockAssignments` from `birds.subFlock`.
+The rival's "second roost" bankings (22 of 30 days on commons) were
+en-route claims from stolen player birds; the autoplayer's ≤37% win
+rate against every probed rival config was the same theft. Fix:
+explicit side ownership — `GameState.subFlockOwners` (0 = player,
+1 = rival), a new `.spawnRival(ratio:)` action replacing the starter
+split, `splitFlock` inheriting the source owner, a per-side cap (a
+side may split only while it has exactly one flock), `forceSplit`
+targeting the same side and updating both arrays, and the roost
+tally + R-13 tiebreak counting by owner. `replayContentVersion`
+12→13; goldens regenerated. New `VersusOwnershipTests` (7 tests);
+R-12 rewritten for versus mode; R-13/solo fixtures given
+owner-matched rows. Full suites green: MUCore 110/110, MUAI 53/53.
+The balg4 balance sweep (100 days × 6 regions × 3 tiers) is running
+on the fixed engine; the pre-fix numbers (gentle 57.3%, normal
+72.2%) are superseded. The autoplayer's nearest-roost dusk strategy
+is the remaining known weakness and a legitimate tuning target.
