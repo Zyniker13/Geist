@@ -158,6 +158,11 @@ final class MUGateTests: XCTestCase {
         // its leader path to the paused state and the flock follows it after
         // resume (ADR-0026).
         pause.tap()
+        // Re-read the row after the pause so the drag aims at the *frozen*
+        // positions, not the pre-pause snapshot the flocks have orbited past.
+        // The overlay polls the model every 0.5 s, so wait one poll cycle.
+        Thread.sleep(forTimeInterval: 0.7)
+        leaders = GameUITest.rowText(of: leadersRow)
         let positions = GameUITest.parseLeaders(leaders)
         XCTAssertEqual(positions.count, 2, "expected two leaders, got \(positions.count): \(leaders)")
 
@@ -195,8 +200,14 @@ final class MUGateTests: XCTestCase {
         // leader position (nearest → flock 1), resume. Flock 1's leader
         // should follow the path right; flock 0 was untouched by this drag.
         pause.tap()
+        // Re-read after the pause so the drag aims at flock 1's frozen
+        // position, not the post-drag-0 snapshot the flocks orbited past.
+        Thread.sleep(forTimeInterval: 0.7)
+        leaders = GameUITest.rowText(of: leadersRow)
+        let frozen1 = GameUITest.parseLeaders(leaders)
+        XCTAssertEqual(frozen1.count, 2, "expected two leaders before drag 1: \(leaders)")
         let start1 = GameUITest.normalizedPoint(
-            forWorld: (x: after0[1].x, y: after0[1].y),
+            forWorld: (x: frozen1[1].x, y: frozen1[1].y),
             worldSize: worldSize,
             app: app
         )
