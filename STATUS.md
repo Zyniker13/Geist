@@ -5,16 +5,20 @@ This file is the single place to resume the program from. Keep every field below
 - **Current game:** Murmuration (`12-murmuration`)
 - **Phase:** P4 (AI Opponents) in progress on
   `murmur/phase/P4-ai-opponents`; P3 complete, G3 gate pass tagged.
-- **Last done:** committed the falcon stoop rework (ADR-0034,
-  contentVersion 14, MUCore 131/131 green) and the rival-pilot tunables
-  (`claimGate`/`contestRatio`/`splitMinBirds`, behavior-preserving
-  defaults, MUAI 57/57). balg4 recorded: player win rates 75.7 / 85.0 /
-  90.3% (gentle/normal/hard) against the 85/60/35 targets — the tier
-  ordering is still inverted; the dusk-claim gates are the levers.
-  ADR-0035 probe grid (14 cells × commons+meadow × 30 days) running.
-- **Next step:** pick the tier table from the probe, implement it with
-  ADR-0035 + docs, verify with a 100-day sweep, then run the G4
-  500-days-per-region sweep, app build + UI tests, merge P4.
+- **Last done:** ADR-0034 stoop rework committed (v14) and corrected by
+  ADR-0035's tightened forced-split trigger (v15: `diveRadius` around the
+  stoop path — the 2× catchment minted a second flock on nearly every
+  dive); MUCore 112/112, MUAI 59/59, CI green through 476342f. Probe
+  rounds 1–3 found the real levers: the dusk claim gate + a large field
+  standoff (normal commons 63.3%), the two-flock dusk routing fix for
+  hard, and a per-tier rival start scale (wired into RegionStarter with
+  provisional 1.0/1.25/1.5 pending the final pick). The falcon grab
+  budget is corridor-bound at 8–48 per 1,000 (docs/BALANCE.md).
+  Probe round 4 (10 cells × 3 regions × 30 days, v15) running to pick
+  the final tier table.
+- **Next step:** finalize the tier table from probe6, commit ADR-0035 +
+  docs/BALANCE.md, verify with a 100-day sweep, then the G4
+  500-days-per-region sweep, app make test + lint, merge P4, tag G4.
 - **Blocked on:** nothing.
 
 ## Environment Check
@@ -42,7 +46,7 @@ If Xcode 27.2 or an iOS 26-or-later runtime is missing and cannot be installed w
 | Order | No. | Folder | Game | State | Last Gate | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | 04 | [`04-night-market`](games/04-night-market/ROADMAP.md) | Night Market | Done | `night-market/gate-G10-pass` | All gates G0–G10 tagged; TestFlight/App Store steps owner-only in #12 |
-| 2 | 12 | [`12-murmuration`](games/12-murmuration/ROADMAP.md) | Murmuration | In Progress (P4) | `murmur/gate-G3-pass` | P4.1: ADR-0033 ownership fix + ADR-0034 stoop rework committed; balg4 inverted (75.7/85/90.3 vs 85/60/35); ADR-0035 probe grid running |
+| 2 | 12 | [`12-murmuration`](games/12-murmuration/ROADMAP.md) | Murmuration | In Progress (P4) | `murmur/gate-G3-pass` | P4.1: ADR-0033/0034 committed, v15 trigger correction in; probe round 4 (v15 re-baseline + start-scale cells) running to pick the final tier table |
 | 3 | 02 | [`02-orrery`](games/02-orrery/ROADMAP.md) | Orrery | Not Started | — | — |
 | 4 | 14 | [`14-beacon-coast`](games/14-beacon-coast/ROADMAP.md) | Beacon Coast | Not Started | — | — |
 | 5 | 13 | [`13-terrace`](games/13-terrace/ROADMAP.md) | Terrace | Not Started | — | — |
@@ -146,3 +150,4 @@ One line per meaningful step, newest last: date, phase or game and stage, what w
 - 2026-11-19: P3 merged to main (`fd46dc7`), tag `murmur/gate-G3-pass` pushed, CI green (run 44622087845). P4 started on `murmur/phase/P4-ai-opponents`: MU-P4.1 implementation in progress (three-tier `RivalDifficulty`, region wiring, `GentleRival` rewrite, menu picker + `-uitest-difficulty`, `debug.difficulty` overlay, two new UI tests); engine bugs fixed with regressions (`splitFlock` world-count split, R-13 `rivalBirds` placeholder, R-5 rival-mode merge); AI budget verified in Release (rival 1.76 µs/tick ≤ 0.5 ms/tick); G4 balance sweep (3 tiers × 500 days × 6 regions) running.
 - 2026-11-20: P4 energy model rework (ADR-0032): the sweep's all-day starvation traced to (1) the feed rate capped below the flight drain (field budget `richness*10`, slow regrowth) and (2) the drain applying during dusk though R-8 pins it "while in flight" (no roost overlaps any field). Field budget doubled to `richness*20`, feed divisor 10→7, drain now skips sub-flocks settled within 2× a roost radius; contentVersion 12, rule tests re-anchored, settled-drain regressions green. Balance sweep (100 days, dusk-flock columns) running; golden regeneration sequenced after it.
 - 2026-11-21: P4.1 — versus side-ownership fixed (ADR-0033, `subFlockOwners` + `.spawnRival`, contentVersion 13, MUCore 110/110 + MUAI 53/53); falcon stoop rework (ADR-0034: kills along the dive path, size-scaled grab budget, `diveResult` carries kills, contentVersion 14, MUCore 131/131, 0eac065); rival-pilot dusk tunables (`claimGate`/`contestRatio`/`splitMinBirds`, behavior-preserving, MUAI 57/57, 474273d). balg4 (100 days × 6 regions × 3 tiers) still inverted: 75.7/85.0/90.3% player wins vs 85/60/35 targets; ADR-0035 probe grid running.
+- 2026-11-21 (cont.): probe rounds 1–3 + CI fixes — the versus UI test now runs falcon-free (`-uitest-falcons`, `Region.withFalconCount`); hard routes its two existing dusk flocks instead of issuing a per-side-capped split; lint violations fixed (a252b4e/adf2748, CI green). Forced-split trigger tightened to `diveRadius` around the stoop path (v15, f6d3049; the 2× catchment minted a flock per dive and handed gentle commons to the rival, 43.3% player wins). Tier-scaled rival start wired into `RegionStarter` (provisional 1.0/1.25/1.5). docs/BALANCE.md drafted. Probe round 4 (v15 re-baseline, 10 cells) running.
