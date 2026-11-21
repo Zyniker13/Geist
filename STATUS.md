@@ -10,12 +10,17 @@ This file is the single place to resume the program from. Keep every field below
   the struck flock's side) instead of the single struck flock's
   `flockSize`, closing the split-farming asymmetry the G4 sweeps
   exposed; `replayContentVersion` 15 → 16, all 20 goldens regenerated,
-  MUCore 113/113 green. Probe rounds 1–4 + ADR-0035 (v15) found the
-  real levers (dusk claim gate, large-field standoff, two-flock dusk
-  routing for hard, per-tier rival start scale 1.0/1.25/1.5).
+  MUCore 113/113 green. Versus UI test flake fixed (c18c378):
+  `testVersusTwoFlockRouting` read the leaders row before pausing and
+  aimed the drag at the stale pre-pause positions, so on a slow runner
+  the touch routed to the wrong flock; now re-reads the row after the
+  pause (overlay polls every 0.5 s) so the drag aims at the frozen
+  positions. Not a regression (falcon-free test; recent commits don't
+  touch versus routing).
 - **Next step:** G4 500-days-per-region sweep re-running on the v16
-  binary (3 tiers × 6 regions); on completion compute per-tier win
-  rates 85/60/35 ± band, dusk medians, falcon losses, then app
+  binary (3 tiers × 6 regions, gentle tier in progress); on completion
+  compute per-tier win rates 85/60/35 ± band, dusk medians, falcon
+  losses, then re-run the versus UI test on the fixed code, app
   `make test` + lint, merge P4, tag G4.
 - **Blocked on:** nothing.
 
@@ -150,3 +155,4 @@ One line per meaningful step, newest last: date, phase or game and stage, what w
 - 2026-11-21: P4.1 — versus side-ownership fixed (ADR-0033, `subFlockOwners` + `.spawnRival`, contentVersion 13, MUCore 110/110 + MUAI 53/53); falcon stoop rework (ADR-0034: kills along the dive path, size-scaled grab budget, `diveResult` carries kills, contentVersion 14, MUCore 131/131, 0eac065); rival-pilot dusk tunables (`claimGate`/`contestRatio`/`splitMinBirds`, behavior-preserving, MUAI 57/57, 474273d). balg4 (100 days × 6 regions × 3 tiers) still inverted: 75.7/85.0/90.3% player wins vs 85/60/35 targets; ADR-0035 probe grid running.
 - 2026-11-21 (cont.): probe rounds 1–3 + CI fixes — the versus UI test now runs falcon-free (`-uitest-falcons`, `Region.withFalconCount`); hard routes its two existing dusk flocks instead of issuing a per-side-capped split; lint violations fixed (a252b4e/adf2748, CI green). Forced-split trigger tightened to `diveRadius` around the stoop path (v15, f6d3049; the 2× catchment minted a flock per dive and handed gentle commons to the rival, 43.3% player wins). Tier-scaled rival start wired into `RegionStarter` (provisional 1.0/1.25/1.5). docs/BALANCE.md drafted. Probe round 4 (v15 re-baseline, 10 cells) running.
 - 2026-11-21 (cont.): ADR-0036 committed (7e88060, v16) — the falcon grab budget scales with `birdsOnSideCount` (every sub-flock owned by the struck flock's side) instead of the single struck flock's `flockSize`, closing the split-farming asymmetry; `replayContentVersion` 15 → 16, 20 goldens regenerated, MUCore 113/113 green. G4 500-day sweep re-running on the v16 binary (3 tiers × 6 regions).
+- 2026-11-21 (cont.): versus UI test flake fixed (c18c378) — `testVersusTwoFlockRouting` read the leaders row before pausing and aimed the drag at the stale pre-pause positions, so on a slow runner the touch routed to the wrong flock (2 assertion failures in the full `make test` run; 7 package suites green, 113 tests). Now re-reads the row after the pause (overlay polls every 0.5 s) so the drag aims at the frozen positions; applied to both drags. Not a regression (falcon-free test; recent commits don't touch versus routing). G4 v16 sweep still running (gentle tier).

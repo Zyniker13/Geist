@@ -1079,3 +1079,18 @@ green (the one pre-regen golden failure now passes).
 (scratch g4-{tier}-v16.csv), three tiers sequential. Gate math on
 completion: per-tier win rates 85/60/35 ± band, dusk medians
 1,000–2,500, falcon losses 5–20% of peak.
+
+**Versus UI test flake fixed (c18c378, 2026-11-21):** the full
+`make test` run (7 package suites green, 113 tests) failed 2
+assertions in `MUGateTests.testVersusTwoFlockRouting` — both leaders
+reported `L0 1024,768 L1 1395,753` (flock 0 unmoved, flock 1 moved
+396px). Root cause: the test read the leaders row *before* pausing,
+then aimed the drag at those pre-pause positions; on a slow runner the
+flocks orbit between the read and the pause tap, so the touch landed
+nearest the other flock and the drag routed to it. Fix: re-read the
+row after the pause (the overlay polls the model every 0.5 s) so the
+drag aims at the frozen positions — applied to both drags. Not a
+regression: recent commits (ADR-0036, format, NoUsage) don't touch
+versus routing or pause, and the test runs falcon-free. Re-run of the
+single test pending on the fixed code (the first re-run used the wrong
+scheme name, `Murmuration` instead of `MU`).
