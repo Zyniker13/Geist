@@ -22,19 +22,37 @@ make coverage    # MUCore coverage -> docs/COVERAGE.md (G1)
 
 ## Current state
 
-**G0 (scaffold) and G1 (rules engine) passed.** The rules engine implements
-R-1…R-13 (wind grid, day/dusk, leader paths, condense, merges, energy
-drain/feeding/growth/starvation, falcon dives with the density shield, roost
-claims and victory) as pure integer math over `GameState` with a persistent
-`SeededRNG` — deterministic across Debug/Release and Mac vs the arm64 iOS
-simulator (checkpoint hashes every 300 ticks, final hash `5cbccf1ff18d0a2a`).
-67 MUCore tests, 20 committed golden replays, coverage 95.4% (sources).
-See [`STATUS.md`](STATUS.md) for the phase/gate ledger with sign-offs,
-[`DECISIONS.md`](DECISIONS.md) for ADRs (integer trig, neighbor-visit cap,
-rescale floors), and [`COVERAGE.md`](COVERAGE.md) for the coverage table.
+**G0–G4 passed. P5 (meta and replayability) complete, G5 evidence being
+recorded.** The rules engine implements R-1…R-13 with 20 golden replays at
+replayContentVersion 17; P4 shipped AI opponents (three difficulty tiers,
+balance v16); P5 adds the meta layer in `Packages/MUMeta`:
 
-Next phase: P2 core-loop vertical slice (FlockRenderer, gestures, first
-playable regions).
+- **Campaign (MU-P5.1):** a twelve-stage route over the six regions
+  (`MetaState.campaignRoute`), flock carry between stages (floor 400,
+  clamped to the next region's capacity), resume at the first unplayed
+  stage, stage recording via `MetaStore.recordCampaignStage`.
+- **Daily (MU-P5.2):** `DailyChallenge` derives dayNumber/modifier/wind
+  offset from the UTC date (epoch 2026-01-01); six modifiers map to
+  region/engine knobs in `Region+Daily.applying(dailyModifier:)` —
+  strong winds (wind magnitude ×2, engine `windStrengthQ16`), extra
+  falcons (+1), scarce fields (richness ÷2, floor 1), fog (wind regen
+  300-tick cadence, engine `windRegenTicksOverride`), double roosts
+  (+half-radius twin per roost, floor 32), tiny flock (birds ÷2, floor
+  200). Local best scores persist per date. UI tests pin a day with
+  `-uitest-daily-day N`.
+- **Achievements (MU-P5.3):** 20 achievements + `LifetimeStats`
+  (largest flock, longest unbroken flight streak, roosts, starvation,
+  versus/daily/campaign counts) folded per completed day in
+  `GameModel.recordMetaForDay()`; `MetaStore.record` persists and
+  returns freshly earned achievements.
+- **HUD evidence rows:** `game.stage` ("stage N/12" during campaign)
+  and `debug.daily` ("dayNumber modifier") in the debug overlay.
+
+Coverage (docs/COVERAGE.md P5 section): MUCore 95.7%, MUAI 79.0%,
+MUMeta 81.7%, overall 87.0% — all gate thresholds met.
+
+Next phase: P6 aesthetics and audio pass (ink-wash shader, granular
+wingbeat synthesis).
 
 ## Owner-only items
 

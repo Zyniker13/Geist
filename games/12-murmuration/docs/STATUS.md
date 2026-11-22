@@ -1216,3 +1216,38 @@ wired + UI-tested). Merging to main and tagging
 - CI run 44982651604 (775d8d1, main): **completed success** — all six
   jobs green (`test`, `ui-test-ios`, `ui-test-macos`, `build-ios`,
   `build-macos`, `lint`). P4 closed.
+
+### P5 in progress (2026-11-22, branch murmur/phase/P5-meta)
+
+- **MU-P5.1/5.2/5.3 core** (037179b): MUMeta gains Campaign (12-stage
+  route, carry floor 400 + next-region cap), DailyChallenge (UTC epoch
+  2026-01-01, dayNumber % 6 modifier cycle, per-date wind offset
+  100k..1M, 30-date uniqueness), DailyScores, LifetimeStats +
+  SessionOutcome fold, 20 achievements. App wiring: MetaStore
+  persistence, GameModel day-end fold, menu Migration/Daily entries
+  with resume.
+- **Daily modifiers** (9bb1fc3): engine knobs `windStrengthQ16` +
+  `windRegenTicksOverride` on GameState (v17, goldens regenerated);
+  `Region.applying(dailyModifier:)` in MUMeta maps all six modifiers;
+  -uitest-daily-day pins the day; debug.daily overlay row.
+  **Bug found + fixed:** the uniform/shear wind branches multiplied a
+  Q16.16 unit component by the scaled magnitude in Int32 — 2.0x wind
+  (65536 * 39322) overflowed and trapped as bare signal code 5; widened
+  to Int64 with a regression test. Verified: default-knob physics is
+  bit-identical to v16 (wind cells equal at tick 1; only the encoded
+  state grew).
+- **Campaign-end fold** (1ca4af6): isCampaignEnd was hardcoded false —
+  the final stage (index 11) completing a day now folds a campaign end
+  so first-campaign/campaign-three can earn.
+- **Coverage** (2990e7f): MUCore 95.70% (make coverage TOTAL), MUAI
+  79.01%, MUMeta 81.7% (sources: Achievements 71.4 / Campaign 90.6 /
+  Daily 78.1 / Region+Daily 100), overall 87.0% — Core >= 90, AI >= 75,
+  Meta >= 75, overall >= 60 all pass (docs/COVERAGE.md P5 section).
+- **Daily-identical evidence** (9a1bdad): DailyThirtyDatesTests — 30
+  consecutive dates (2026-03-20..04-18) yield 30 distinct wind offsets
+  with each modifier exactly 5x; the day number is pure UTC seconds
+  (timezone-independent); two independent region builds of the same
+  date are equal (GameState equality incl. wind cells); consecutive
+  days differ.
+- Package suites: MUCore 120/120, MUMeta 23/23. Both platform builds
+  green. iOS campaign/daily UI test running.
