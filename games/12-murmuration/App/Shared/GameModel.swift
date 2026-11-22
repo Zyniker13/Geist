@@ -11,6 +11,7 @@ import SwiftUI
 import MUCore
 import MUContent
 import MUAI
+import MUMeta
 import MURender
 
 /// File-backed trace mirror for the UI-test gate diagnostics: stdout of a
@@ -67,9 +68,11 @@ final class GameModel: ObservableObject {
     /// Local two-flock versus (MU-P3.3): the rival flock is human-driven, so
     /// GentleRival is disabled and each touch routes to the nearest flock.
     let versus: Bool
-    /// The rival pilot's difficulty tier (MU-P4.1): region default unless the
-    /// menu picker (or the UI-test flag) overrides it.
+    /// The rival pilot's difficulty tier (MU-P4.1).
     let rivalDifficulty: RivalDifficulty
+    /// The daily challenge's modifier when this session is the daily
+    /// (MU-P5.2); nil in every other mode.
+    let dailyModifier: DailyModifier?
     /// Ticks advanced per display frame in fast-forward (UI tests).
     let ticksPerFrame: Int
 
@@ -79,6 +82,13 @@ final class GameModel: ObservableObject {
     @Published private(set) var dayEnded = false
     @Published private(set) var finished = false
     @Published private(set) var results: [DayResult] = []
+    /// Session counters for the meta layer (MU-P5.3): peak flock size,
+    /// cumulative starvation deaths, roosts claimed at each dusk.
+    private(set) var peakFlock = 0
+    private(set) var birdsStarved = 0
+    private(set) var roostsClaimed = 0
+    /// The campaign stage this session plays (nil outside campaign mode).
+    let campaignStage: Int?
     @Published var fps = 0
     /// Rolling mean frame build time in milliseconds (tick + render encode).
     @Published var frameMs: Double = 0
@@ -126,13 +136,17 @@ final class GameModel: ObservableObject {
         save: SavedGame? = nil,
         tutorial: Tutorial? = nil,
         versus: Bool = false,
-        rivalDifficulty: RivalDifficulty? = nil
+        rivalDifficulty: RivalDifficulty? = nil,
+        dailyModifier: DailyModifier? = nil,
+        campaignStage: Int? = nil
     ) {
         self.region = region
         self.totalDays = totalDays
         self.autoplay = autoplay
         self.versus = versus
         self.rivalDifficulty = rivalDifficulty ?? region.rivalDifficulty
+        self.dailyModifier = dailyModifier
+        self.campaignStage = campaignStage
         self.ticksPerFrame = max(ticksPerFrame, 1)
         if let save = save, save.regionID == region.id {
             self.state = save.state
@@ -284,8 +298,11 @@ final class GameModel: ObservableObject {
         let (next, events) = applyTick(to: state, rng: &rng)
         state = next
         appendTrace()
+        // Meta counters (MU-P5.3): peak flock and starvation total.
+        if state.birds.count > peakFlock { peakFlock = state.birds.count }
         for event in events {
             handle(event)
+            if case .energy(.starve(_, let dead)) = event { birdsStarved += dead }
         }
         advanceTutorial()
         if dayEnded {
@@ -341,6 +358,7 @@ final class GameModel: ObservableObject {
         switch event {
         case .dayEnd:
             dayEnded = true
+            recordMetaForDay()
         case .roost(.dayEnd(let player, let rival)):
             recordResult(playerRoosts: player, rivalRoosts: rival)
         case .victory(let winner):
@@ -365,6 +383,31 @@ final class GameModel: ObservableObject {
             results[index] = result
         } else {
             results.append(result)
+        }
+        roostsClaimed = playerRoosts
+    }
+
+    /// Fold this day into the meta layer (MU-P5): campaign carry, daily
+    /// best, lifetime stats. UI-test runs (autoplay/fast-forward) record
+    /// too — the meta layer is part of shipped behavior.
+    private func recordMetaForDay() {
+        roostsClaimed = max(roostsClaimed, 0)
+        let outcome = SessionOutcome(
+            peakFlock: peakFlock,
+            roostsClaimed: roostsClaimed,
+            birdsStarved: birdsStarved,
+            isVersus: versus,
+            isDaily: dailyModifier != nil,
+            isCampaignEnd: false
+        )
+        let dailyDayNumber = dailyModifier != nil
+            ? DailyChallenge(date: DailyChallenge.epoch).dayNumber
+            : nil
+        _ = MetaStore.record(outcome, dayCompleted: true, dailyDayNumber: dailyDayNumber)
+        if let stage = campaignStage {
+            _ = MetaStore.recordCampaignStage(
+                index: max(stage - 1, 0), endSize: state.birds.count
+            )
         }
     }
 

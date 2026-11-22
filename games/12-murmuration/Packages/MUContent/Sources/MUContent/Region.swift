@@ -336,6 +336,22 @@ public struct Region: Codable, Sendable, Equatable, Identifiable {
         )
     }
 
+    /// A copy with a different wind seed offset — the daily challenge
+    /// (MU-P5.2) derives each date's wind map from its own offset.
+    public func withWindOffset(_ offset: Int) -> Region {
+        Region(
+            id: id, name: name,
+            worldWidth: worldWidth, worldHeight: worldHeight,
+            birdCount: birdCount, falconCount: falconCount,
+            hasRival: hasRival, rivalStartBirds: rivalStartBirds,
+            soloTargetBirds: soloTargetBirds,
+            windSeedOffset: offset, seed: seed,
+            roosts: roosts, fields: fields, palette: palette,
+            obstacles: obstacles, windPattern: windPattern,
+            falconBehavior: falconBehavior
+        )
+    }
+
     /// A copy with a different falcon count — the versus routing test pins
     /// an exact two-flock stage, so its fixture runs falcon-free
     /// (`-uitest-falcons 0`); a falcon dive legitimately mints a third
