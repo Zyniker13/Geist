@@ -379,6 +379,12 @@ final class GameModel: ObservableObject {
                 last.winner = winner
                 results[results.count - 1] = last
             }
+        case .falcon(.diveResult(_, _, let hit, let kills)):
+            // Haptics (MU-P6 aesthetic spec): a sharp tap when a falcon
+            // strikes; the whoosh swell feeds off turn spikes separately.
+            if hit, kills > 0 {
+                audioRef.value?.strike()
+            }
         default:
             break
         }

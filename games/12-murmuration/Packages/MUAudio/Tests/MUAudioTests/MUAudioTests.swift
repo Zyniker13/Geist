@@ -181,4 +181,49 @@ final class MUAudioTests: XCTestCase {
         XCTAssertGreaterThan(duskPeak, dayPeak)
         XCTAssertLessThan(duskPeak, 1.0, "the pad must stay out of clipping")
     }
+
+    // MARK: TurnWhoosh
+
+    func testWhooshFiresOnSharpTurnThenCoasts() {
+        var whoosh = TurnWhoosh(seed: 9)
+        // Steady flight: silent.
+        XCTAssertEqual(whoosh.tick(turnRate: 0.02), 0)
+        // A sharp turn arms the swell.
+        XCTAssertGreaterThan(whoosh.tick(turnRate: 0.15), 0)
+        // The cooldown suppresses immediate re-fires.
+        let duringCooldown = TurnWhoosh(seed: 9)
+        _ = duringCooldown
+        var w2 = TurnWhoosh(seed: 9)
+        XCTAssertGreaterThan(w2.tick(turnRate: 0.15), 0)
+        var sawZero = false
+        // Hold turning: the swell must decay to zero before the cooldown
+        // lifts (0.55 s swell < 1.2 s cooldown).
+        var ticks = 0
+        while ticks < 40 {
+            let g = w2.tick(turnRate: 0.15)
+            ticks += 1
+            if g == 0 { sawZero = true; break }
+        }
+        XCTAssertTrue(sawZero, "the swell must decay while the cooldown holds")
+    }
+
+    func testWhooshRenderAddsFiniteSamplesOnlyWhenArmed() {
+        var whoosh = TurnWhoosh(seed: 21)
+        let frames = 480
+        let buf = UnsafeMutablePointer<Float>.allocate(capacity: frames)
+        defer { buf.deallocate() }
+        whoosh.render(gain: 0, into: buf, frames: frames)
+        var peak: Float = 0
+        for f in 0..<frames { peak = max(peak, abs(buf[f])) }
+        XCTAssertEqual(peak, 0, "gain 0 must leave the buffer untouched")
+        whoosh.render(gain: 0.5, into: buf, frames: frames)
+        var peak2: Float = 0
+        var finite = true
+        for f in 0..<frames {
+            peak2 = max(peak2, abs(buf[f]))
+            if !buf[f].isFinite { finite = false }
+        }
+        XCTAssertTrue(finite)
+        XCTAssertGreaterThan(peak2, 0)
+    }
 }

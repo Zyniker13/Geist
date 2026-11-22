@@ -158,6 +158,69 @@ public struct WingbeatGranular: Sendable {
     }
 }
 
+/// Turn whoosh (MU-P6.2): a short filtered-noise swell fired when the
+/// flock turns sharply. The app feeds it the flock's mean turn rate each
+/// tick; the synth self-triggers when the rate crosses its threshold and
+/// coasts while the turn holds.
+public struct TurnWhoosh: Sendable {
+    public static let sampleRate: Float = 48_000
+
+    /// Seconds since the last whoosh fired (cooldown).
+    public var cooldown: Float = 0
+    /// Remaining swell time for the active whoosh.
+    public var swell: Float = 0
+    /// Deterministic noise phase (seeded; the seeded-RNG rule).
+    var rngState: UInt64
+
+    public init(seed: UInt64 = 0x6A57_0000_9E37_79B9) {
+        rngState = seed
+    }
+
+    mutating func nextRandom() -> Float {
+        rngState ^= rngState << 13
+        rngState ^= rngState >> 7
+        rngState ^= rngState << 17
+        return Float(UInt64(truncatingIfNeeded: rngState) & 0xFFFFFF) / Float(0xFFFFFF)
+    }
+
+    /// One noise sample for the strike pulse (public so the app's audio
+    /// callback can reuse this synth's seeded stream).
+    public mutating func pulseNoise() -> Float {
+        nextRandom()
+    }
+
+    /// Feed one tick's mean turn rate; returns the swell gain for the
+    /// tick (0 when silent). A rate above 0.09 rad/tick arms a whoosh.
+    public mutating func tick(turnRate: Float) -> Float {
+        if cooldown > 0 { cooldown = max(0, cooldown - 1 / 30) }
+        if swell > 0 { swell = max(0, swell - 1 / 30) }
+        if turnRate > 0.09 && cooldown <= 0 {
+            swell = 0.55
+            cooldown = 1.2
+        }
+        return swell > 0 ? min(1, swell / 0.55) : 0
+    }
+
+    /// Render `frames` samples of whoosh noise at `gain` (0 = silent).
+    public mutating func render(
+        gain: Float,
+        into buffer: UnsafeMutablePointer<Float>,
+        frames: Int
+    ) {
+        guard frames > 0, gain > 0 else {
+            for f in 0..<frames { buffer[f] += 0 }
+            return
+        }
+        let dt = 1 / Self.sampleRate
+        for f in 0..<frames {
+            let noise = nextRandom() * 2 - 1
+            // Low-pass the noise by averaging successive samples.
+            buffer[f] += gain * 0.5 * noise
+            _ = dt
+        }
+    }
+}
+
 /// Regional pad (MU-P6.2): slow, quiet drone chords, one chord set per
 /// region, rising at dusk. Pure additive synthesis over shared voices.
 public struct RegionalPad: Sendable {

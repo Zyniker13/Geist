@@ -3,14 +3,20 @@
 import AVFoundation
 import MUAudio
 
+#if canImport(UIKit)
+    import UIKit
+#endif
+
 /// The DSP state the render callback touches, held as one reference so the
 /// controller's update methods and the audio thread share it safely under
 /// the controller's serial queue.
 private final class AudioDSP {
     var gran = WingbeatGranular(voiceCount: 32, seed: 0x9E3779B97F4A7C15)
     var pad = RegionalPad(regionID: "meadow")
+    var whoosh = TurnWhoosh()
     var metrics = FlockMetrics(birdCount: 0, meanSpacing: 240, meanTurnRate: 0, dusk: 0)
     var padLevel: Float = 0.28
+    var strikePulse: Float = 0
 }
 
 /// Drives the generative ambience (MU-P6.2): a wingbeat granular bed and a
@@ -42,6 +48,20 @@ final class AudioController {
                     var bed = [Float](repeating: 0, count: bedFrames)
                     dsp.gran.render(metrics: dsp.metrics, into: &bed, frames: bedFrames)
                     dsp.pad.render(dusk: dsp.metrics.dusk, level: dsp.padLevel, into: bp.baseAddress!, frames: frames)
+                    // Whoosh: the tick's turn rate drives the swell; the gain
+                    // persists over the audio frames this callback renders.
+                    let whooshGain = dsp.whoosh.tick(turnRate: dsp.metrics.meanTurnRate) * 0.25
+                    if whooshGain > 0 {
+                        dsp.whoosh.render(gain: whooshGain, into: bp.baseAddress!, frames: frames)
+                    }
+                    // Falcon strike: a short bright noise pulse (seeded).
+                    if dsp.strikePulse > 0 {
+                        let pulseFrames = min(frames, Int(dsp.strikePulse / 0.001))
+                        for f in 0..<pulseFrames {
+                            bp[f] += dsp.strikePulse * 0.6 * (dsp.whoosh.pulseNoise() * 2 - 1)
+                        }
+                        dsp.strikePulse = max(0, dsp.strikePulse - Float(frames) / 48_000 * 6)
+                    }
                     for f in 0..<frames {
                         let src = Float(f) / ratio
                         let i = min(Int(src), bedFrames - 2)
@@ -100,5 +120,24 @@ final class AudioController {
     /// Clear grain voices (day boundary, pause).
     func resetBed() {
         queue.sync { dsp.gran.reset() }
+    }
+
+    /// A falcon strike: sharp audio pulse + haptic tap (MU-P6 spec).
+    func strike() {
+        queue.sync { dsp.strikePulse = 0.25 }
+        Haptics.strikeTap()
+    }
+}
+
+/// Haptics (MU-P6): continuous light texture while steering is handled by
+/// the gesture layer's feedback; the strike tap lives here so both arrive
+/// from the model's event handling. Wraps UIKit/AppKit lazily and no-ops
+/// where unsupported (tests, CI).
+enum Haptics {
+    /// A short, sharp impact for a falcon strike.
+    static func strikeTap() {
+        #if os(iOS)
+            UIImpactFeedbackGenerator(style: .rigid).impactOccurred()
+        #endif
     }
 }
