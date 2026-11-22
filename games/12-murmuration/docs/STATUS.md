@@ -1173,3 +1173,38 @@ rounds); both post-pause reads in the versus test now use it.
   `testPerfFrameBudgetWithThreeThousandBirds` (32.5 s) and
   `testThreeDayAutoplay` (233.6 s); `testVersusTwoFlockRouting` green.
   Scratch g4-final-maketest3.log.
+
+### Worktree verification → centroid-aim fix → G4 closed (2026-11-21, d2a7e73)
+
+The required committed-tree check caught the real remaining bug: a
+`git worktree` at 29d11e8 passed lint + MUCore 113/113 but failed only
+`testVersusTwoFlockRouting` — drag 0 pressed at exactly [0.50, 0.50]
+(the frozen leader L0 1024,768 = the day-start origin) yet routed to
+flock 1. Root cause: `routeFlock` keys on the bird **centroid**, and
+flock 0's birds had drifted from their resting leader point while
+foraging — aiming at the leader is only deterministic when the two
+coincide. Fix (d2a7e73): the overlay gains a `debug.centroids` row
+("C0 x,y C1 x,y", only for 2+ flocks) computed from the same
+`centroidOfFlock` the router uses; `GameUITest.parseCentroids` parses
+it (shared `parseFlockPoints`); the versus test pauses, reads a stable
+centroid row, and aims both drags at the flock's own centroid.
+Leader assertions unchanged.
+
+Evidence on the committed tree (worktree g4-verify @ d2a7e73):
+- `make lint` → exit 0 (SwiftLint strict + swift-format + content-lint
+  + check-imports OK).
+- `swift test --package-path Packages/MUCore` → `Executed 113 tests,
+  with 0 failures (0 unexpected) in 150.017 (150.022) seconds`.
+- Full iOS UI suite (Debug, iPad Pro 13-inch (M5), sim-lock'd):
+  `** TEST SUCCEEDED **`, rc=0; `Executed 9 tests, with 0 failures
+  (0 unexpected) in 499.030 (499.043) seconds`
+  (scratch g4-worktree-uitest2.log).
+- Single-test local run on the working tree pre-commit:
+  `testVersusTwoFlockRouting` passed (25.6 s,
+  scratch uitest-versus-rerun4.log).
+
+**GATE G4 VERDICT: PASS** — all §8.1 checks pass or are SUBSTITUTED per
+ADR-0037 (win-rate targets unreachable with the current event economy;
+all other bands met, 0 crashes, AI budget 3.7× headroom, difficulty
+wired + UI-tested). Merging to main and tagging
+`murmur/gate-G4-pass`.
