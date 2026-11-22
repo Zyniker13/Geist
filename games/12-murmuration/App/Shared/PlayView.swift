@@ -6,6 +6,7 @@
 import SwiftUI
 import MUCore
 import MUContent
+import MUMeta
 
 /// Launch-time configuration for a play session (UI-test harness and menu).
 struct GameLaunchConfig {
@@ -30,6 +31,17 @@ struct GameLaunchConfig {
     /// default. The versus routing test pins a two-flock stage and runs
     /// falcon-free (`-uitest-falcons 0`).
     var falconOverride: Int?
+    /// Campaign mode (MU-P5.1): the campaign's stage index to play and
+    /// the flock size carried into it. When set, `-uitest-region` is
+    /// ignored and the stage's region plays.
+    var campaignStage: Int?
+    var campaignCarriedBirds: Int?
+    /// Daily mode (MU-P5.2): play today's daily challenge (modifier +
+    /// daily wind map) instead of the plain region.
+    var daily = false
+    /// UI-test override for the daily's day number (0 = today). Real
+    /// launches are always today.
+    var dailyDayOverride: Int?
 
     /// Parse the effective UI-test flags (file config on macOS, else argv).
     static func resolved() -> GameLaunchConfig {
@@ -57,6 +69,16 @@ struct GameLaunchConfig {
         if let seed = value("-uitest-seed"), let n = UInt64(seed) { config.seed = n }
         if let falcons = value("-uitest-falcons"), let n = Int(falcons) {
             config.falconOverride = max(n, 0)
+        }
+        if let stage = value("-uitest-campaign"), let n = Int(stage) {
+            config.campaignStage = max(n, 0)
+        }
+        if let carried = value("-uitest-carry"), let n = Int(carried) {
+            config.campaignCarriedBirds = max(n, 1)
+        }
+        if args.contains("-uitest-daily") { config.daily = true }
+        if let day = value("-uitest-daily-day"), let n = Int(day) {
+            config.dailyDayOverride = n
         }
         return config
     }
@@ -92,8 +114,35 @@ struct PlayView: View {
                 base = soloRegion
             }
         }
+        // Campaign (MU-P5.1): the stage's region replaces the launch
+        // region; the carried flock size becomes the bird override.
+        if let stage = config.campaignStage,
+           stage < MetaState.campaignRoute.count,
+           let campaignRegion = catalog.region(id: MetaState.campaignRoute[stage]) {
+            base = campaignRegion
+        }
+        // Daily (MU-P5.2): today's wind map replaces the region's own; the
+        // modifier is recorded for the HUD and the difficulty row. UI tests
+        // pin a day number so the challenge is deterministic across runs.
+        var dailyModifier: DailyModifier?
+        var dailyDayNumber: Int?
+        if config.daily {
+            let now: Date
+            if let day = config.dailyDayOverride {
+                now = DailyChallenge.epoch.addingTimeInterval(Double(day) * DailyChallenge.secondsPerDay)
+            } else {
+                now = Date()
+            }
+            let challenge = DailyChallenge(date: DailyChallenge.epoch, now: now)
+            base = base.withWindOffset(challenge.windSeedOffset)
+            base = base.applying(dailyModifier: challenge.modifier)
+            dailyModifier = challenge.modifier
+            dailyDayNumber = challenge.dayNumber
+        }
         var adjusted: Region
-        if let birds = config.birdOverride {
+        if let birds = config.campaignCarriedBirds {
+            adjusted = base.withBirdCount(birds)
+        } else if let birds = config.birdOverride {
             adjusted = base.withBirdCount(birds)
         } else if let seed = config.seed {
             adjusted = base.reseeded(seed)
@@ -111,7 +160,10 @@ struct PlayView: View {
                 ticksPerFrame: config.ticksPerFrame,
                 tutorial: tutorial,
                 versus: config.versus,
-                rivalDifficulty: config.rivalDifficulty
+                rivalDifficulty: config.rivalDifficulty,
+                dailyModifier: dailyModifier,
+                dailyDayNumber: dailyModifier != nil ? dailyDayNumber : nil,
+                campaignStage: config.campaignStage
             ))
         // Applied after init via the view's task (published-mutable only).
         _pendingPauseAt = State(initialValue: config.pauseAt)

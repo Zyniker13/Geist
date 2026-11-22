@@ -1,6 +1,7 @@
 import SwiftUI
 import MUCore
 import MUContent
+import MUMeta
 
 /// Debug overlay visibility state (S0.7), launched by `-uitest-overlay`,
 /// the three-finger double tap (iOS), or ⌘⇧D (macOS).
@@ -55,6 +56,7 @@ struct GameDebugOverlay: View, Equatable {
         var leaders = ""
         var centroids = ""
         var difficulty = ""
+        var daily = ""
     }
 
     /// All parent-created instances are equal: the body reads only the
@@ -87,6 +89,12 @@ struct GameDebugOverlay: View, Equatable {
                     .accessibilityElement(children: .ignore)
                     .accessibilityLabel("diff \(sample.difficulty)")
                     .accessibilityIdentifier("debug.difficulty")
+            }
+            if !sample.daily.isEmpty {
+                Text("daily \(sample.daily)")
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel("daily \(sample.daily)")
+                    .accessibilityIdentifier("debug.daily")
             }
             if !sample.leaders.isEmpty {
                 Text(sample.leaders)
@@ -121,7 +129,10 @@ struct GameDebugOverlay: View, Equatable {
                 frameMs: model.frameMs,
                 leaders: Self.leaderLabel(model.state),
                 centroids: Self.centroidLabel(model.state),
-                difficulty: model.region.hasRival ? model.rivalDifficulty.rawValue : ""
+                difficulty: model.region.hasRival ? model.rivalDifficulty.rawValue : "",
+                daily: model.dailyModifier.map {
+                    "\(model.dailyDayNumber ?? -1) \($0.displayName)"
+                } ?? ""
             )
             try? await Task.sleep(nanoseconds: 500_000_000)
         }
@@ -198,6 +209,8 @@ struct MenuView: View {
     // wait for them (docs/STATUS.md, run 44286953243).
     @State private var playing: Bool
     @State private var versusMode = false
+    @State private var campaignMode = false
+    @State private var dailyMode = false
     /// The menu's rival-difficulty choice (MU-P4.1).
     @State private var difficultyMode: RivalDifficulty = .gentle
     @State private var catalog: RegionCatalog
@@ -234,11 +247,26 @@ struct MenuView: View {
         }
     }
 
-    /// The launch config with the menu's versus choice applied (the flag
-    /// overrides argv's `-uitest-versus` when set from the menu).
+    /// The launch config with the menu's mode choice applied (the flag
+    /// overrides argv's `-uitest-versus` when set from the menu). Campaign
+    /// resume: play the first stage without a recorded end size.
     private var launchConfig: GameLaunchConfig {
         var config = GameLaunchConfig.resolved()
         if versusMode { config.versus = true }
+        if campaignMode {
+            let meta = MetaStore.load()
+            let campaign = Campaign(route: MetaState.campaignRoute)
+            let next = campaign.nextStage(endSizes: meta.campaignEndSizes)
+            config.campaignStage = next
+            if next < meta.campaignEndSizes.count + 1, next > 0,
+               let carried = meta.campaignEndSizes[next - 1] {
+                config.campaignCarriedBirds = carried
+            } else if next == 0 {
+                config.campaignCarriedBirds = catalog
+                    .region(id: MetaState.campaignRoute[0])?.birdCount
+            }
+        }
+        if dailyMode { config.daily = true }
         // An explicit UI-test flag wins over the menu picker default.
         config.rivalDifficulty = config.rivalDifficulty ?? difficultyMode
         return config
@@ -279,6 +307,23 @@ struct MenuView: View {
                 }
                 .buttonStyle(.bordered)
                 .accessibilityIdentifier("menu.versus")
+                // Migration campaign (MU-P5.1): twelve regions back to
+                // back; the flock carries between them. Resume at the
+                // first stage without an end size.
+                Button("Migration — twelve regions") {
+                    campaignMode = true
+                    playing = true
+                }
+                .buttonStyle(.bordered)
+                .accessibilityIdentifier("menu.campaign")
+                // Today's daily (MU-P5.2): same wind map and modifier on
+                // every device for the date.
+                Button("Daily challenge") {
+                    dailyMode = true
+                    playing = true
+                }
+                .buttonStyle(.bordered)
+                .accessibilityIdentifier("menu.daily")
                 // Rival difficulty (MU-P4.1): the tier overrides the region's
                 // default. Regions without a rival ignore it.
                 Picker("Rival difficulty", selection: $difficultyMode) {

@@ -11,10 +11,14 @@ let package = Package(
     products: [
         .library(name: "MUMeta", targets: ["MUMeta"])
     ],
-    dependencies: [],
+    dependencies: [
+        .package(name: "MUContent", path: "../MUContent"),
+        .package(name: "MUCore", path: "../MUCore"),
+    ],
     targets: [
         .target(
             name: "MUMeta",
+            dependencies: ["MUContent", "MUCore"],
         ),
         .testTarget(
             name: "MUMetaTests",

@@ -1216,3 +1216,78 @@ wired + UI-tested). Merging to main and tagging
 - CI run 44982651604 (775d8d1, main): **completed success** — all six
   jobs green (`test`, `ui-test-ios`, `ui-test-macos`, `build-ios`,
   `build-macos`, `lint`). P4 closed.
+
+### P5 in progress (2026-11-22, branch murmur/phase/P5-meta)
+
+- **MU-P5.1/5.2/5.3 core** (037179b): MUMeta gains Campaign (12-stage
+  route, carry floor 400 + next-region cap), DailyChallenge (UTC epoch
+  2026-01-01, dayNumber % 6 modifier cycle, per-date wind offset
+  100k..1M, 30-date uniqueness), DailyScores, LifetimeStats +
+  SessionOutcome fold, 20 achievements. App wiring: MetaStore
+  persistence, GameModel day-end fold, menu Migration/Daily entries
+  with resume.
+- **Daily modifiers** (9bb1fc3): engine knobs `windStrengthQ16` +
+  `windRegenTicksOverride` on GameState (v17, goldens regenerated);
+  `Region.applying(dailyModifier:)` in MUMeta maps all six modifiers;
+  -uitest-daily-day pins the day; debug.daily overlay row.
+  **Bug found + fixed:** the uniform/shear wind branches multiplied a
+  Q16.16 unit component by the scaled magnitude in Int32 — 2.0x wind
+  (65536 * 39322) overflowed and trapped as bare signal code 5; widened
+  to Int64 with a regression test. Verified: default-knob physics is
+  bit-identical to v16 (wind cells equal at tick 1; only the encoded
+  state grew).
+- **Campaign-end fold** (1ca4af6): isCampaignEnd was hardcoded false —
+  the final stage (index 11) completing a day now folds a campaign end
+  so first-campaign/campaign-three can earn.
+- **Coverage** (2990e7f): MUCore 95.70% (make coverage TOTAL), MUAI
+  79.01%, MUMeta 81.7% (sources: Achievements 71.4 / Campaign 90.6 /
+  Daily 78.1 / Region+Daily 100), overall 87.0% — Core >= 90, AI >= 75,
+  Meta >= 75, overall >= 60 all pass (docs/COVERAGE.md P5 section).
+- **Daily-identical evidence** (9a1bdad): DailyThirtyDatesTests — 30
+  consecutive dates (2026-03-20..04-18) yield 30 distinct wind offsets
+  with each modifier exactly 5x; the day number is pure UTC seconds
+  (timezone-independent); two independent region builds of the same
+  date are equal (GameState equality incl. wind cells); consecutive
+  days differ.
+- Package suites: MUCore 120/120, MUMeta 23/23. Both platform builds
+  green. iOS campaign/daily UI test running.
+
+### G5 evidence: campaign + daily UI tests pass (2026-11-22, 82f4077)
+
+`sim-lock xcodebuild test -scheme MU -destination 'platform=iOS
+Simulator,name=zGeist_bot-iPad-Pro-13' -configuration Debug
+-only-testing:MUITests/CampaignUITests`:
+
+```
+Test Case '-[MUITests.CampaignUITests testCampaignStageCompletesUnderAutoplayer]' passed (112.500 seconds).
+Test Case '-[MUITests.CampaignUITests testDailyShowsDayAndModifier]' passed (63.385 seconds).
+Executed 2 tests, with 0 failures (0 unexpected) in 175.884 (175.898) seconds
+** TEST SUCCEEDED **
+UITEST_DONE rc=0
+```
+
+- testCampaignStageCompletesUnderAutoplayer launches stage 3 (0-based)
+  with a carried flock of 800 (-uitest-campaign 3 -uitest-carry 800),
+  asserts the HUD row reads "stage 4/12", and the Autoplayer drives two
+  days to program done.
+- testDailyShowsDayAndModifier launches the daily pinned to day 13
+  (-uitest-daily -uitest-daily-day 13), asserts the debug.daily row
+  carries the day number + modifier name, and completes the day.
+
+### G5 evidence: full `make test` green (2026-11-22, fab5941)
+
+```
+** TEST SUCCEEDED **
+MAKETEST_DONE rc=0
+```
+
+- Package suites: MUCore 120/120 (182.9 s, includes the 20 v17 golden
+  replays + 7 DailyWindKnobTests), MUContent 37/37, MUAI 27/27,
+  MURender 20/20, MUAudio 12/12, MUPlatform 11/11, MUMeta 27/27
+  (13 campaign/daily/achievements + 10 modifier-mapping + 4
+  thirty-date evidence tests).
+- iOS UI suite 11/11 (670.0 s): MUGateTests 9/9 (perf 32.4 s, autoplay,
+  pause/resume hash 168.3 s, difficulty picker + launch arg, versus
+  routing, tutorial) + CampaignUITests 2/2 (campaign stage 111.7 s,
+  daily day-13 62.8 s).
+- Total across suites: 293 test executions, 0 failures.

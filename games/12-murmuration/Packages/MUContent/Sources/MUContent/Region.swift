@@ -146,6 +146,12 @@ public struct Region: Codable, Sendable, Equatable, Identifiable {
     public let obstacles: [ObstacleDef]
     /// Wind pattern (R-1) this region plays under.
     public let windPattern: WindPattern
+    /// Wind-field magnitude multiplier in Q16.16 (MU-P5.2 daily strong
+    /// winds: 131072 = 2.0x). Default 65536 = 1.0x.
+    public let windStrengthQ16: Int32
+    /// Wind regeneration cadence in ticks (MU-P5.2 daily fog: 300);
+    /// 0 = the engine default (600).
+    public let windRegenTicksOverride: Int32
     /// Falcon behavior (R-10) used by this region's falcons.
     public let falconBehavior: FalconBehavior
 
@@ -208,6 +214,8 @@ public struct Region: Codable, Sendable, Equatable, Identifiable {
         palette: RegionPalette,
         obstacles: [ObstacleDef] = [],
         windPattern: WindPattern = .uniform,
+        windStrengthQ16: Int32 = 65_536,
+        windRegenTicksOverride: Int32 = 0,
         falconBehavior: FalconBehavior = .patrol
     ) {
         self.id = id
@@ -227,6 +235,8 @@ public struct Region: Codable, Sendable, Equatable, Identifiable {
         self.palette = palette
         self.obstacles = obstacles
         self.windPattern = windPattern
+        self.windStrengthQ16 = windStrengthQ16
+        self.windRegenTicksOverride = windRegenTicksOverride
         self.falconBehavior = falconBehavior
     }
 
@@ -234,6 +244,7 @@ public struct Region: Codable, Sendable, Equatable, Identifiable {
         case id, name, worldWidth, worldHeight, birdCount, falconCount
         case hasRival, rivalStartBirds, rivalDifficulty, soloTargetBirds, windSeedOffset, seed
         case roosts, fields, palette, obstacles, windPattern, falconBehavior
+        case windStrengthQ16, windRegenTicksOverride
     }
 
     /// JSON decoding defaults let regions authored before P3 load unchanged:
@@ -258,6 +269,9 @@ public struct Region: Codable, Sendable, Equatable, Identifiable {
         palette = try container.decode(RegionPalette.self, forKey: .palette)
         obstacles = try container.decodeIfPresent([ObstacleDef].self, forKey: .obstacles) ?? []
         windPattern = try container.decodeIfPresent(WindPattern.self, forKey: .windPattern) ?? .uniform
+        windStrengthQ16 = try container.decodeIfPresent(Int32.self, forKey: .windStrengthQ16) ?? 65_536
+        windRegenTicksOverride =
+            try container.decodeIfPresent(Int32.self, forKey: .windRegenTicksOverride) ?? 0
         falconBehavior = try container.decodeIfPresent(FalconBehavior.self, forKey: .falconBehavior) ?? .patrol
     }
 
@@ -273,6 +287,8 @@ public struct Region: Codable, Sendable, Equatable, Identifiable {
             windSeedOffset: windSeedOffset, seed: seed,
             roosts: roosts, fields: fields, palette: palette,
             obstacles: obstacles, windPattern: windPattern,
+            windStrengthQ16: windStrengthQ16,
+            windRegenTicksOverride: windRegenTicksOverride,
             falconBehavior: falconBehavior
         )
     }
@@ -298,6 +314,8 @@ public struct Region: Codable, Sendable, Equatable, Identifiable {
             windSeedOffset: windSeedOffset,
             seed: seed,
             windPattern: windPattern,
+            windStrengthQ16: windStrengthQ16,
+            windRegenTicksOverride: windRegenTicksOverride,
             falconBehavior: falconBehavior,
             obstacleCenterX: obstacles.map(\.x),
             obstacleCenterY: obstacles.map(\.y),
@@ -317,6 +335,8 @@ public struct Region: Codable, Sendable, Equatable, Identifiable {
             windSeedOffset: windSeedOffset, seed: seed,
             roosts: roosts, fields: fields, palette: palette,
             obstacles: obstacles, windPattern: windPattern,
+            windStrengthQ16: windStrengthQ16,
+            windRegenTicksOverride: windRegenTicksOverride,
             falconBehavior: falconBehavior
         )
     }
@@ -332,6 +352,26 @@ public struct Region: Codable, Sendable, Equatable, Identifiable {
             windSeedOffset: windSeedOffset, seed: newSeed,
             roosts: roosts, fields: fields, palette: palette,
             obstacles: obstacles, windPattern: windPattern,
+            windStrengthQ16: windStrengthQ16,
+            windRegenTicksOverride: windRegenTicksOverride,
+            falconBehavior: falconBehavior
+        )
+    }
+
+    /// A copy with a different wind seed offset — the daily challenge
+    /// (MU-P5.2) derives each date's wind map from its own offset.
+    public func withWindOffset(_ offset: Int) -> Region {
+        Region(
+            id: id, name: name,
+            worldWidth: worldWidth, worldHeight: worldHeight,
+            birdCount: birdCount, falconCount: falconCount,
+            hasRival: hasRival, rivalStartBirds: rivalStartBirds,
+            soloTargetBirds: soloTargetBirds,
+            windSeedOffset: offset, seed: seed,
+            roosts: roosts, fields: fields, palette: palette,
+            obstacles: obstacles, windPattern: windPattern,
+            windStrengthQ16: windStrengthQ16,
+            windRegenTicksOverride: windRegenTicksOverride,
             falconBehavior: falconBehavior
         )
     }
@@ -350,6 +390,82 @@ public struct Region: Codable, Sendable, Equatable, Identifiable {
             windSeedOffset: windSeedOffset, seed: seed,
             roosts: roosts, fields: fields, palette: palette,
             obstacles: obstacles, windPattern: windPattern,
+            windStrengthQ16: windStrengthQ16,
+            windRegenTicksOverride: windRegenTicksOverride,
+            falconBehavior: falconBehavior
+        )
+    }
+
+    /// A copy with a scaled wind-field magnitude (MU-P5.2 strong winds:
+    /// 131072 = 2.0x the 65536 default).
+    public func withWindStrength(_ q16: Int32) -> Region {
+        Region(
+            id: id, name: name,
+            worldWidth: worldWidth, worldHeight: worldHeight,
+            birdCount: birdCount, falconCount: falconCount,
+            hasRival: hasRival, rivalStartBirds: rivalStartBirds,
+            rivalDifficulty: rivalDifficulty,
+            soloTargetBirds: soloTargetBirds,
+            windSeedOffset: windSeedOffset, seed: seed,
+            roosts: roosts, fields: fields, palette: palette,
+            obstacles: obstacles, windPattern: windPattern,
+            windStrengthQ16: q16,
+            windRegenTicksOverride: windRegenTicksOverride,
+            falconBehavior: falconBehavior
+        )
+    }
+
+    /// A copy with a different wind regeneration cadence (MU-P5.2 fog:
+    /// 300 ticks). 0 restores the engine default (600).
+    public func withWindRegenTicksOverride(_ ticks: Int32) -> Region {
+        Region(
+            id: id, name: name,
+            worldWidth: worldWidth, worldHeight: worldHeight,
+            birdCount: birdCount, falconCount: falconCount,
+            hasRival: hasRival, rivalStartBirds: rivalStartBirds,
+            rivalDifficulty: rivalDifficulty,
+            soloTargetBirds: soloTargetBirds,
+            windSeedOffset: windSeedOffset, seed: seed,
+            roosts: roosts, fields: fields, palette: palette,
+            obstacles: obstacles, windPattern: windPattern,
+            windStrengthQ16: windStrengthQ16,
+            windRegenTicksOverride: ticks,
+            falconBehavior: falconBehavior
+        )
+    }
+
+    /// A copy with different fields (MU-P5.2 scarce fields).
+    public func withFields(_ newFields: [FieldDef]) -> Region {
+        Region(
+            id: id, name: name,
+            worldWidth: worldWidth, worldHeight: worldHeight,
+            birdCount: birdCount, falconCount: falconCount,
+            hasRival: hasRival, rivalStartBirds: rivalStartBirds,
+            rivalDifficulty: rivalDifficulty,
+            soloTargetBirds: soloTargetBirds,
+            windSeedOffset: windSeedOffset, seed: seed,
+            roosts: roosts, fields: newFields, palette: palette,
+            obstacles: obstacles, windPattern: windPattern,
+            windStrengthQ16: windStrengthQ16,
+            windRegenTicksOverride: windRegenTicksOverride,
+            falconBehavior: falconBehavior
+        )
+    }
+
+    /// A copy with different roosts (MU-P5.2 double roosts).
+    public func withRoosts(_ newRoosts: [RoostDef]) -> Region {
+        Region(
+            id: id, name: name,
+            worldWidth: worldWidth, worldHeight: worldHeight,
+            birdCount: birdCount, falconCount: falconCount,
+            hasRival: hasRival, rivalStartBirds: rivalStartBirds,
+            rivalDifficulty: rivalDifficulty,
+            soloTargetBirds: soloTargetBirds,
+            windSeedOffset: windSeedOffset, seed: seed,
+            roosts: newRoosts, fields: fields, palette: palette,
+            obstacles: obstacles, windPattern: windPattern,
+            windStrengthQ16: windStrengthQ16,
+            windRegenTicksOverride: windRegenTicksOverride,
             falconBehavior: falconBehavior
         )
     }
