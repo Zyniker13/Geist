@@ -172,6 +172,9 @@ struct PlayView: View {
 
     @State private var pendingPauseAt: Int?
     @State private var pendingHash: Bool
+    /// The ambience engine (MU-P6.2). Owned by the view so it starts and
+    /// stops with the play screen; `@State` keeps it across re-renders.
+    @State private var audio: AudioController?
 
     var body: some View {
         ZStack {
@@ -201,6 +204,20 @@ struct PlayView: View {
             if MULaunch.arguments().contains("-uitest-trace") {
                 model.enablePlaybackTrace()
             }
+            // Ambience (MU-P6.2): start the engine and hand the model the
+            // controller so ticks feed it metrics. Tests and CI launch with
+            // audio unavailable-safe: start() degrades to silence.
+            if audio == nil {
+                let controller = AudioController()
+                controller.setRegion(regionID: model.region.id, padLevel: 0.28)
+                controller.start()
+                audio = controller
+                model.audio = controller
+            }
+        }
+        .onDisappear {
+            audio?.stop()
+            model.audio = nil
         }
     }
 

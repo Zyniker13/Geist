@@ -26,6 +26,12 @@ struct BirdInstance {
     var velY: Float = 0
     var size: Float = 0
     var colorIdx: Float = 0
+    /// Wingbeat phase (radians at the scene's tick; the shader advances it
+    /// through the frame's interpolation fraction). Zero for falcons.
+    var phase: Float = 0
+    /// Layout pad: Metal rounds a struct containing float2 to 8-byte
+    /// alignment (sizeof 40); mirror it so the buffers line up.
+    var metalPad: Float = 0
 }
 
 /// Shader mirror of `DiskInstance` in Shaders.metal (stride 32).
@@ -378,6 +384,11 @@ public final class FlockRenderer: NSObject, MTKViewDelegate {
             instance.velY = Float(cur.velY[i])
             instance.size = birdSize
             instance.colorIdx = Float(cur.subFlock[i] == 0 ? 0 : 1)
+            // Wingbeat phase (MU-P6.1): a deterministic clock keyed on the
+            // scene tick and the bird's index — same frame, same flap; the
+            // per-bird offset breaks the lockstep pulse into a natural
+            // ripple. One stroke per 24 ticks (~0.8 s), i.e. slow flaps.
+            instance.phase = Float((scene.tick * 13 + i * 41) % 24) / 24.0 * 6.2831853
             ptr[written] = instance
             written += 1
         }

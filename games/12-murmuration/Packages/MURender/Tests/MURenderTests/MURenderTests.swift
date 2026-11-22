@@ -16,8 +16,8 @@ final class MURenderTests: XCTestCase {
     // MARK: - Layout (must match the shaders' struct layouts)
 
     func testBirdInstanceLayoutMatchesShader() {
-        XCTAssertEqual(MemoryLayout<BirdInstance>.stride, 32)
-        XCTAssertEqual(MemoryLayout<BirdInstance>.size, 32)
+        XCTAssertEqual(MemoryLayout<BirdInstance>.stride, 40)
+        XCTAssertEqual(MemoryLayout<BirdInstance>.size, 40)
     }
 
     func testDiskInstanceLayoutMatchesShader() {

@@ -1,8 +1,184 @@
 import XCTest
+
 @testable import MUAudio
 
 final class MUAudioTests: XCTestCase {
-    func testExample() throws {
-        XCTAssertTrue(true)
+    // MARK: WingbeatGranular
+
+    func testWingbeatRendersFiniteSamples() {
+        var gran = WingbeatGranular(voiceCount: 16)
+        let frames = 4800
+        let buf = UnsafeMutablePointer<Float>.allocate(capacity: frames)
+        defer { buf.deallocate() }
+        gran.render(
+            metrics: FlockMetrics(birdCount: 400, meanSpacing: 90, meanTurnRate: 0.05, dusk: 0),
+            into: buf,
+            frames: frames
+        )
+        var peak: Float = 0
+        var finite = true
+        for f in 0..<frames {
+            let s = buf[f]
+            if !s.isFinite { finite = false }
+            peak = max(peak, abs(s))
+        }
+        XCTAssertTrue(finite, "all samples must be finite")
+        XCTAssertGreaterThan(peak, 0, "the bed must produce sound")
+        XCTAssertLessThan(peak, 1.0, "the bed must stay out of clipping")
+    }
+
+    func testWingbeatBedGrowsWithFlockSize() {
+        // Same seed; larger flock -> more active voices and higher peak.
+        func peakFor(birds: Int) -> Float {
+            var gran = WingbeatGranular(voiceCount: 32, seed: 7)
+            let frames = 9600
+            let buf = UnsafeMutablePointer<Float>.allocate(capacity: frames)
+            defer { buf.deallocate() }
+            gran.render(
+                metrics: FlockMetrics(birdCount: birds, meanSpacing: 120, meanTurnRate: 0.03, dusk: 0),
+                into: buf,
+                frames: frames
+            )
+            var peak: Float = 0
+            for f in 0..<frames { peak = max(peak, abs(buf[f])) }
+            return peak
+        }
+        XCTAssertGreaterThan(peakFor(birds: 800), peakFor(birds: 40))
+    }
+
+    func testDenseFlockRaisesGrainEnergyOverSparse() {
+        // Density raises the per-voice grain rate and muffles brightness;
+        // net effect: a dense flock's bed carries more sustained energy.
+        func rmsFor(spacing: Float) -> Float {
+            var gran = WingbeatGranular(voiceCount: 8, seed: 11)
+            let frames = 48_000
+            let buf = UnsafeMutablePointer<Float>.allocate(capacity: frames)
+            defer { buf.deallocate() }
+            gran.render(
+                metrics: FlockMetrics(birdCount: 320, meanSpacing: spacing, meanTurnRate: 0.02, dusk: 0),
+                into: buf,
+                frames: frames
+            )
+            var sum: Float = 0
+            for f in 0..<frames { sum += buf[f] * buf[f] }
+            return (sum / Float(frames)).squareRoot()
+        }
+        XCTAssertGreaterThan(rmsFor(spacing: 40), rmsFor(spacing: 220))
+    }
+
+    func testTurnRateAddsEnergy() {
+        func rmsFor(turn: Float) -> Float {
+            var gran = WingbeatGranular(voiceCount: 16, seed: 3)
+            let frames = 48_000
+            let buf = UnsafeMutablePointer<Float>.allocate(capacity: frames)
+            defer { buf.deallocate() }
+            gran.render(
+                metrics: FlockMetrics(birdCount: 600, meanSpacing: 100, meanTurnRate: turn, dusk: 0),
+                into: buf,
+                frames: frames
+            )
+            var sum: Float = 0
+            for f in 0..<frames { sum += buf[f] * buf[f] }
+            return (sum / Float(frames)).squareRoot()
+        }
+        XCTAssertGreaterThan(rmsFor(turn: 0.16), rmsFor(turn: 0.0))
+    }
+
+    func testRenderIsDeterministicForSameSeedAndMetrics() {
+        func checksum(seed: UInt64) -> Float {
+            var gran = WingbeatGranular(voiceCount: 12, seed: seed)
+            let frames = 4800
+            let buf = UnsafeMutablePointer<Float>.allocate(capacity: frames)
+            defer { buf.deallocate() }
+            gran.render(
+                metrics: FlockMetrics(birdCount: 500, meanSpacing: 80, meanTurnRate: 0.1, dusk: 0.5),
+                into: buf,
+                frames: frames
+            )
+            var sum: Float = 0
+            for f in 0..<frames { sum += buf[f] * Float(f % 7) }
+            return sum
+        }
+        XCTAssertEqual(checksum(seed: 42), checksum(seed: 42), accuracy: 1e-6)
+        XCTAssertNotEqual(checksum(seed: 42), checksum(seed: 43))
+    }
+
+    func testZeroBirdsStaysSilent() {
+        var gran = WingbeatGranular(voiceCount: 8)
+        let frames = 2400
+        let buf = UnsafeMutablePointer<Float>.allocate(capacity: frames)
+        defer { buf.deallocate() }
+        gran.render(
+            metrics: FlockMetrics(birdCount: 0, meanSpacing: 999, meanTurnRate: 0, dusk: 0),
+            into: buf,
+            frames: frames
+        )
+        var peak: Float = 0
+        for f in 0..<frames { peak = max(peak, abs(buf[f])) }
+        // Zero birds: no voices map on except the forced first voice, whose
+        // bed gain is 0 — the output must be effectively silent.
+        XCTAssertLessThan(peak, 0.01, "no flock, no wingbeats")
+    }
+
+    func testResetClearsVoices() {
+        var gran = WingbeatGranular(voiceCount: 8, seed: 5)
+        let frames = 2400
+        let buf = UnsafeMutablePointer<Float>.allocate(capacity: frames)
+        defer { buf.deallocate() }
+        gran.render(
+            metrics: FlockMetrics(birdCount: 300, meanSpacing: 100, meanTurnRate: 0.05, dusk: 0),
+            into: buf,
+            frames: frames
+        )
+        gran.reset()
+        let active = gran.voices.filter(\.isActive).count
+        XCTAssertEqual(active, 0, "reset must silence every voice")
+    }
+
+    // MARK: RegionalPad
+
+    func testEveryContentRegionHasAChord() {
+        for region in ["meadow", "commons", "gorge", "ridge", "delta", "fenlands"] {
+            let pad = RegionalPad(regionID: region)
+            XCTAssertFalse(pad.partials.isEmpty, "\(region) needs a chord")
+            XCTAssertGreaterThan(pad.partials[0].ratio, 0)
+            XCTAssertGreaterThan(pad.partials[0].gain, 0)
+        }
+    }
+
+    func testUnknownRegionFallsBackToMeadow() {
+        let pad = RegionalPad(regionID: "nowhere")
+        XCTAssertEqual(pad.partials, RegionalPad.chords["meadow"])
+    }
+
+    func testChordsDifferAcrossRegions() {
+        let set = Set(RegionalPad.chords.values.map { $0.map { "\($0.ratio):\($0.gain)" }.joined(separator: ",") })
+        XCTAssertEqual(
+            set.count,
+            RegionalPad.chords.count,
+            "each region's chord must be distinct"
+        )
+    }
+
+    func testPadIsLouderAtDuskAndFinite() {
+        var pad = RegionalPad(regionID: "gorge")
+        let frames = 4800
+        let bufDay = UnsafeMutablePointer<Float>.allocate(capacity: frames)
+        let bufDusk = UnsafeMutablePointer<Float>.allocate(capacity: frames)
+        defer { bufDay.deallocate(); bufDusk.deallocate() }
+        pad.render(dusk: 0, level: 0.5, into: bufDay, frames: frames)
+        pad = RegionalPad(regionID: "gorge")
+        pad.render(dusk: 1, level: 0.5, into: bufDusk, frames: frames)
+        var dayPeak: Float = 0
+        var duskPeak: Float = 0
+        var finite = true
+        for f in 0..<frames {
+            dayPeak = max(dayPeak, abs(bufDay[f]))
+            duskPeak = max(duskPeak, abs(bufDusk[f]))
+            if !bufDusk[f].isFinite { finite = false }
+        }
+        XCTAssertTrue(finite)
+        XCTAssertGreaterThan(duskPeak, dayPeak)
+        XCTAssertLessThan(duskPeak, 1.0, "the pad must stay out of clipping")
     }
 }
