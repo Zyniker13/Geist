@@ -13,6 +13,7 @@ import MUContent
 import MUAI
 import MUMeta
 import MURender
+import MUAudio
 
 /// File-backed trace mirror for the UI-test gate diagnostics: stdout of a
 /// launched app is not captured in the macOS xcodebuild log, so the gate
@@ -96,6 +97,13 @@ final class GameModel: ObservableObject {
     @Published var frameMs: Double = 0
     /// State hash, refreshed on the cadence below (UI-test hash checks).
     @Published var hashLabel = ""
+
+    /// The ambience controller holder (MU-P6.2). The extension in
+    /// GameModel+Audio.swift reads/writes through it; stored properties
+    /// cannot live in extensions.
+    let audioRef = Ref<AudioController?>(nil)
+    /// Previous-tick velocity headings for the audio turn-rate metric.
+    let audioPrevHeadings = Ref<[Float]>([])
 
     /// When set, the model self-pauses at that tick for two seconds (the
     /// pause/resume checkpoint-hash UI test).
@@ -302,6 +310,7 @@ final class GameModel: ObservableObject {
         let (next, events) = applyTick(to: state, rng: &rng)
         state = next
         appendTrace()
+        pushAudioMetrics()
         // Meta counters (MU-P5.3): peak flock and starvation total.
         if state.birds.count > peakFlock { peakFlock = state.birds.count }
         for event in events {
@@ -369,6 +378,12 @@ final class GameModel: ObservableObject {
             if var last = results.last {
                 last.winner = winner
                 results[results.count - 1] = last
+            }
+        case .falcon(.diveResult(_, _, let hit, let kills)):
+            // Haptics (MU-P6 aesthetic spec): a sharp tap when a falcon
+            // strikes; the whoosh swell feeds off turn spikes separately.
+            if hit, kills > 0 {
+                audioRef.value?.strike()
             }
         default:
             break

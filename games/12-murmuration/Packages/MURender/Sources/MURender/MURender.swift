@@ -31,6 +31,7 @@ public func makeScene(
         fields: state.fields,
         roosts: state.roosts,
         trace: trace,
-        duskBlend: duskBlend
+        duskBlend: duskBlend,
+        tick: state.tick
     )
 }

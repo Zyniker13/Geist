@@ -141,6 +141,7 @@ final class GameInput: NSObject, MTKViewDelegate, UIGestureRecognizerDelegate {
             renderer?.update(model.scene, instant: model.ticksPerFrame > 1)
         }
         renderer?.draw(in: view)
+        steerHapticPulse()
         model.recordFrameCost(started: frameStart)
         frameCount += 1
         if fpsWindowStart == 0 { fpsWindowStart = now }
@@ -175,6 +176,8 @@ final class GameInput: NSObject, MTKViewDelegate, UIGestureRecognizerDelegate {
         }
         model.apply(action)
         sessions[ObjectIdentifier(touch)] = PanSession(builder: builder, flock: flock)
+        // Haptics (MU-P6): continuous light texture while steering.
+        steerHapticStart()
     }
 
     func touchMoved(_ location: CGPoint, touch: UITouch) {
@@ -190,6 +193,37 @@ final class GameInput: NSObject, MTKViewDelegate, UIGestureRecognizerDelegate {
 
     func touchEnded(touch: UITouch) {
         sessions[ObjectIdentifier(touch)] = nil
+        steerHapticStop()
+    }
+
+    // MARK: - Steering haptics (MU-P6)
+
+    /// Continuous light texture while a drag steers a flock. Core haptics
+    /// has no "run until stopped" primitive, so the coordinator keeps a
+    /// light generator prepared and re-fires a short tick while sessions
+    /// are live; the render loop cadence keeps it feeling continuous.
+    private let steerHaptic = UIImpactFeedbackGenerator(style: .light)
+    private var steerHapticFireTick = 0
+
+    private func steerHapticStart() {
+        steerHaptic.prepare()
+        steerHapticFireTick = 0
+    }
+
+    private func steerHapticStop() {
+        if sessions.isEmpty { return }
+        steerHapticFireTick = 0
+    }
+
+    /// Called from the render loop: re-fires the light texture while any
+    /// steering session is live (scaled by flock speed via the model).
+    func steerHapticPulse() {
+        guard !sessions.isEmpty else { return }
+        steerHapticFireTick += 1
+        // Fire every 6 frames (~20 Hz at 120 fps) — a texture, not a drum.
+        if steerHapticFireTick % 6 == 0 {
+            steerHaptic.impactOccurred(intensity: 0.4)
+        }
     }
 
     // MARK: - Gestures

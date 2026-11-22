@@ -25,7 +25,8 @@ enum GameUITest {
         tutorial: Bool = false,
         versus: Bool = false,
         autoplay: Bool = true,
-        difficulty: String? = nil
+        difficulty: String? = nil,
+        extra: [String] = []
     ) {
         var args = [
             "-uitest-overlay",
@@ -62,6 +63,7 @@ enum GameUITest {
         if hash {
             args += ["-uitest-hash"]
         }
+        args += extra
         args += ["-uitest-trace"]
         #if os(macOS)
             // The macOS runner has dropped launchArguments in CI (the app sat on

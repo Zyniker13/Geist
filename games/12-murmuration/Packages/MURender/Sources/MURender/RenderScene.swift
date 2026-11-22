@@ -37,6 +37,11 @@ public struct RenderScene {
     public var trace: [TracePoint]
     /// 0 = day, 1 = full dusk (dims the sky).
     public var duskBlend: Float
+    /// The engine tick this scene was built from. Drives the wingbeat
+    /// phase (MU-P6.1): every bird flaps on the same deterministic clock,
+    /// phase-offset by its instance index, so a paused frame is a frozen
+    /// flap and a replay reproduces the identical visual.
+    public var tick: Int
 
     public init(
         birds: BirdSoA,
@@ -46,7 +51,8 @@ public struct RenderScene {
         fields: [FieldState],
         roosts: [RoostState],
         trace: [TracePoint],
-        duskBlend: Float
+        duskBlend: Float,
+        tick: Int
     ) {
         self.birds = birds
         self.previousBirds = previousBirds
@@ -56,5 +62,6 @@ public struct RenderScene {
         self.roosts = roosts
         self.trace = trace
         self.duskBlend = duskBlend
+        self.tick = tick
     }
 }

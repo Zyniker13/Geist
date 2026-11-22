@@ -26,6 +26,12 @@ struct BirdInstance {
     var velY: Float = 0
     var size: Float = 0
     var colorIdx: Float = 0
+    /// Wingbeat phase (radians at the scene's tick; the shader advances it
+    /// through the frame's interpolation fraction). Zero for falcons.
+    var phase: Float = 0
+    /// Layout pad: Metal rounds a struct containing float2 to 8-byte
+    /// alignment (sizeof 40); mirror it so the buffers line up.
+    var metalPad: Float = 0
 }
 
 /// Shader mirror of `DiskInstance` in Shaders.metal (stride 32).
@@ -269,6 +275,8 @@ public final class FlockRenderer: NSObject, MTKViewDelegate {
         encoder.setRenderPipelineState(hillPipeline)
         encoder.setVertexBuffer(hillBuffer, offset: 0, index: 0)
         encoder.setVertexBytes(params, length: MemoryLayout<Float>.stride * 4, index: 1)
+        var hillDusk: [Float] = [duskBlend]
+        encoder.setVertexBytes(&hillDusk, length: MemoryLayout<Float>.stride, index: 2)
         for range in hillRanges {
             encoder.drawPrimitives(
                 type: .triangleStrip, vertexStart: range.offset, vertexCount: range.count
@@ -378,6 +386,11 @@ public final class FlockRenderer: NSObject, MTKViewDelegate {
             instance.velY = Float(cur.velY[i])
             instance.size = birdSize
             instance.colorIdx = Float(cur.subFlock[i] == 0 ? 0 : 1)
+            // Wingbeat phase (MU-P6.1): a deterministic clock keyed on the
+            // scene tick and the bird's index — same frame, same flap; the
+            // per-bird offset breaks the lockstep pulse into a natural
+            // ripple. One stroke per 24 ticks (~0.8 s), i.e. slow flaps.
+            instance.phase = Float((scene.tick * 13 + i * 41) % 24) / 24.0 * 6.2831853
             ptr[written] = instance
             written += 1
         }
@@ -430,12 +443,21 @@ public final class FlockRenderer: NSObject, MTKViewDelegate {
             ))
         }
         for roost in scene.roosts {
+            // The roost (MU-P6.1): a soft dark knot of trees on the
+            // skyline — layered rim rather than a flat black hole.
             diskInstances.append(DiskInstance(
                 centerX: Float(roost.centerX),
                 centerY: Float(roost.centerY),
                 radius: Float(roost.radius),
                 pad: 0,
-                color: SIMD4(0.06, 0.06, 0.09, 1)
+                color: SIMD4(0.11, 0.10, 0.15, 0.92)
+            ))
+            diskInstances.append(DiskInstance(
+                centerX: Float(roost.centerX),
+                centerY: Float(roost.centerY),
+                radius: Float(roost.radius) * 0.72,
+                pad: 0,
+                color: SIMD4(0.06, 0.06, 0.09, 0.96)
             ))
             // Claim fill: the majority flock's share of accrued points, with
             // exact ties (R-12 accrues nothing) left unfilled.
