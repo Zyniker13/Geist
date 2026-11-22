@@ -130,6 +130,7 @@ final class MUGateTests: XCTestCase {
         )
 
         let leadersRow = GameUITest.overlayRow(app: app, identifier: "debug.leaders")
+        let centroidsRow = GameUITest.overlayRow(app: app, identifier: "debug.centroids")
         XCTAssertTrue(
             leadersRow.waitForExistence(timeout: 30),
             "leaders row never appeared (versus split did not happen)"
@@ -167,11 +168,23 @@ final class MUGateTests: XCTestCase {
         let positions = GameUITest.parseLeaders(leaders)
         XCTAssertEqual(positions.count, 2, "expected two leaders, got \(positions.count): \(leaders)")
 
-        // Touch at flock 0's frozen leader position routes to flock 0 by
-        // nearest distance. Flock 0's leader should follow the path right
-        // after resume; flock 1, untouched, should barely drift.
+        // Touch at flock 0's frozen centroid routes to flock 0: routing keys
+        // on the bird CENTROID (`routeFlock`), not the leader point the
+        // leaders row reports — the two drift apart while a flock forages,
+        // and aiming at the leader misrouted the drag to flock 1 (worktree
+        // verification of 29d11e8, L0 1024,768 with the centroid elsewhere).
+        // The centroid row exists only while there are 2+ flocks.
+        XCTAssertTrue(
+            centroidsRow.waitForExistence(timeout: 10),
+            "centroid row missing in versus (expected for 2 flocks)"
+        )
+        let centroidText = GameUITest.stableRowText(of: centroidsRow)
+        let centroids = GameUITest.parseCentroids(centroidText)
+        XCTAssertEqual(
+            centroids.count, 2, "expected two centroids, got \(centroids.count): \(centroidText)"
+        )
         let start0 = GameUITest.normalizedPoint(
-            forWorld: (x: positions[0].x, y: positions[0].y),
+            forWorld: (x: centroids[0].x, y: centroids[0].y),
             worldSize: worldSize,
             app: app
         )
@@ -207,8 +220,16 @@ final class MUGateTests: XCTestCase {
         leaders = GameUITest.stableRowText(of: leadersRow)
         let frozen1 = GameUITest.parseLeaders(leaders)
         XCTAssertEqual(frozen1.count, 2, "expected two leaders before drag 1: \(leaders)")
+        // Touch at flock 1's frozen centroid routes to flock 1 by nearest
+        // centroid (see drag 0 for why the centroid, not the leader).
+        XCTAssertTrue(centroidsRow.exists, "centroid row missing before drag 1")
+        let centroidText1 = GameUITest.stableRowText(of: centroidsRow)
+        let centroids1 = GameUITest.parseCentroids(centroidText1)
+        XCTAssertEqual(
+            centroids1.count, 2, "expected two centroids before drag 1: \(centroidText1)"
+        )
         let start1 = GameUITest.normalizedPoint(
-            forWorld: (x: frozen1[1].x, y: frozen1[1].y),
+            forWorld: (x: centroids1[1].x, y: centroids1[1].y),
             worldSize: worldSize,
             app: app
         )

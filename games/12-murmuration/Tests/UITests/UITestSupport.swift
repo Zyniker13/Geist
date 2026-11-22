@@ -220,13 +220,26 @@ enum GameUITest {
     /// Parse "L0 x,y L1 x,y" leader labels into per-flock world positions.
     /// The label alternates id and position tokens.
     static func parseLeaders(_ text: String) -> [(x: Double, y: Double)] {
+        parseFlockPoints(text, prefix: "L")
+    }
+
+    /// Parse "C0 x,y C1 x,y" centroid labels into per-flock world positions.
+    /// The label alternates id and position tokens.
+    static func parseCentroids(_ text: String) -> [(x: Double, y: Double)] {
+        parseFlockPoints(text, prefix: "C")
+    }
+
+    /// Shared parser for the overlay's alternating "P<i> x,y" rows.
+    private static func parseFlockPoints(
+        _ text: String, prefix: Character
+    ) -> [(x: Double, y: Double)] {
         var result: [(x: Double, y: Double)] = []
         let tokens = text.split(separator: " ")
         var index = 0
         while index + 1 < tokens.count {
             let id = tokens[index]
             let position = tokens[index + 1]
-            if id.hasPrefix("L"), id.count > 1, Int(id.dropFirst()) != nil {
+            if id.hasPrefix("\(prefix)"), id.count > 1, Int(id.dropFirst()) != nil {
                 let parts = position.split(separator: ",")
                 if parts.count == 2, let x = Double(parts[0]), let y = Double(parts[1]) {
                     result.append((x, y))

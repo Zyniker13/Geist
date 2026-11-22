@@ -53,6 +53,7 @@ struct GameDebugOverlay: View, Equatable {
         var hash = ""
         var frameMs = 0.0
         var leaders = ""
+        var centroids = ""
         var difficulty = ""
     }
 
@@ -93,6 +94,12 @@ struct GameDebugOverlay: View, Equatable {
                     .accessibilityLabel(sample.leaders)
                     .accessibilityIdentifier("debug.leaders")
             }
+            if !sample.centroids.isEmpty {
+                Text(sample.centroids)
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel(sample.centroids)
+                    .accessibilityIdentifier("debug.centroids")
+            }
         }
         .font(.system(size: 11, weight: .semibold, design: .monospaced))
         .foregroundStyle(.white)
@@ -113,6 +120,7 @@ struct GameDebugOverlay: View, Equatable {
                 hash: model.hashLabel,
                 frameMs: model.frameMs,
                 leaders: Self.leaderLabel(model.state),
+                centroids: Self.centroidLabel(model.state),
                 difficulty: model.region.hasRival ? model.rivalDifficulty.rawValue : ""
             )
             try? await Task.sleep(nanoseconds: 500_000_000)
@@ -125,6 +133,24 @@ struct GameDebugOverlay: View, Equatable {
         for flock in 0..<state.subFlockCount where flock < state.leaderPaths.count {
             let p = state.leaderPaths[flock]
             parts.append("L\(flock) \(p.currentX),\(p.currentY)")
+        }
+        return parts.joined(separator: " ")
+    }
+
+    /// "C0 x,y C1 x,y" for each flock's bird centroid when there is more
+    /// than one flock (MU-P3.3). Touch routing keys on the centroid
+    /// (`GameSurface.routeFlock`), not the leader path point — the two can
+    /// drift apart while a flock forages — so UI tests that aim gestures
+    /// at a flock must aim at its centroid for nearest-flock routing to be
+    /// deterministic.
+    nonisolated static func centroidLabel(_ state: GameState) -> String {
+        guard state.subFlockCount > 1 else { return "" }
+        var parts: [String] = []
+        for flock in 0..<state.subFlockCount {
+            let c = centroidOfFlock(
+                birds: state.birds, assignments: state.subFlockAssignments, subFlock: UInt8(flock)
+            )
+            parts.append("C\(flock) \(c.x),\(c.y)")
         }
         return parts.joined(separator: " ")
     }
