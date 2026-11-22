@@ -9,7 +9,8 @@ final class MUAudioTests: XCTestCase {
         var gran = WingbeatGranular(voiceCount: 16)
         let frames = 4800
         let buf = UnsafeMutablePointer<Float>.allocate(capacity: frames)
-        defer { buf.deallocate() }
+        buf.initialize(repeating: 0, count: frames)
+        defer { buf.deinitialize(count: frames); buf.deallocate() }
         gran.render(
             metrics: FlockMetrics(birdCount: 400, meanSpacing: 90, meanTurnRate: 0.05, dusk: 0),
             into: buf,
@@ -33,7 +34,8 @@ final class MUAudioTests: XCTestCase {
             var gran = WingbeatGranular(voiceCount: 32, seed: 7)
             let frames = 9600
             let buf = UnsafeMutablePointer<Float>.allocate(capacity: frames)
-            defer { buf.deallocate() }
+            buf.initialize(repeating: 0, count: frames)
+            defer { buf.deinitialize(count: frames); buf.deallocate() }
             gran.render(
                 metrics: FlockMetrics(birdCount: birds, meanSpacing: 120, meanTurnRate: 0.03, dusk: 0),
                 into: buf,
@@ -53,7 +55,8 @@ final class MUAudioTests: XCTestCase {
             var gran = WingbeatGranular(voiceCount: 8, seed: 11)
             let frames = 48_000
             let buf = UnsafeMutablePointer<Float>.allocate(capacity: frames)
-            defer { buf.deallocate() }
+            buf.initialize(repeating: 0, count: frames)
+            defer { buf.deinitialize(count: frames); buf.deallocate() }
             gran.render(
                 metrics: FlockMetrics(birdCount: 320, meanSpacing: spacing, meanTurnRate: 0.02, dusk: 0),
                 into: buf,
@@ -71,7 +74,8 @@ final class MUAudioTests: XCTestCase {
             var gran = WingbeatGranular(voiceCount: 16, seed: 3)
             let frames = 48_000
             let buf = UnsafeMutablePointer<Float>.allocate(capacity: frames)
-            defer { buf.deallocate() }
+            buf.initialize(repeating: 0, count: frames)
+            defer { buf.deinitialize(count: frames); buf.deallocate() }
             gran.render(
                 metrics: FlockMetrics(birdCount: 600, meanSpacing: 100, meanTurnRate: turn, dusk: 0),
                 into: buf,
@@ -89,7 +93,8 @@ final class MUAudioTests: XCTestCase {
             var gran = WingbeatGranular(voiceCount: 12, seed: seed)
             let frames = 4800
             let buf = UnsafeMutablePointer<Float>.allocate(capacity: frames)
-            defer { buf.deallocate() }
+            buf.initialize(repeating: 0, count: frames)
+            defer { buf.deinitialize(count: frames); buf.deallocate() }
             gran.render(
                 metrics: FlockMetrics(birdCount: 500, meanSpacing: 80, meanTurnRate: 0.1, dusk: 0.5),
                 into: buf,
@@ -107,7 +112,8 @@ final class MUAudioTests: XCTestCase {
         var gran = WingbeatGranular(voiceCount: 8)
         let frames = 2400
         let buf = UnsafeMutablePointer<Float>.allocate(capacity: frames)
-        defer { buf.deallocate() }
+        buf.initialize(repeating: 0, count: frames)
+        defer { buf.deinitialize(count: frames); buf.deallocate() }
         gran.render(
             metrics: FlockMetrics(birdCount: 0, meanSpacing: 999, meanTurnRate: 0, dusk: 0),
             into: buf,
@@ -124,7 +130,8 @@ final class MUAudioTests: XCTestCase {
         var gran = WingbeatGranular(voiceCount: 8, seed: 5)
         let frames = 2400
         let buf = UnsafeMutablePointer<Float>.allocate(capacity: frames)
-        defer { buf.deallocate() }
+        buf.initialize(repeating: 0, count: frames)
+        defer { buf.deinitialize(count: frames); buf.deallocate() }
         gran.render(
             metrics: FlockMetrics(birdCount: 300, meanSpacing: 100, meanTurnRate: 0.05, dusk: 0),
             into: buf,
@@ -164,8 +171,10 @@ final class MUAudioTests: XCTestCase {
         var pad = RegionalPad(regionID: "gorge")
         let frames = 4800
         let bufDay = UnsafeMutablePointer<Float>.allocate(capacity: frames)
+        bufDay.initialize(repeating: 0, count: frames)
         let bufDusk = UnsafeMutablePointer<Float>.allocate(capacity: frames)
-        defer { bufDay.deallocate(); bufDusk.deallocate() }
+        bufDusk.initialize(repeating: 0, count: frames)
+        defer { bufDay.deinitialize(count: frames); bufDay.deallocate(); bufDusk.deinitialize(count: frames); bufDusk.deallocate() }
         pad.render(dusk: 0, level: 0.5, into: bufDay, frames: frames)
         pad = RegionalPad(regionID: "gorge")
         pad.render(dusk: 1, level: 0.5, into: bufDusk, frames: frames)
@@ -211,7 +220,8 @@ final class MUAudioTests: XCTestCase {
         var whoosh = TurnWhoosh(seed: 21)
         let frames = 480
         let buf = UnsafeMutablePointer<Float>.allocate(capacity: frames)
-        defer { buf.deallocate() }
+        buf.initialize(repeating: 0, count: frames)
+        defer { buf.deinitialize(count: frames); buf.deallocate() }
         whoosh.render(gain: 0, into: buf, frames: frames)
         var peak: Float = 0
         for f in 0..<frames { peak = max(peak, abs(buf[f])) }
