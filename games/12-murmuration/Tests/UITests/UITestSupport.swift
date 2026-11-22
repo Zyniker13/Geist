@@ -20,10 +20,12 @@ enum GameUITest {
         fast: Int? = nil,
         pauseAt: Int? = nil,
         birds: Int? = nil,
+        falcons: Int? = nil,
         hash: Bool = false,
         tutorial: Bool = false,
         versus: Bool = false,
-        autoplay: Bool = true
+        autoplay: Bool = true,
+        difficulty: String? = nil
     ) {
         var args = [
             "-uitest-overlay",
@@ -39,6 +41,9 @@ enum GameUITest {
         if versus {
             args += ["-uitest-versus"]
         }
+        if let difficulty {
+            args += ["-uitest-difficulty", difficulty]
+        }
         // Trace the app's own log lines ([MU] …) into the xcodebuild output so
         // a failing tutorial run can be diagnosed after the fact.
         args += ["-uitest-trace"]
@@ -50,6 +55,9 @@ enum GameUITest {
         }
         if let birds {
             args += ["-uitest-birds", String(birds)]
+        }
+        if let falcons {
+            args += ["-uitest-falcons", String(falcons)]
         }
         if hash {
             args += ["-uitest-hash"]
@@ -159,6 +167,25 @@ enum GameUITest {
         return row.staticTexts.firstMatch.label
     }
 
+    /// A row text that has stopped changing. The overlay polls the model
+    /// every 0.5 s, so a read right after pausing can still carry the
+    /// pre-pause snapshot (the poll fires late on a slow runner); aiming a
+    /// gesture at that stale string is the run-44921826085 flake. Read,
+    /// wait one poll cycle, and re-read until two consecutive reads agree
+    /// (or give up after `rounds` and return the last read).
+    static func stableRowText(
+        of row: XCUIElement, rounds: Int = 4, interval: TimeInterval = 0.6
+    ) -> String {
+        var last = rowText(of: row)
+        for _ in 0..<rounds {
+            Thread.sleep(forTimeInterval: interval)
+            let next = rowText(of: row)
+            if next == last { return next }
+            last = next
+        }
+        return last
+    }
+
     /// Read an integer from an overlay row labelled "<prefix> <value>".
     static func intValue(of row: XCUIElement, prefix: String) -> Int? {
         guard row.exists else { return nil }
@@ -193,13 +220,26 @@ enum GameUITest {
     /// Parse "L0 x,y L1 x,y" leader labels into per-flock world positions.
     /// The label alternates id and position tokens.
     static func parseLeaders(_ text: String) -> [(x: Double, y: Double)] {
+        parseFlockPoints(text, prefix: "L")
+    }
+
+    /// Parse "C0 x,y C1 x,y" centroid labels into per-flock world positions.
+    /// The label alternates id and position tokens.
+    static func parseCentroids(_ text: String) -> [(x: Double, y: Double)] {
+        parseFlockPoints(text, prefix: "C")
+    }
+
+    /// Shared parser for the overlay's alternating "P<i> x,y" rows.
+    private static func parseFlockPoints(
+        _ text: String, prefix: Character
+    ) -> [(x: Double, y: Double)] {
         var result: [(x: Double, y: Double)] = []
         let tokens = text.split(separator: " ")
         var index = 0
         while index + 1 < tokens.count {
             let id = tokens[index]
             let position = tokens[index + 1]
-            if id.hasPrefix("L"), id.count > 1, Int(id.dropFirst()) != nil {
+            if id.hasPrefix("\(prefix)"), id.count > 1, Int(id.dropFirst()) != nil {
                 let parts = position.split(separator: ",")
                 if parts.count == 2, let x = Double(parts[0]), let y = Double(parts[1]) {
                     result.append((x, y))

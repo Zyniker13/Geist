@@ -18,6 +18,14 @@ public struct BoidsParams: Sendable, Codable {
     public var edgeMargin: Int32 = 64         // steer inward within this band
     public var edgeWeight: Int32 = 65_536     // 1.0
     public var obstacleWeight: Int32 = 98_304 // 1.5 — P3: rock beats flock
+    /// Leader brake (P4): inside this radius of the leader point the bird's
+    /// velocity is damped each tick so the flock settles onto the point
+    /// instead of swinging past it and back forever (undamped pendulum).
+    public var leaderBrakeRadius: Int32 = 800
+    /// Damping (Q16.16) applied at the leader point itself, ramping linearly
+    /// down to zero at `leaderBrakeRadius`: 32_768 = 0.5 per tick at the
+    /// point, 0.125 at three-quarters of the radius out, 0 at the edge.
+    public var leaderBrakeQ: Int32 = 32_768
 
     public init() {}
 }
@@ -272,6 +280,22 @@ public func stepBirds(
         let leaderF = normalizedScaled(leaderDX, leaderDY, params.leaderWeight)
         forceX += leaderF.x
         forceY += leaderF.y
+        // Leader brake (P4): near the leader point, damp velocity so a bird
+        // converges onto the point instead of overshooting and swinging back
+        // forever. The damping ramps linearly from zero at the radius edge to
+        // the full `leaderBrakeQ` at the point, so transit through the outer
+        // radius keeps cruise speed and only the final approach decelerates
+        // (an arrive profile; a flat brake inside 800 damped day-start trips
+        // to a crawl and merged the day-start clouds before they separated).
+        let brake2 = Int64(params.leaderBrakeRadius)
+            * Int64(params.leaderBrakeRadius)
+        let d2 = leaderDX * leaderDX + leaderDY * leaderDY
+        if d2 < brake2 {
+            let ramp = Int64(params.leaderBrakeRadius) - isqrt64(UInt64(max(d2, 1)))
+            let q = (Int64(params.leaderBrakeQ) * ramp) / Int64(params.leaderBrakeRadius)
+            forceX -= (Int64(birds.velX[i]) * q) >> 16
+            forceY -= (Int64(birds.velY[i]) * q) >> 16
+        }
         let (windX, windY) = frame.wind(at: px, py)
         if windX != 0 || windY != 0 {
             let windF = normalizedScaled(Int64(windX), Int64(windY), params.windWeight)

@@ -33,6 +33,14 @@ public struct GameState: Codable, Sendable, Equatable {
     /// Sub-flock assignments for each bird (index-aligned with BirdSoA).
     public var subFlockAssignments: [UInt8]
 
+    /// Side owner of each sub-flock: 0 = player side, 1 = rival side (ADR-0033).
+    /// Index-aligned with `leaderPaths`, `energy` and the roost-claims rows.
+    /// Every mechanism that creates or reassigns a sub-flock must respect
+    /// this: a falcon forced split moves birds only within their side, a
+    /// split only extends its own side, and the day-end roost tally counts
+    /// claims by this table instead of by flock index.
+    public var subFlockOwners: [UInt8]
+
     /// Energy per sub-flock (R-8).
     public var energy: [Int]
 
@@ -53,10 +61,11 @@ public struct GameState: Codable, Sendable, Equatable {
     /// `mergeProximity` (R-5): the merge fires after `mergeThresholdTicks`.
     public var mergeProximityStreak: Int
 
-    /// Versus mode suppresses the R-5 auto-merge (MU-P3.3): the day-start
-    /// split defines the two player flocks, and both start coincident at the
-    /// world center — the proximity rule would collapse them back into one
-    /// flock within 30 ticks, before either player can steer away.
+    /// Versus and rival modes suppress the R-5 auto-merge (MU-P3.3, MU-P4.1):
+    /// the day-start split defines the two flocks, and both start coincident
+    /// at the world center — the proximity rule would collapse them back into
+    /// one flock within 30 ticks. In versus that merges the two players; in
+    /// rival mode it would absorb the rival's flock into the player's.
     public var versusMergeSuppressed: Bool
 
     /// Wind vectors per 256-unit cell, row-major (R-1). Regenerated
@@ -115,7 +124,46 @@ public struct GameState: Codable, Sendable, Equatable {
     /// v7: P3.3 versus fix — `versusMergeSuppressed` joined the state (R-5
     /// auto-merge collapsed the versus flocks; default false reproduces the
     /// v6 behavior, but the JSON encoding grew, so hashes change).
-    public static let replayContentVersion = 7
+    /// v8: P4 energy fix — feeding gain now counts only the birds inside the
+    /// field's radius (R-8), not the whole sub-flock, so replay trajectories
+    /// diverge wherever a flock grazed a field from outside (see ADR-0028).
+    /// v9: P4 leader brake — inside `leaderBrakeRadius` of the leader point
+    /// the bird's velocity is damped each tick, so a parked flock settles
+    /// onto the point instead of penduluming around it forever.
+    /// v10: the brake ramps linearly to zero at the radius edge (arrive
+    /// profile); the flat brake damped day-start trips to a crawl and merged
+    /// the day-start clouds before the pilots could separate them.
+    /// v11: a split widens every roost's claim row by one slot (R-12);
+    /// before this, a third sub-flock's dusk claim trapped with
+    /// "Index out of range" (exit 133 in the G4 hard-tier balance sweep).
+    /// v12: energy tuning for the G4 dusk-flock window (ADR-0032) — fields
+    /// hold double the depletion budget (`fieldRichness * 20`), grazing gain
+    /// uses divisor 7 instead of 10, and the energy drain applies only while
+    /// the sub-flock is in flight (R-8 "while flying"), so flocks no longer
+    /// starve through the 900-tick dusk on roosts that overlap no field.
+    /// v13: versus sub-flock side ownership (ADR-0033) — `spawnRival`
+    /// replaces the starter split, `subFlockOwners` gates forced splits,
+    /// scripted splits, and the day-end roost tally.
+    /// v14: falcon stoop path (ADR-0034) — kills land within `diveRadius`
+    /// of the falcon→target→2×diveRadius segment instead of the dive point,
+    /// the grab budget scales with the target flock's size, and the
+    /// centroid split check runs against the path.
+    /// v15: ADR-0035 retune — the forced-split trigger tightens to
+    /// `diveRadius` around the stoop path (the 2× catchment minted a
+    /// second flock on nearly every hit), and the rival dusk tunables
+    /// (`claimGate`/`contestRatio`/`splitMinBirds`) join the pilot.
+    /// v16: ADR-0036 — the falcon grab budget scales with the struck
+    /// flock's side size (via `subFlockOwners`) instead of the struck
+    /// flock's own size, so a forced split no longer halves a side's
+    /// per-dive losses; replay trajectories diverge wherever a dive hits
+    /// a split side.
+    public static let replayContentVersion = 16
+
+    /// R-10 grab budget: successful-dive kills per 1,000 birds of the target
+    /// flock (ADR-0034). Tuning constant — the balance harness overrides it
+    /// with `--falcon-budget` when sweeping falcon pressure; production code
+    /// reads it only at the dive site.
+    nonisolated(unsafe) public static var falconGrabPerThousand = 8
 
     /// Content version for golden replays.
     public let contentVersion: Int
@@ -275,6 +323,7 @@ public struct GameState: Codable, Sendable, Equatable {
         self.leaderPaths[0].currentX = centerX
         self.leaderPaths[0].currentY = centerY
         self.subFlockAssignments = subFlockAssignments
+        self.subFlockOwners = [0] // ADR-0033: one player-side flock at start.
         self.energy = Array(repeating: 800, count: 1) // start at 800 energy
         self.initialBirdCount = birdCount
 
@@ -287,7 +336,7 @@ public struct GameState: Codable, Sendable, Equatable {
                 radius: Int32(fieldRadius[i]),
                 richness: fieldRichness[i],
                 currentDepletion: 0,
-                maxDepletion: fieldRichness[i] * 10,
+                maxDepletion: fieldRichness[i] * 20,
                 ticksSinceFeed: 0
             ))
         }
@@ -301,10 +350,10 @@ public struct GameState: Codable, Sendable, Equatable {
                 centerX: roostCenterX[i],
                 centerY: roostCenterY[i],
                 radius: Int32(roostRadius[i]),
-                claims: [0, 0],
+                claims: [0],
                 claimant: -1
             ))
-            roostClaims.append([0, 0]) // [player flock, rival flock]
+            roostClaims.append([0]) // One row per roost, one slot per flock.
         }
         self.roosts = roosts
         self.roostClaims = roostClaims

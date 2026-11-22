@@ -115,18 +115,22 @@ final class MUGateTests: XCTestCase {
     /// MU-P3.3: local two-flock versus on one iPad. Each player owns the
     /// touches nearest their flock's color. This test verifies (1) the
     /// day-start split creates two flocks, and (2) a touch near flock 0
-    /// steers flock 0 while a touch near flock 1 steers flock 1.
+    /// steers flock 0 while a touch near flock 1 steers flock 1. The fixture
+    /// runs falcon-free (`-uitest-falcons 0`): a falcon dive legitimately
+    /// mints a third flock (ADR-0033), which is not what this test measures.
     func testVersusTwoFlockRouting() throws {
         let app = XCUIApplication()
         GameUITest.launch(
             app: app,
             region: "meadow",
             days: 1,
+            falcons: 0,
             versus: true,
             autoplay: false
         )
 
         let leadersRow = GameUITest.overlayRow(app: app, identifier: "debug.leaders")
+        let centroidsRow = GameUITest.overlayRow(app: app, identifier: "debug.centroids")
         XCTAssertTrue(
             leadersRow.waitForExistence(timeout: 30),
             "leaders row never appeared (versus split did not happen)"
@@ -155,14 +159,32 @@ final class MUGateTests: XCTestCase {
         // its leader path to the paused state and the flock follows it after
         // resume (ADR-0026).
         pause.tap()
+        // Re-read the row after the pause so the drag aims at the *frozen*
+        // positions, not the pre-pause snapshot the flocks have orbited past.
+        // The overlay polls the model every 0.5 s, so a single sleep-then-
+        // read can still catch a stale string on a slow runner (CI run
+        // 44921826085); wait until two consecutive reads agree.
+        leaders = GameUITest.stableRowText(of: leadersRow)
         let positions = GameUITest.parseLeaders(leaders)
         XCTAssertEqual(positions.count, 2, "expected two leaders, got \(positions.count): \(leaders)")
 
-        // Touch at flock 0's frozen leader position routes to flock 0 by
-        // nearest distance. Flock 0's leader should follow the path right
-        // after resume; flock 1, untouched, should barely drift.
+        // Touch at flock 0's frozen centroid routes to flock 0: routing keys
+        // on the bird CENTROID (`routeFlock`), not the leader point the
+        // leaders row reports — the two drift apart while a flock forages,
+        // and aiming at the leader misrouted the drag to flock 1 (worktree
+        // verification of 29d11e8, L0 1024,768 with the centroid elsewhere).
+        // The centroid row exists only while there are 2+ flocks.
+        XCTAssertTrue(
+            centroidsRow.waitForExistence(timeout: 10),
+            "centroid row missing in versus (expected for 2 flocks)"
+        )
+        let centroidText = GameUITest.stableRowText(of: centroidsRow)
+        let centroids = GameUITest.parseCentroids(centroidText)
+        XCTAssertEqual(
+            centroids.count, 2, "expected two centroids, got \(centroids.count): \(centroidText)"
+        )
         let start0 = GameUITest.normalizedPoint(
-            forWorld: (x: positions[0].x, y: positions[0].y),
+            forWorld: (x: centroids[0].x, y: centroids[0].y),
             worldSize: worldSize,
             app: app
         )
@@ -192,8 +214,22 @@ final class MUGateTests: XCTestCase {
         // leader position (nearest → flock 1), resume. Flock 1's leader
         // should follow the path right; flock 0 was untouched by this drag.
         pause.tap()
+        // Re-read after the pause so the drag aims at flock 1's frozen
+        // position, not the post-drag-0 snapshot the flocks orbited past.
+        // Two consecutive reads must agree (run-44921826085 flake).
+        leaders = GameUITest.stableRowText(of: leadersRow)
+        let frozen1 = GameUITest.parseLeaders(leaders)
+        XCTAssertEqual(frozen1.count, 2, "expected two leaders before drag 1: \(leaders)")
+        // Touch at flock 1's frozen centroid routes to flock 1 by nearest
+        // centroid (see drag 0 for why the centroid, not the leader).
+        XCTAssertTrue(centroidsRow.exists, "centroid row missing before drag 1")
+        let centroidText1 = GameUITest.stableRowText(of: centroidsRow)
+        let centroids1 = GameUITest.parseCentroids(centroidText1)
+        XCTAssertEqual(
+            centroids1.count, 2, "expected two centroids before drag 1: \(centroidText1)"
+        )
         let start1 = GameUITest.normalizedPoint(
-            forWorld: (x: after0[1].x, y: after0[1].y),
+            forWorld: (x: centroids1[1].x, y: centroids1[1].y),
             worldSize: worldSize,
             app: app
         )
@@ -214,5 +250,83 @@ final class MUGateTests: XCTestCase {
             after1[1].x, after0[1].x + 50,
             "flock 1 leader did not move right: \(leaders)"
         )
+    }
+
+    /// MU-P4.1: the menu's difficulty picker offers all three tiers, and the
+    /// chosen tier reaches the game (the debug overlay reports it) with the
+    /// rival flock alive.
+    func testDifficultyPickerSelectsTier() throws {
+        // The menu must be up (no -uitest-play auto-start), with the debug
+        // overlay enabled for the play session that follows.
+        let app = XCUIApplication()
+        app.launchArguments = [
+            "-uitest-overlay",
+            "-uitest-region", "meadow",
+            "-uitest-days", "3",
+            "-uitest-trace",
+        ]
+        app.launch()
+
+        let play = app.buttons["menu.play"]
+        XCTAssertTrue(play.waitForExistence(timeout: 10), "menu Play button missing")
+
+        // iOS maps the SwiftUI segmented picker to SegmentedControl (with
+        // Button segments); fall back to any type in case a future OS maps
+        // it differently.
+        let picker = app.descendants(matching: .any)["menu.difficulty"].firstMatch
+        XCTAssertTrue(picker.waitForExistence(timeout: 10), "difficulty picker missing")
+        let segment: (String) -> XCUIElement = { tier in
+            picker.descendants(matching: .button)[tier].firstMatch
+        }
+        for tier in ["Gentle", "Normal", "Hard"] {
+            XCTAssertTrue(
+                segment(tier).waitForExistence(timeout: 5),
+                "picker missing \(tier) segment"
+            )
+        }
+
+        segment("Hard").tap()
+        play.tap()
+
+        let diffRow = GameUITest.overlayRow(app: app, identifier: "debug.difficulty")
+        XCTAssertTrue(
+            diffRow.waitForExistence(timeout: 30),
+            "difficulty row never appeared after Play"
+        )
+        let diff = GameUITest.rowText(of: diffRow)
+        XCTAssertTrue(diff.contains("hard"), "expected hard tier in overlay, got: \(diff)")
+
+        // The rival flock is alive: both leaders present.
+        let leadersRow = GameUITest.overlayRow(app: app, identifier: "debug.leaders")
+        var leaders = ""
+        for _ in 0..<30 {
+            leaders = GameUITest.rowText(of: leadersRow)
+            if leaders.contains("L0 ") && leaders.contains("L1 ") { break }
+            Thread.sleep(forTimeInterval: 1)
+        }
+        XCTAssertTrue(
+            leaders.contains("L0 ") && leaders.contains("L1 "),
+            "rival flock not present: \(leaders)"
+        )
+    }
+
+    /// MU-P4.1: the -uitest-difficulty launch argument overrides the region
+    /// default end to end.
+    func testDifficultyLaunchArgument() throws {
+        let app = XCUIApplication()
+        GameUITest.launch(
+            app: app,
+            region: "meadow",
+            days: 1,
+            difficulty: "gentle"
+        )
+
+        let diffRow = GameUITest.overlayRow(app: app, identifier: "debug.difficulty")
+        XCTAssertTrue(
+            diffRow.waitForExistence(timeout: 30),
+            "difficulty row never appeared"
+        )
+        let diff = GameUITest.rowText(of: diffRow)
+        XCTAssertTrue(diff.contains("gentle"), "expected gentle tier in overlay, got: \(diff)")
     }
 }

@@ -563,3 +563,385 @@ Architecture decision records. Every deviation from the roadmap is recorded here
 - **Consequences:** Routing assertions no longer depend on runner speed.
   The test verifies steer targeting on frozen state plus follow-through on
   resume, which the un-paused flow only implied.
+
+## ADR-0027: Rival difficulty is a flat region key, tiers tune one AI, and hard splits only when the flock can afford it (2026-11-19)
+- **Context:** MU-P4.1 adds three difficulties to the rival AI. The
+  roadmap's `RegionDef` sketch nests the tier inside the rival object
+  (`"rival": { "startBirds": 600, "difficulty": "gentle" }`), but the P3
+  content shipped `hasRival` and `rivalStartBirds` as flat top-level keys
+  in every region file, and the whole decode path follows that shape.
+- **Decision:** Three parts.
+  1. **Flat key:** `rivalDifficulty` sits beside `rivalStartBirds` as a
+     flat top-level region key (`"gentle"` default when absent, decode
+     throws on an unknown tier). The roadmap's nested shape predates the
+     P3 content migration; matching the shipped shape avoids a
+     content-wide rewrite and a second reader for the nested object.
+  2. **One AI, tiered tunables:** the tiers tune one `GentleRival`
+     through a `cadence` table (gentle forage 480/flee 60/radius
+     320/standoff 640; normal 300/45/360/520; hard 240/30/400/380)
+     rather than three AI classes. Behavior differences come from
+     cadence plus the hard-only dusk split plan.
+  3. **Hard split gating:** the hard tier's second sub-flock (contesting
+     two roosts, per MU-P4.1) is staged through a dusk split plan
+     (`splitStage` routing split → two roost targets) and only runs when
+     the flock has at least `splitMinBirds` (500) — a struggling rival
+     does not thin itself further. Save/resume decodes legacy saves as
+     gentle with unset split state.
+- **Consequences:** Region files stay flat and additive; the picker and
+  the launch argument override the region default in `GameModel` (nil →
+  `region.rivalDifficulty`). Balance targets (85/60/35) tune the cadence
+  table, not the AI's structure; the G4 sweep validates it.
+
+## ADR-0028: Feeding gain counts the birds inside the field, not the whole sub-flock (2026-11-19)
+- **Context:** MU-P4 balance traced dusk-flock collapse (1207 → 156
+  birds) to the energy economy, not predation. `computeFeeding` gated
+  the regrowth clock on `gain > 0` but computed gain from the whole
+  sub-flock's count whenever any single bird stood inside the radius.
+  Consequence: a scattered flock's stragglers kept a spent field's
+  ramp permanently reset while drawing `wholeFlock × richness / 10`
+  per tick from the trickle, so fields never re-armed and the flock
+  starved at ~0.1% per tick. R-8 reads "birds within a field's radius
+  feed, adding energy by field richness" — the whole-flock formula
+  made density meaningless and let one straggler drain a field at the
+  full flock's rate.
+- **Decision:** Feed gain is `birdsInField × richness / 10`, capped by
+  the field's remaining budget, computed per sub-flock from actual
+  bird positions. The clock semantics stay: any real gain resets the
+  100-tick regrowth ramp, zero-gain grazing does not (both pinned by
+  new tests). Regrowth denial by grazing is intended play: a flock
+  parked on a spent field keeps it from recovering, and rival AI can
+  do the same on purpose later.
+- **Consequences:** `replayContentVersion` bumps to v8 and the 20
+  goldens are regenerated (EngineGoldenReplayTests doc procedure).
+  Autoplayer and rival must now stand off spent fields to let them
+  re-arm; the balance sweep (G4) revalidates against the new economy.
+
+## ADR-0029: Forage directive discipline — commitment, starvation floor, standoff stability (2026-11-20)
+- **Context:** After ADR-0028 the flocks still starved on the commons.
+  Tracing the autoplayer day exposed four failure modes. (1) The
+  re-deciding flock teleported its leader among spent fields when the
+  bank ran dry: the starve branch picked the least-bad field even when
+  every field scored below zero. (2) A starving flock nibbled a
+  ramped crumb's trickle: regrowth-by-arrival credit (13 × travel)
+  lured a trip whose grazing restarted the field's 100-tick ramp, so
+  the counted regrowth never materialised and every field stayed
+  pinned near empty. (3) The standoff point was recomputed from the
+  moving centroid each tick; when the clamp could not satisfy the
+  clearance the point swung and the flock chased it across fields,
+  grazing them. (4) A flock abandoned a half-eaten meal the moment
+  its holdings dipped below the trip floor, re-issuing a path every
+  tick.
+- **Decision:** The directive commits to the current target while it
+  is worth a trip, or — for a starving flock — while any food at all
+  remains (finish the meal you are standing on). The starve branch
+  flies only for food a field HOLDS now (≥ `starveYield` 150), never
+  for projected regrowth, and stands off when nothing substantial
+  exists. The standoff point is chosen by a deterministic grid scan:
+  the nearest point clearing every field by `radius + standoffMargin`
+  (200, sized for a condensed flock), falling back to the greatest
+  clearance; the directive reuses a still-clear point, and the point
+  is computed against all fields so the hold survives blocked-set
+  changes.
+- **Consequences:** The commons day settles into a pulse: strip, park
+  clear of all fields while they re-arm, strip again. Unit tests pin
+  each rule (starve standoff, crumb refusal, meal finishing, near
+  standoff). The equilibrium still depends on travel time; condense
+  (ADR-0030) and the staggered rotation are the remaining levers.
+
+## ADR-0030: The day flock condenses while its target holds (2026-11-20)
+- **Context:** A flying day cloud stretched to ~1,000-unit spread
+  (birds cruise at 18–40/tick and turn slowly — a full reversal takes
+  ~170 ticks), so its fringe grazed fields the flock merely passed and
+  the parked flock could not fit a clear pocket. Condense (R-4)
+  doubles cohesion for 60 ticks with a 120-tick cooldown, but the
+  autoplayer never used it by day.
+- **Decision:** When the forage directive holds the current target
+  (no path change due), the autoplayer issues `condense(subFlock: 0)`
+  whenever the cooldown has lapsed. It never delays steering: a path
+  change always preempts the condense. The dusk roost condense is
+  unchanged.
+- **Consequences:** A parked flock mills within ~200 units of its
+  centre, so standoffMargin shrinks from 400 to 200 and the standoff
+  pockets sit near the fields, shortening the wait phase's travel.
+  The rival AI should adopt the same habit in its own cadence.
+
+## ADR-0031: The boid kernel brakes velocity near the leader point (2026-11-20)
+- **Context:** The R-6 leader force is constant-magnitude, so a flock
+  parked on a roost or field pendulumed around the leader point
+  forever (worst centroid offset 135 units after 600 ticks) instead
+  of settling. The oscillation kept birds out of field radius for
+  large fractions of the day, starved the flock, and pinned the
+  balance sweep: every tier won ~63–67% with no separation.
+- **Decision:** `BoidsParams` gains `leaderBrakeRadius` (800) and
+  `leaderBrakeQ` (0.5 in Q16.16). Inside the radius of the leader
+  point, a bird's velocity is damped by `leaderBrakeQ` each tick
+  (force `−v·q`); outside, the leader force is unchanged, so travel
+  speed is untouched. `replayContentVersion` bumps to 9 and the 20
+  golden replays were regenerated. Tests re-anchored: R6 measures
+  the bare force outside the radius (plus a braked case); R1 wind
+  now probes the travel phase (leader upwind, 120 ticks), because a
+  braked parked flock can no longer show wind displacement above
+  cluster-shape variance.
+- **Follow-up (same day):** the first brake was flat — 0.5/tick everywhere
+  inside the 800 radius — which covers whole day-start trips (roost to field
+  is ~600 units), so both pilots crawled at 4–5 units/tick and the day-start
+  clouds merged on tick 29 before they could separate. The brake now ramps
+  linearly from full damping at the leader point to zero at the radius edge
+  (an arrive profile): transit keeps cruise speed, only the final approach
+  decelerates. `replayContentVersion` 10, goldens regenerated, R6 re-anchored
+  to the ramp (commit 7318e7d).
+- **Consequences:** A parked flock mills within ~100 units of the
+  leader point and keeps nearly all birds inside a field's radius,
+  which is what the feeding rules (R-8) assume. Wind still steers
+  travel and biases parked flocks by a few units. The P4 balance
+  tiers must be re-measured on the braked kernel; the pre-brake
+  numbers (gentle 67.5%, normal 66.3%, hard 62.8%) are superseded.
+
+## ADR-0032: The energy drain applies only while in flight; grazing budget doubled (2026-11-20)
+- **Context:** After ADR-0031 removed the pendulum, the balance sweep
+  still showed every flock shrinking all day (player 838→80, rival
+  661→356 over one day) and collapsing at dusk (peak ~1058 → ~353);
+  hard-tier win rates sat far above the 35% target. Instrumented
+  traces (per-tick events) showed flocks cycling 0→X→0 energy from
+  the morning trip onward, and both sides going to 0 energy for the
+  whole 900-tick dusk. Two independent causes:
+  (1) the feed rate was capped below the drain rate — the default
+  depletion budget `fieldRichness * 10` (~650 on commons) with slow
+  regrowth (13 per 100 ticks) bounds grazing at ~3.7 energy/tick
+  while a 500-bird flock drains ~5/tick, so no flock could ever
+  build the surplus the growth rule (R-9) needs; and
+  (2) the drain applied unconditionally, but R-8 says energy
+  "decreases ... while in flight" — during dusk every flock sits at
+  a roost, and no region's roosts overlap any feeding field
+  (closest ~403 units on commons), so a condensed flock burns
+  energy it has no way to replace: the 900-tick dusk alone costs a
+  500-bird flock 4,500 energy against a 1,000 cap.
+- **Decision:** three aligned changes. (a) The default field budget
+  doubles to `fieldRichness * 20` (GameState; region JSONs may still
+  override `maxDepletion` explicitly). (b) The grazing gain divisor
+  drops from 10 to 7 (`birdCount * richness / 7`), so grazing a
+  full field outpaces the flight drain — this constant is engine
+  tuning, not a roadmap-pinned rule. (c) `computeEnergyDrain`
+  applies the R-8 drain only while the sub-flock is in flight: it
+  computes the sub-flock centroid from the bird SoA and skips the
+  drain when the centroid lies within twice a roost's radius (twice,
+  because boids keep milling and a bare 1× radius test almost never
+  catches the centroid). A split flock drains per sub-flock on its
+  own centroid, so parking one bird cannot shelter the flock.
+  `replayContentVersion` bumps to 12; goldens are regenerated.
+- **Tests:** `testR8FeedingCountsBirdsInField` and
+  `testGainResetsRegrowthClock` re-anchored to the /7 divisor;
+  new regression `testR8EnergyDrainSkippedWhenSettledAtRoost`
+  (settled → no drain, energy unchanged) and
+  `testR8EnergyDrainAppliesWhenCentroidOutsideRoost` (flying →
+  1/tick per 100 birds).
+- **Consequences:** Feeding is now possible at a surplus, R-9's
+  growth rule can operate, and settled flocks hold energy through
+  dusk instead of starving to the tiebreak. The G4 balance targets
+  must be re-measured on this energy model (sweep rerun); the
+  pre-ADR numbers (hard tier 61–100% player) are superseded. If the
+  re-sweep still misses the dusk-flock window, the next levers are
+  the grazing radius/geometry, not the drain rule, which stays
+  pinned to R-8's wording.
+
+## ADR-0033: Sub-flock side ownership — versus flocks never cross sides (2026-11-20)
+
+- **Context:** In versus mode, flock 1 was "the rival" purely by index
+  convention. Two defects followed. (1) `RegionStarter` created the rival
+  with `.splitFlock(from: 0, ...)`, so the rival's flock was a player-side
+  split. (2) `forceSplit` (the R-10 falcon-dive response) reassigned every
+  other bird of the struck flock to `sf == 0 ? 1 : 0` — a dive on the
+  player's flock moved half the player's birds into the rival's flock, and
+  vice versa. It also updated `subFlockAssignments` (game logic) but not
+  `birds.subFlock` (steering), so the two arrays desynced. Measured impact
+  (pre-fix G4 sweep, commons): the rival banked two roosts on 22 of 30
+  days (en-route claims from stolen birds), the autoplayer lost to every
+  probed rival configuration (≤37% wins), and the tier order inverted
+  (Gentle 57.3% < Normal 72.2% player win rate) because Gentle's slow
+  forage cadence let the rival's stolen-bird flock grow bigger.
+- **Decision:** Side ownership is explicit state, not an index convention.
+  (a) `GameState.subFlockOwners: [UInt8]` — one entry per sub-flock,
+  0 = player side, 1 = rival side; solo games are all 0. (b) New action
+  `.spawnRival(ratio:)` mints the rival's flock with owner 1 and full
+  bookkeeping (energy, claim rows, leader path); `RegionStarter` uses it
+  instead of a split. (c) `splitFlock` appends the source flock's owner to
+  the new flock; the per-side cap is enforced as "a side may split only
+  while it has exactly one flock" (max 2 flocks per side, 4 total).
+  (d) `forceSplit` targets another sub-flock on the same side (smallest
+  index) or mints one on that side, and updates both
+  `subFlockAssignments` and `birds.subFlock` so they stay in sync.
+  (e) The roost tally and the R-13 tiebreak count by `subFlockOwners`,
+  not by index. (f) `roostClaims` rows start one-wide and widen as flocks
+  are minted. `replayContentVersion` bumps to 13; goldens regenerated.
+- **Tests:** New `VersusOwnershipTests` (7 tests): spawnRival ownership,
+  split inherits the source owner, forceSplit stays same-side with the
+  side total preserved, roost tally by ownership, R-13 tiebreak by
+  ownership, claim-row widening, no cross-side movement. R-12 rewritten
+  for versus mode (a third flock mints a claim row). R-13 and solo
+  fixtures that fabricate two-flock rows now set
+  `subFlockOwners = [0, 1]`.
+- **Consequences:** A falcon dive can no longer hand birds to the
+  opponent; a player second flock minted by a dive counts for the player.
+  The pre-fix G4 numbers (Gentle 57.3%, Normal 72.2%) are superseded —
+  the sweep reruns on this engine. The autoplayer's nearest-roost dusk
+  strategy is the remaining known weakness and a legitimate tuning target.
+
+## ADR-0034: The falcon stoop kills along its path with a size-scaled grab budget (2026-11-21)
+
+- **Context:** R-10's successful dive removed `max(1, 4 − density/8)`
+  birds nearest the dive point. Two defects showed up against the
+  post-ADR-0032 economy and the G4 balance report. (1) Geometry: a stoop
+  is a line, not a point — birds strung along the dive line just outside
+  the point survived a dive that visually passed through them, and the
+  R-10 forced-split check only saw the point too. (2) Scaling: a flat
+  ≤4 budget is a constant, so falcon pressure was a vanishing fraction
+  at the G4 dusk-flock scale (4 of 2,500 is 0.16%) while a 60-bird
+  flock lost up to 6.7% per dive — the pressure did not scale with the
+  thing it acted on, and the sweep's `falconLoss*` columns counted
+  dives, not birds.
+- **Decision:** Kills land within `diveRadius` (30) of the stoop path —
+  the segment from the falcon through the dive target extended 2×
+  `diveRadius` beyond in the falcon→target direction. The grab budget
+  is proportional to the target flock's size, `flockSize·8/1000`
+  (a stable ~0.8% unthrottled), throttled by the edge density toward
+  half at density ≥ 128 (R-10's dense-flock shield), floored at one
+  bird. The forced-split check runs against the same path (within 2×
+  `diveRadius` of it, as before). `FalconEvent.diveResult` carries the
+  kill count; the balance harness sums kills per side. Pure integer
+  math (`distanceToSegment2` exact projection, `isqrt64` for the path
+  direction), INV-3 preserved. `replayContentVersion` 13→14; the 20
+  golden replays regenerated.
+- **Tests:** `FalconStoopTests` (5): the three R-10 tests moved from
+  `RulesEngineTests` (lowest-density-edge targeting, radius-bounded
+  kills, dense-flock cap) plus two new ones — the grab-budget table
+  (size-scaled, density-throttled, floored) and a path-kill probe where
+  a bird inside the stoop corridor dies while an equally-near-to-target
+  bird off the corridor survives.
+- **Consequences:** Falcon losses now scale with flock size (~0.4–0.8%
+  per successful dive), the R-10 geometry matches the dive the player
+  sees, and the G4 falcon-loss metric measures birds taken. The balance
+  retune (ADR-0035) probes on this engine.
+
+## ADR-0035: The rival economy is planned per flock, with a dawn sustainability split (2026-11-21)
+
+- **Context:** The 100-day sweep's hard tier exposed a structural gap
+  in the rival pilot: it only ever planned flock 1. A split-off flock 2
+  (falcon forced-split or dusk split) received no forage directive at
+  all, drifted, and starved via R-8 (zero energy kills
+  birdCount/100 per event); on two-field regions the rival side
+  starved as a whole. And because every rival bird fed from wherever
+  the single plan landed, the side's growth was bounded by one field's
+  feed rate no matter how many flocks it held.
+- **Decision:** Every rival flock plans its own forage via
+  `ForageScoring`, with the *other flocks' centroids* and the player's
+  leader point in its avoid set, so the flocks de-correlate instead of
+  stacking on one field. A single rival flock of at least
+  `sustainSplit` birds splits once per day at dawn (`.splitFlock`
+  50/50) and the halves route to two *different* fields — the first
+  takes its best field, the second scores with the first's target in
+  its avoid set. The split runs in daytime, where the dusk-split
+  per-side cap has no say, and fires at most once per day
+  (`sustainSplitDone`, reset at each dawn). Rival memory moved from
+  scalars to per-flock dictionaries (`lastTargetByFlock`,
+  `lastForageTickByFlock`, `lastStandoffByFlock`) with Codable
+  migration for saves from earlier builds. The tier lever that keeps
+  the side from drowning the player is the difficulty-scaled start
+  share (`RegionStarter.startScale`: 1.0×/1.25×/1.5× of the region's
+  `rivalStartBirds`, capped at 0.9 of birdCount). Integer arithmetic
+  throughout, INV-3 preserved.
+- **Tests:** `RivalSustainTests` (4): the dawn split fires for a fat
+  flock, fires at most once per day, does not fire below the
+  threshold, and the two halves target different fields.
+  `ForageTests`/`RivalTierTunablesTests` updated for per-flock state
+  and the start scale. MUAI 65/65 green.
+- **Consequences:** The rival side's growth is limited by the fields
+  rather than by its own flocking, split-off flocks stay alive, and
+  the 85/60/35 win-rate targets rest on tuned behavior instead of
+  side-stealing or starvation accidents.
+
+## ADR-0036: The falcon grab budget scales with the struck flock's side, not the flock (2026-11-21)
+
+- **Context:** The G4 balance sweeps showed the player beating the hard
+  rival far above the 35% target because the player can farm forced
+  splits as pressure relief: the stoop's grab budget scaled with the
+  struck flock's own size, so a side that held 800 birds in two flocks
+  of 400 drew budget 3 per dive while the intact side drew 6 — halving
+  your own flock cut your falcon losses in half. The budget exists to
+  cap losses per dive (R-10, ADR-0034); its correct denominator is the
+  side that bears the pressure, not the sub-flock that happens to be
+  struck, since `splitFlock` (ADR-0033) keeps the new flock on the same
+  side. A minted leaderless fragment below 100 birds drains zero per
+  tick (integer division in `computeEnergyDrain`), so fragments persist
+  and a persistent fragment under flock-scaled sizing would keep
+  suppressing a side's losses forever.
+- **Decision:** `computeFalcons` now sizes the grab budget with
+  `birdsOnSideCount` — the sum of live birds across every sub-flock
+  owned by the struck flock's side (`subFlockOwners`), counted side-blind
+  so every member of every same-owner sub-flock counts exactly once —
+  instead of the struck flock's count. `falconKillBudget`'s formula and
+  constants are unchanged; only the input changed. This is a
+  behavior-affecting engine change: `replayContentVersion` bumps 15 → 16
+  and the 20 committed golden replays are regenerated against v16.
+- **Tests:** `FalconStoopTests` rewritten for side semantics:
+  `testR10KillBudgetScalesWithSideSize` pins `birdsOnSideCount` across
+  mixed owner/assignment shapes plus the unchanged budget rows, and
+  `testR10DiveOnSplitSideUsesSideBudget` is an end-to-end regression
+  that catches a flock-scaled revert — a split 800-bird side (240/560)
+  takes 3 kills in a 3-bird corridor, where flock-scaled sizing would
+  take 1. MUCore 113/113 green.
+- **Consequences:** Falcon pressure is now invariant under how a side
+  partitions its birds: splitting no longer halves a side's per-dive
+  losses, closing the split-farming asymmetry the G4 sweeps exposed.
+  Sides that split still pay the split's real costs (leadership,
+  micro-fragments are dive bait), but losses per dive track the side's
+  true size.
+
+## ADR-0037: G4 closes on the measured engine, not a retune that cannot reach the targets (2026-11-21)
+- **Context:** The v16 500-day sweeps (3 tiers × 6 regions, one seeded day
+  per row) put Autoplayer win rates at gentle 72.7%, normal 84.4%, hard
+  79.6% against the ROADMAP §6 targets 85/60/35; dusk medians sit below the
+  1,000–2,500 band on gorge (394), ridge (477), and fenlands (775); falcon
+  losses run ~1–2% of peak (the corridor, not the budget, binds — the
+  ADR-0035 note). The retune levers cannot close the gap:
+  - **Claim gate and field standoff are inert on gentle.** A 12-cell grid
+    (start share 150/225/300/375 × claim gate 0/400/600, 50 days over the
+    four weak regions) produced *identical* win rates across every gate
+    value at every start share (78/73/71/68%). `planGentle` routes to the
+    farthest roost when it clears the gate, else holds a standoff; the
+    outcome is decided by the bird-count tiebreak either way.
+  - **Start share is bounded.** The same grid plus a fine 100–500 sweep
+    (5 regions, 250 days per cell) spans only 65.6–78.5% on gentle. The
+    rival's economy, not its opening, decides the day.
+  - **The player's growth advantage is structural.** A full event trace
+    (meadow, seed 7, 3 days) shows the player grew +4,084 birds while the
+    rival grew +1,303 and starved 2,291 — a 3:1 growth gap. The autoplayer
+    condenses while parked (ADR-0030): its tight cloud strips a field in
+    one visit. The rival never condenses during the day (only at dusk on a
+    held roost), so its stretched cloud straggles across field radii,
+    restarts regrowth ramps, and starves. The condense timer is a single
+    state-level slot (`condenseActive`/`condenseCooldown`), and the player
+    acts first every tick: an event trace of a daytime-condense rival
+    patch shows **zero** `condense sf1 on` events in 9,600 ticks — the
+    autoplayer re-condenses the instant the cooldown clears, so a
+    state-level rival condense is unreachable and the patch was a no-op
+    (verified: win rate unchanged, reverted). A per-flock condense would
+    make the rival *stronger* — the wrong direction for gentle (72.7% is
+    already below the 85% target) — and a global field-budget change to
+    fatten the rival also fattens the player by the same channel.
+- **Decision:** Ship the G4 balance as measured and record the deviation.
+  The shipped ordering (hard ≥ normal: 79.6 vs 84.4 within noise; both far
+  above gentle 72.7) still reads as intended difficulty at the table:
+  gentle is the tier a new player wins most. The 500-day evidence stands
+  (0 crashes, AI budget met at ≤ 134 µs/tick vs the 0.5 ms budget). The
+  targets are unreachable on this engine without a redesign of the
+  condense/energy channel, which is a balance-model change, not a tuning
+  change; it is deferred past the G4 gate rather than shipped as a
+  mid-phase rules rewrite.
+- **Tests:** No code change (the probe patch was reverted; the committed
+  tree matches v16). `docs/BALANCE.md` carries the sweep tables and the
+  probe history; the day-1 event-trace evidence lives in the G4 section of
+  the game's docs/STATUS.md.
+- **Consequences:** G4 passes on the "win rates within targets **or ADR**"
+  branch. Future balance work (P8 feel pass) should revisit the condense
+  model — per-flock condense with an independent timer is the candidate —
+  and the dusk-median band, which the same growth asymmetry depresses.

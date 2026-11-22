@@ -3,27 +3,25 @@
 This file is the single place to resume the program from. Keep every field below current after every meaningful step (see "Resuming After a Restart" in `ROADMAP.md`). Per-game detail (gate evidence and sign-offs) lives in each game's `docs/STATUS.md`.
 
 - **Current game:** Murmuration (`12-murmuration`)
-- **Phase:** P3 complete; G3 gate pass tagged — next P4 (AI Opponents) on
-  `murmur/phase/P4-ai-opponents`.
-- **Last done:** MU-P3.3 local two-flock versus built and green (`ea3c1b7`,
-  pushed). Player-visible menu entry (`menu.versus`), nearest-flock touch
-  routing on iOS (tie-break to flock 0 at the coincident start),
-  option-drag routing on Mac, rival AI skipped in versus. Two engine bugs
-  fixed (ADR-0025): `splitFlock` now anchors the new flock's leader at its
-  centroid; versus sets `versusMergeSuppressed` so R-5 auto-merge cannot
-  collapse the day-start split (replay contentVersion 7, 20 goldens
-  regenerated). `make test` green end-to-end (MUCore 93, MUContent 33,
-  MURender 26, MUAudio 12, MUAI 15, MUPlatform 13, MUMeta 20; MUGateTests
-  5/5 incl. tutorial + versus; pause-hash + perf gate), `make lint` 0
-  violations, content-lint 9 files / 0 errors. G3 counts verified (6
-  regions, 2 falcon behaviors, rival flock, 5 tutorial steps) — evidence in
-  the game's `docs/STATUS.md`. CI on `ea3c1b7` failed only in
-  `testVersusTwoFlockRouting` (twice): a stale-position race between the
-  leaders-row parse and the touch on the slow CI runner — fixed by pausing
-  the sim around each parse+drag (`fd46dc7`, ADR-0026), local rerun green.
-- **Next step:** watch branch CI for `fd46dc7` (run in progress), then
-  merge P3 to `main`, push the `murmur/gate-G3-pass` tag, and start MU-P4.1
-  (rival AI with three difficulties, falcon tuning, balance report).
+- **Phase:** P4 (AI Opponents) in progress on
+  `murmur/phase/P4-ai-opponents`; P3 complete, G3 gate pass tagged.
+- **Last done:** ADR-0036 committed (7e88060, v16): the falcon grab
+  budget now scales with `birdsOnSideCount` (every sub-flock owned by
+  the struck flock's side) instead of the single struck flock's
+  `flockSize`, closing the split-farming asymmetry the G4 sweeps
+  exposed; `replayContentVersion` 15 → 16, all 20 goldens regenerated,
+  MUCore 113/113 green. Versus UI test flake fixed (c18c378):
+  `testVersusTwoFlockRouting` read the leaders row before pausing and
+  aimed the drag at the stale pre-pause positions, so on a slow runner
+  the touch routed to the wrong flock; now re-reads the row after the
+  pause (overlay polls every 0.5 s) so the drag aims at the frozen
+  positions. Not a regression (falcon-free test; recent commits don't
+  touch versus routing).
+- **Next step:** G4 500-days-per-region sweep re-running on the v16
+  binary (3 tiers × 6 regions, gentle tier in progress); on completion
+  compute per-tier win rates 85/60/35 ± band, dusk medians, falcon
+  losses, then re-run the versus UI test on the fixed code, app
+  `make test` + lint, merge P4, tag G4.
 - **Blocked on:** nothing.
 
 ## Environment Check
@@ -51,7 +49,7 @@ If Xcode 27.2 or an iOS 26-or-later runtime is missing and cannot be installed w
 | Order | No. | Folder | Game | State | Last Gate | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | 04 | [`04-night-market`](games/04-night-market/ROADMAP.md) | Night Market | Done | `night-market/gate-G10-pass` | All gates G0–G10 tagged; TestFlight/App Store steps owner-only in #12 |
-| 2 | 12 | [`12-murmuration`](games/12-murmuration/ROADMAP.md) | Murmuration | In Progress (P3) | `murmur/gate-G2-pass` | G2 pass: 6/6 CI jobs green (run 44449181682); autoplay, perf (ADR-0017 display-slot budget), pause/resume hash all green; ADR-0019 rewritten from the CI AX-tree dump (rows = `children: .ignore` leaves with explicit labels); ADR-0020 mac UI evidence CI-only |
+| 2 | 12 | [`12-murmuration`](games/12-murmuration/ROADMAP.md) | Murmuration | In Progress (P4) | `murmur/gate-G3-pass` | P4.1: ADR-0036 committed (v16, side-scaled falcon grab budget); G4 500-day sweep re-running on v16 |
 | 3 | 02 | [`02-orrery`](games/02-orrery/ROADMAP.md) | Orrery | Not Started | — | — |
 | 4 | 14 | [`14-beacon-coast`](games/14-beacon-coast/ROADMAP.md) | Beacon Coast | Not Started | — | — |
 | 5 | 13 | [`13-terrace`](games/13-terrace/ROADMAP.md) | Terrace | Not Started | — | — |
@@ -152,3 +150,9 @@ One line per meaningful step, newest last: date, phase or game and stage, what w
   `make test` + commit next.
 - 2026-11-19: Murmuration P3.3 complete on `murmur/phase/P3-content-systems` (`ea3c1b7`): local two-flock versus with player-visible menu entry, nearest-flock touch routing (iOS) and option-drag (Mac); ADR-0025 records the two engine fixes — `splitFlock` seeds the new flock's leader path at its centroid, and `versusMergeSuppressed` blocks the R-5 auto-merge that collapsed the coincident versus flocks; replay contentVersion 7 with 20 regenerated goldens. `make test` green (MUCore 93, MUGateTests 5/5 incl. tutorial + versus), `make lint` 0. G3 gate checks (counts, content-lint 0, tutorial + versus UI tests) verified with output in the game's docs/STATUS.md; tag `murmur/gate-G3-pass` after merge.
 - 2026-11-19: CI red on `ea3c1b7` (`testVersusTwoFlockRouting` stale-position race on slow runner); fixed by pausing around parse+drag (`fd46dc7`, ADR-0026), local rerun green, awaiting CI.
+- 2026-11-19: P3 merged to main (`fd46dc7`), tag `murmur/gate-G3-pass` pushed, CI green (run 44622087845). P4 started on `murmur/phase/P4-ai-opponents`: MU-P4.1 implementation in progress (three-tier `RivalDifficulty`, region wiring, `GentleRival` rewrite, menu picker + `-uitest-difficulty`, `debug.difficulty` overlay, two new UI tests); engine bugs fixed with regressions (`splitFlock` world-count split, R-13 `rivalBirds` placeholder, R-5 rival-mode merge); AI budget verified in Release (rival 1.76 µs/tick ≤ 0.5 ms/tick); G4 balance sweep (3 tiers × 500 days × 6 regions) running.
+- 2026-11-20: P4 energy model rework (ADR-0032): the sweep's all-day starvation traced to (1) the feed rate capped below the flight drain (field budget `richness*10`, slow regrowth) and (2) the drain applying during dusk though R-8 pins it "while in flight" (no roost overlaps any field). Field budget doubled to `richness*20`, feed divisor 10→7, drain now skips sub-flocks settled within 2× a roost radius; contentVersion 12, rule tests re-anchored, settled-drain regressions green. Balance sweep (100 days, dusk-flock columns) running; golden regeneration sequenced after it.
+- 2026-11-21: P4.1 — versus side-ownership fixed (ADR-0033, `subFlockOwners` + `.spawnRival`, contentVersion 13, MUCore 110/110 + MUAI 53/53); falcon stoop rework (ADR-0034: kills along the dive path, size-scaled grab budget, `diveResult` carries kills, contentVersion 14, MUCore 131/131, 0eac065); rival-pilot dusk tunables (`claimGate`/`contestRatio`/`splitMinBirds`, behavior-preserving, MUAI 57/57, 474273d). balg4 (100 days × 6 regions × 3 tiers) still inverted: 75.7/85.0/90.3% player wins vs 85/60/35 targets; ADR-0035 probe grid running.
+- 2026-11-21 (cont.): probe rounds 1–3 + CI fixes — the versus UI test now runs falcon-free (`-uitest-falcons`, `Region.withFalconCount`); hard routes its two existing dusk flocks instead of issuing a per-side-capped split; lint violations fixed (a252b4e/adf2748, CI green). Forced-split trigger tightened to `diveRadius` around the stoop path (v15, f6d3049; the 2× catchment minted a flock per dive and handed gentle commons to the rival, 43.3% player wins). Tier-scaled rival start wired into `RegionStarter` (provisional 1.0/1.25/1.5). docs/BALANCE.md drafted. Probe round 4 (v15 re-baseline, 10 cells) running.
+- 2026-11-21 (cont.): ADR-0036 committed (7e88060, v16) — the falcon grab budget scales with `birdsOnSideCount` (every sub-flock owned by the struck flock's side) instead of the single struck flock's `flockSize`, closing the split-farming asymmetry; `replayContentVersion` 15 → 16, 20 goldens regenerated, MUCore 113/113 green. G4 500-day sweep re-running on the v16 binary (3 tiers × 6 regions).
+- 2026-11-21 (cont.): versus UI test flake fixed (c18c378) — `testVersusTwoFlockRouting` read the leaders row before pausing and aimed the drag at the stale pre-pause positions, so on a slow runner the touch routed to the wrong flock (2 assertion failures in the full `make test` run; 7 package suites green, 113 tests). Now re-reads the row after the pause (overlay polls every 0.5 s) so the drag aims at the frozen positions; applied to both drags. Not a regression (falcon-free test; recent commits don't touch versus routing). G4 v16 sweep still running (gentle tier).

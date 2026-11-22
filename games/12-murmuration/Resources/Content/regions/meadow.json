@@ -123,5 +123,6 @@
       "b": 0.08,
       "a": 1.0
     }
-  }
+  },
+  "rivalDifficulty": "gentle"
 }

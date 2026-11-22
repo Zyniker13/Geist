@@ -170,7 +170,9 @@ final class GameInput: NSObject, MTKViewDelegate, UIGestureRecognizerDelegate {
         var builder = LeaderPathBuilder()
         guard let action = builder.begin(
             leaderX: path.currentX, leaderY: path.currentY, subFlock: flock
-        ) else { return }
+        ) else {
+            return
+        }
         model.apply(action)
         sessions[ObjectIdentifier(touch)] = PanSession(builder: builder, flock: flock)
     }

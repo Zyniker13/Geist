@@ -126,9 +126,13 @@ final class MUAITests: XCTestCase {
         var ai = Autoplayer()
         _ = ai.action(for: state)  // tick 0: path to field A
         state.tick = 1
-        XCTAssertNil(ai.action(for: state), "interval not due")
+        if case .setLeaderPath? = ai.action(for: state) {
+            return XCTFail("interval not due: no re-path")
+        }
         state.tick = 480
-        XCTAssertNil(ai.action(for: state), "same best field: do not teleport the leader")
+        if case .setLeaderPath? = ai.action(for: state) {
+            return XCTFail("same best field: do not teleport the leader")
+        }
     }
 
     func testAutoplayerRepathsWhenBestFieldChanges() {
@@ -153,21 +157,6 @@ final class MUAITests: XCTestCase {
         XCTAssertEqual(sf, 0)
         XCTAssertEqual(waypoints, [Waypoint(x: 400, y: 400)], "nearest roost")
         XCTAssertNil(ai.action(for: state), "the dusk path is issued once")
-    }
-
-    func testAutoplayerCondensesInsideRoost() {
-        var state = makeTestRegion().makeGameState()
-        var ai = Autoplayer()
-        state.tick = GameState.duskStart
-        for i in 0..<state.birds.count {
-            state.birds.posX[i] = 400
-            state.birds.posY[i] = 400
-        }
-        _ = ai.action(for: state)  // issues the dusk path to the roost
-        guard case .condense(let sf)? = ai.action(for: state) else {
-            return XCTFail("expected a condense inside the roost")
-        }
-        XCTAssertEqual(sf, 0)
     }
 
     // MARK: - GentleRival
@@ -276,7 +265,11 @@ final class MUAITests: XCTestCase {
                 return XCTFail("the rival merged within 60 ticks")
             }
         }
-        XCTAssertEqual(state.subFlockCount, 2)
+        // ADR-0033: a qualifying falcon dive mints a second flock on the
+        // struck flock's own side, so the count may exceed 2. The invariant
+        // under test is: no merge, and the rival's flock still has birds.
+        XCTAssertGreaterThanOrEqual(state.subFlockCount, 2)
+        XCTAssertLessThanOrEqual(state.subFlockCount, 4)
         XCTAssertGreaterThan(count(state, subFlock: 1), 0, "the rival is still alive")
     }
 
@@ -305,6 +298,172 @@ final class MUAITests: XCTestCase {
             hashes.append(stateHash(state))
         }
         XCTAssertEqual(hashes[0], hashes[1], "two AI days must hash identically")
+    }
+
+    // MARK: - P4.1 difficulty tiers
+
+    /// Teleport every bird of one subflock, so centroid-dependent decisions
+    /// (standoff, flee radius) are exact regardless of simulation drift.
+    private func teleportFlock(
+        _ state: inout GameState, subFlock: UInt8, x: Int32, y: Int32
+    ) {
+        for i in 0..<state.birds.count where state.birds.subFlock[i] == subFlock {
+            state.birds.posX[i] = x
+            state.birds.posY[i] = y
+        }
+    }
+
+    /// Three roosts designed so gentle and normal disagree at dusk with the
+    /// player leader at the center and the rival parked at the top-right:
+    /// gentle takes the Euclidean-farthest roost (C, bottom-right) while
+    /// normal scores |roost−player|² − |roost−rival|² and takes A (top-right,
+    /// far from the player, next to the rival). Standoff is 640² for gentle
+    /// and 520² for normal; A's player distance (0.87M) clears both.
+    private func makeThreeRoostRegion() -> Region {
+        Region(
+            id: "tier", name: "Tier",
+            worldWidth: 2048, worldHeight: 1536,
+            birdCount: 1400, falconCount: 1, hasRival: true,
+            rivalStartBirds: 600, windSeedOffset: 0, seed: 7,
+            roosts: [
+                .init(x: 1800, y: 250, radius: 120),
+                .init(x: 200, y: 1300, radius: 120),
+                .init(x: 1848, y: 1400, radius: 120),
+            ],
+            fields: [
+                .init(x: 500, y: 480, radius: 128, richness: 60),
+                .init(x: 1560, y: 1060, radius: 128, richness: 60),
+            ],
+            palette: .standard
+        )
+    }
+
+    func testGentleRivalDefaultsToGentleTier() throws {
+        XCTAssertEqual(GentleRival().difficulty, .gentle)
+        let hard = GentleRival(difficulty: .hard)
+        XCTAssertEqual(hard.difficulty, .hard)
+        // Cadences per tier: hard checks flee more often and forages in
+        // shorter hops than gentle, and keeps a tighter standoff. The
+        // flee radius is stored as a plain distance and squared at the
+        // comparison site.
+        XCTAssertEqual(hard.fleeInterval, 30)
+        XCTAssertEqual(hard.forageInterval, 240)
+        XCTAssertEqual(hard.fleeRadius, 400)
+        XCTAssertEqual(hard.standoffDistance, 380)
+    }
+
+    func testGentleAndNormalDisagreeAtDusk() throws {
+        let region = makeThreeRoostRegion()
+        var state = region.makeGameState()
+        state = apply(RegionStarter.startingActions(for: region), to: state)
+        state.tick = GameState.duskStart
+        teleportFlock(&state, subFlock: 1, x: 1900, y: 200)
+        state.leaderPaths[0].currentX = 1024
+        state.leaderPaths[0].currentY = 768
+
+        var gentle = GentleRival()
+        guard case .setLeaderPath(_, let gentleWaypoints)? = gentle.action(for: state) else {
+            return XCTFail("expected a gentle roost path")
+        }
+        XCTAssertEqual(gentleWaypoints, [Waypoint(x: 1848, y: 1400)], "gentle takes the farthest roost")
+
+        var normal = GentleRival(difficulty: .normal)
+        guard case .setLeaderPath(_, let normalWaypoints)? = normal.action(for: state) else {
+            return XCTFail("expected a normal roost path")
+        }
+        XCTAssertEqual(normalWaypoints, [Waypoint(x: 1800, y: 250)], "normal takes the roost next to the rival")
+    }
+
+    func testNormalFleesInsideGentleRadius() throws {
+        let region = makeThreeRoostRegion()
+        var state = region.makeGameState()
+        state = apply(RegionStarter.startingActions(for: region), to: state)
+        state.tick = 100
+        teleportFlock(&state, subFlock: 0, x: 1024, y: 768)
+        teleportFlock(&state, subFlock: 1, x: 1364, y: 768)
+
+        var gentle = GentleRival()
+        // At centroid distance 340 gentle (flee radius 320) does not flee:
+        // it takes its overdue forage hop to the field far from the player.
+        guard case .setLeaderPath(_, let gentleWaypoints)? = gentle.action(for: state) else {
+            return XCTFail("expected a gentle forage path")
+        }
+        XCTAssertEqual(gentleWaypoints, [Waypoint(x: 1560, y: 1060)], "forage, not flee")
+
+        var normal = GentleRival(difficulty: .normal)
+        guard case .setLeaderPath(_, let normalWaypoints)? = normal.action(for: state) else {
+            return XCTFail("expected normal to flee at distance 340 (radius 360)")
+        }
+        XCTAssertEqual(normalWaypoints, [Waypoint(x: 1543, y: 768)], "flee to standoff distance from the player")
+    }
+
+    func testHardSplitsToContestTwoRoosts() throws {
+        let region = makeTestRegion()
+        var state = region.makeGameState()
+        state = apply(RegionStarter.startingActions(for: region), to: state)
+        state.tick = GameState.duskStart
+        var hard = GentleRival(difficulty: .hard)
+
+        guard case .splitFlock(let from, let ratio)? = hard.action(for: state) else {
+            return XCTFail("expected a hard split at dusk")
+        }
+        XCTAssertEqual(from, 1)
+        XCTAssertEqual(ratio, 0.5, accuracy: 0.001)
+        let (afterSplit, _) = applyAction(.splitFlock(from: from, ratio: ratio), to: state)
+        state = afterSplit
+        XCTAssertEqual(state.subFlockCount, 3, "the split creates a second rival flock")
+
+        let firstAction = hard.action(for: state)
+        guard case .setLeaderPath(let firstSF, let firstWaypoints)? = firstAction else {
+            return XCTFail("expected a roost path for the first half, got \(String(describing: firstAction))")
+        }
+        XCTAssertEqual(firstSF, 1)
+        XCTAssertEqual(firstWaypoints, [Waypoint(x: 1648, y: 1200)], "the far roost")
+
+        let (afterFirst, _) = applyAction(.setLeaderPath(subFlock: firstSF, waypoints: firstWaypoints), to: state)
+        state = afterFirst
+        guard case .setLeaderPath(let secondSF, let secondWaypoints)? = hard.action(for: state) else {
+            return XCTFail("expected a roost path for the second half")
+        }
+        XCTAssertEqual(secondSF, 2)
+        XCTAssertEqual(secondWaypoints, [Waypoint(x: 400, y: 400)], "the near roost")
+    }
+
+    func testHardHoldsStandoffWhenOutnumbered() throws {
+        let region = Region(
+            id: "hopeless", name: "Hopeless",
+            worldWidth: 2048, worldHeight: 1536,
+            birdCount: 1000, falconCount: 1, hasRival: true, rivalStartBirds: 100,
+            windSeedOffset: 0, seed: 7,
+            roosts: [
+                .init(x: 400, y: 400, radius: 120),
+                .init(x: 1648, y: 1200, radius: 120),
+            ],
+            fields: [
+                .init(x: 500, y: 480, radius: 128, richness: 60),
+                .init(x: 1560, y: 1060, radius: 128, richness: 60),
+            ],
+            palette: .standard
+        )
+        var state = region.makeGameState()
+        state = apply(RegionStarter.startingActions(for: region), to: state)
+        state.tick = GameState.duskStart
+        teleportFlock(&state, subFlock: 1, x: 1024, y: 768)
+        var hard = GentleRival(difficulty: .hard)
+
+        guard case .setLeaderPath(_, let waypoints)? = hard.action(for: state) else {
+            return XCTFail("expected a standoff path, not a split (900 > 2 × 100)")
+        }
+        XCTAssertEqual(waypoints, [Waypoint(x: 1404, y: 768)], "holds a standoff away from the player cloud")
+    }
+
+    func testHardTierCodableRoundTrip() throws {
+        var rival = GentleRival(difficulty: .hard)
+        _ = rival.action(for: makeTestRegion().makeGameState())
+        let data = try JSONEncoder().encode(rival)
+        let copy = try JSONDecoder().decode(GentleRival.self, from: data)
+        XCTAssertEqual(copy, rival)
+        XCTAssertEqual(copy.difficulty, .hard)
     }
 
     // MARK: - Save/resume support

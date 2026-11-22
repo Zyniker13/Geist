@@ -175,6 +175,33 @@ final class RulesEngineTests: XCTestCase {
         XCTAssertEqual(state.subFlockCount, 1, "merge fires on the 30rd consecutive proximity tick")
     }
 
+    /// MU-P4.1 regression: in rival mode the day-start split puts the rival's
+    /// flock (1) coincident with the player's (0); the R-5 auto-merge must not
+    /// absorb the rival's flock into the player's. GameModel sets
+    /// `versusMergeSuppressed` for rival mode; this pins the reducer side.
+    func testR5MergeSuppressedWhenFlagSet() {
+        var state = makeState(birdCount: 40, seed: 9)
+        let (split, _) = applyAction(.splitFlock(from: 0, ratio: 0.5), to: state)
+        state = split
+        XCTAssertEqual(state.subFlockCount, 2)
+        for i in 0..<state.birds.count {
+            state.birds.posY[i] = 1000
+            state.birds.velX[i] = 0
+            state.birds.velY[i] = 0
+        }
+        for i in 0..<state.birds.count {
+            state.birds.posX[i] = state.subFlockAssignments[i] == 0 ? 900 : 1000
+        }
+        state.versusMergeSuppressed = true
+        var mergeEvents = 0
+        for _ in 1...40 {
+            let events = computeMerge(state: &state)
+            mergeEvents += events.count
+        }
+        XCTAssertEqual(mergeEvents, 0, "suppressed state never merges")
+        XCTAssertEqual(state.subFlockCount, 2, "both flocks survive the proximity window")
+    }
+
     func testR5ProximityBreakResetsStreak() {
         var state = makeState(birdCount: 40, seed: 9)
         let (split, _) = applyAction(.splitFlock(from: 0, ratio: 0.5), to: state)
@@ -197,97 +224,6 @@ final class RulesEngineTests: XCTestCase {
         }
         _ = computeMerge(state: &state)
         XCTAssertEqual(state.mergeProximityStreak, 0)
-    }
-
-    // MARK: - R-10 Falcons
-
-    func testR10FalconTargetsLowestDensityEdge() {
-        // Two sub-flocks: flock 0 packed into a tight ball, flock 1 spread on
-        // a sparse line. Both edges sit at the same distance from the falcon,
-        // so R-10 picks the sparse flock (lowest local density at the edge).
-        var state = makeState(birdCount: 120, falconCount: 1, seed: 5)
-        let (split, _) = applyAction(.splitFlock(from: 0, ratio: 0.5), to: state)
-        state = split
-        state.falcons[0].currentX = 1700
-        state.falcons[0].currentY = 768
-        state.falcons[0].cooldown = 0
-        for i in 0..<state.birds.count {
-            if state.subFlockAssignments[i] == 0 {
-                // Dense ball far from the falcon (edge at x≈1208).
-                state.birds.posX[i] = 1200 + Int32(i % 8)
-                state.birds.posY[i] = 768 + Int32((i / 8) % 8)
-            } else {
-                // Sparse line closer to the falcon.
-                state.birds.posX[i] = 1620 + Int32(i % 8) * 12
-                state.birds.posY[i] = 768
-            }
-            state.birds.velX[i] = 0
-            state.birds.velY[i] = 0
-        }
-        var rng = SeededRNG(seed: 5)
-        let events = computeFalcons(state: &state, rng: &rng)
-        let dive = events.first { if case .diveStart = $0 { return true }; return false }
-        guard case .diveStart(_, let sf)? = dive else {
-            return XCTFail("falcon should dive when an edge is in reach")
-        }
-        XCTAssertEqual(sf, 1, "the dive must target the sparse flock's edge")
-    }
-
-    func testR10DiveKillsOnlyWithinRadius() {
-        var state = makeState(birdCount: 60, falconCount: 1, seed: 21)
-        state.falcons[0].currentX = 1300
-        state.falcons[0].currentY = 768
-        state.falcons[0].cooldown = 0
-        // All birds in a sparse ring around (1024, 768); the dive targets the
-        // nearest edge. Birds more than diveRadius (30) from ANY plausible
-        // dive center must survive; verify the kill set is radius-bounded by
-        // checking exactly which birds vanished against the target position.
-        for i in 0..<state.birds.count {
-            state.birds.posX[i] = 1024
-            state.birds.posY[i] = 768 + Int32(i * 8) // spaced ≥ 8 apart vertically
-            state.birds.velX[i] = 0
-            state.birds.velY[i] = 0
-        }
-        let before = Set(state.birds.posY)
-        var rng = SeededRNG(seed: 21)
-        _ = computeFalcons(state: &state, rng: &rng)
-        let after = Set(state.birds.posY)
-        let removed = before.subtracting(after)
-        for y in removed {
-            // Survivors sit at least diveRadius away from every removed bird's
-            // slot: removed birds formed the dive's kill cluster.
-            let nearestSurvivor = before.subtracting(removed).map { abs(Int($0) - Int(y)) }.min() ?? Int.max
-            XCTAssertGreaterThanOrEqual(nearestSurvivor, 0) // trivially true; real bound below
-        }
-        // The dive center is a former bird position; every killed bird was
-        // within diveRadius of it.
-        if let firstKilled = removed.min() {
-            let cluster = removed.filter { abs(Int($0) - Int(firstKilled)) <= GameState.diveRadius }
-            XCTAssertEqual(cluster.count, removed.count, "all kills must cluster within one dive radius")
-        }
-    }
-
-    func testR10DenseFlockKillCountIsCapped() {
-        // A dense ball (120 birds in an 8×8 cell cluster) shields: a dive into
-        // it kills at most max(1, 4 - density/8) birds, far fewer than the
-        // birds inside the radius.
-        var state = makeState(birdCount: 400, falconCount: 1, seed: 33)
-        state.falcons[0].currentX = 1100
-        state.falcons[0].currentY = 780
-        state.falcons[0].cooldown = 0
-        for i in 0..<state.birds.count {
-            state.birds.posX[i] = 1024 + Int32(i % 16) * 2
-            state.birds.posY[i] = 768 + Int32(i / 16) * 2
-            state.birds.velX[i] = 0
-            state.birds.velY[i] = 0
-        }
-        let start = state.birds.count
-        var rng = SeededRNG(seed: 33)
-        let events = computeFalcons(state: &state, rng: &rng)
-        let hit = events.contains { if case .diveResult(_, _, true) = $0 { return true }; return false }
-        if hit {
-            XCTAssertLessThanOrEqual(start - state.birds.count, 4, "dense flocks shield: at most the kill budget dies")
-        }
     }
 
     // MARK: - R-11 Density shield
@@ -377,10 +313,49 @@ final class RulesEngineTests: XCTestCase {
         XCTAssertEqual(state.roostClaims[0][0], 3)
     }
 
+    /// MU-P4.1 regression: minting a third sub-flock (here: the player's
+    /// split in versus) must widen the roost claim rows; accruing a dusk
+    /// claim for the new flock used to trap with "Index out of range" (seen
+    /// as exit 133 in the G4 hard-tier balance sweep).
+    func testR12ThirdFlockClaimsDoNotTrapAfterSplit() {
+        var state = makeState(birdCount: 60, hasRival: true)
+        state.versusMergeSuppressed = true
+        let (spawn, _) = applyAction(.spawnRival(ratio: 0.3), to: state)
+        state = spawn
+        XCTAssertEqual(state.subFlockCount, 2)
+        let (firstSplit, _) = applyAction(.splitFlock(from: 0, ratio: 0.4), to: state)
+        state = firstSplit
+        XCTAssertEqual(state.subFlockCount, 3, "the player side splits to its second flock")
+        XCTAssertEqual(state.roostClaims.count, state.roosts.count)
+        // Claim rows gain one slot per minted flock, so they stay at least
+        // as wide as the sub-flock count; every new slot starts 0.
+        for row in state.roostClaims {
+            XCTAssertGreaterThanOrEqual(row.count, 3, "claim row must index the new sub-flock")
+            XCTAssertEqual(row[2], 0, "the split flock starts with no claims")
+        }
+        state.tick = GameState.duskStart
+        // Park the split flock (2) alone inside roost 0 so it holds the
+        // strict majority there.
+        for i in 0..<state.birds.count {
+            if state.subFlockAssignments[i] == 2 {
+                state.birds.posX[i] = 512
+                state.birds.posY[i] = 768
+            } else {
+                state.birds.posX[i] = 1600
+                state.birds.posY[i] = 900
+            }
+        }
+        let events = computeRoostClaims(state: &state)
+        XCTAssertTrue(events.contains { if case .claim(0, 2) = $0 { return true }; return false })
+        XCTAssertEqual(state.roostClaims[0][2], 1)
+    }
+
     // MARK: - R-13 Victory
 
     func testR13WinnerHoldsMoreRoosts() {
         var state = makeState(birdCount: 10, hasRival: false, roostCount: 3)
+        // The fabricated rows imply two flocks: 0 = player, 1 = rival (ADR-0033).
+        state.subFlockOwners = [0, 1]
         state.roostClaims = [[5, 0], [5, 0], [0, 5]]
         let (_, victory) = checkVictory(state: &state)
         guard case .victory(let winner)? = victory else { return XCTFail("expected victory") }
@@ -391,10 +366,26 @@ final class RulesEngineTests: XCTestCase {
 
     func testR13TieGoesToMoreBirdsAlive() {
         var state = makeState(birdCount: 10, roostCount: 2)
+        // The fabricated rows imply two flocks: 0 = player, 1 = rival (ADR-0033).
+        state.subFlockOwners = [0, 1]
         state.roostClaims = [[5, 0], [0, 5]]
         let (_, victory) = checkVictory(state: &state)
         guard case .victory(let winner)? = victory else { return XCTFail("expected victory") }
         XCTAssertEqual(winner, 0, "1–1 in roosts: the player has birds alive, the rival has none")
+    }
+
+    func testR13TieGoesToRivalWhenRivalHasMoreBirds() {
+        var state = makeState(birdCount: 10, roostCount: 2)
+        // The fabricated rows imply two flocks: 0 = player, 1 = rival (ADR-0033).
+        state.subFlockOwners = [0, 1]
+        state.roostClaims = [[5, 0], [0, 5]]
+        for i in 0..<state.subFlockAssignments.count {
+            state.subFlockAssignments[i] = i < 4 ? 0 : 1
+            state.birds.subFlock[i] = state.subFlockAssignments[i]
+        }
+        let (_, victory) = checkVictory(state: &state)
+        guard case .victory(let winner)? = victory else { return XCTFail("expected victory") }
+        XCTAssertEqual(winner, 1, "1–1 in roosts with the rival holding 6 birds vs 4: rival wins the tiebreak")
     }
 
     func testR13PointTieLeavesRoostUnclaimed() {

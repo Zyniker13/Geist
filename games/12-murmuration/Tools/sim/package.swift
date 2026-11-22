@@ -9,12 +9,16 @@ let package = Package(
     ],
     dependencies: [
         .package(path: "../../Packages/MUCore"),
+        .package(path: "../../Packages/MUContent"),
+        .package(path: "../../Packages/MUAI"),
     ],
     targets: [
         .executableTarget(
             name: "sim",
             dependencies: [
                 .product(name: "MUCore", package: "MUCore"),
+                .product(name: "MUContent", package: "MUContent"),
+                .product(name: "MUAI", package: "MUAI"),
             ],
             path: "Sources/sim",
         ),

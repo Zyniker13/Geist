@@ -123,7 +123,7 @@ final class ReducerIntegrationTests: XCTestCase {
                     switch event {
                     case .energy(.grow), .energy(.starve):
                         return true
-                    case .falcon(.diveResult(_, _, true)):
+                    case .falcon(.diveResult(_, _, true, _)):
                         return true
                     default:
                         return false

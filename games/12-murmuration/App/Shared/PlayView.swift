@@ -4,6 +4,7 @@
 // debug overlay. Shared between iOS and macOS; only the surface type differs.
 
 import SwiftUI
+import MUCore
 import MUContent
 
 /// Launch-time configuration for a play session (UI-test harness and menu).
@@ -22,6 +23,13 @@ struct GameLaunchConfig {
     /// is human-driven (no GentleRival) and each touch routes to the nearest
     /// flock.
     var versus = false
+    /// The rival pilot's difficulty tier (MU-P4.1); nil keeps the region
+    /// default.
+    var rivalDifficulty: RivalDifficulty?
+    /// Falcon-count override for test fixtures; nil keeps the region
+    /// default. The versus routing test pins a two-flock stage and runs
+    /// falcon-free (`-uitest-falcons 0`).
+    var falconOverride: Int?
 
     /// Parse the effective UI-test flags (file config on macOS, else argv).
     static func resolved() -> GameLaunchConfig {
@@ -42,7 +50,14 @@ struct GameLaunchConfig {
         if args.contains("-uitest-hash") { config.hashUpdates = true }
         if args.contains("-uitest-tutorial") { config.tutorial = true }
         if args.contains("-uitest-versus") { config.versus = true }
+        if let difficulty = value("-uitest-difficulty"),
+           let tier = RivalDifficulty(rawValue: difficulty) {
+            config.rivalDifficulty = tier
+        }
         if let seed = value("-uitest-seed"), let n = UInt64(seed) { config.seed = n }
+        if let falcons = value("-uitest-falcons"), let n = Int(falcons) {
+            config.falconOverride = max(n, 0)
+        }
         return config
     }
 }
@@ -77,13 +92,16 @@ struct PlayView: View {
                 base = soloRegion
             }
         }
-        let adjusted: Region
+        var adjusted: Region
         if let birds = config.birdOverride {
             adjusted = base.withBirdCount(birds)
         } else if let seed = config.seed {
             adjusted = base.reseeded(seed)
         } else {
             adjusted = base
+        }
+        if let falcons = config.falconOverride {
+            adjusted = adjusted.withFalconCount(falcons)
         }
         _model = StateObject(
             wrappedValue: GameModel(
@@ -92,7 +110,8 @@ struct PlayView: View {
                 autoplay: config.autoplay,
                 ticksPerFrame: config.ticksPerFrame,
                 tutorial: tutorial,
-                versus: config.versus
+                versus: config.versus,
+                rivalDifficulty: config.rivalDifficulty
             ))
         // Applied after init via the view's task (published-mutable only).
         _pendingPauseAt = State(initialValue: config.pauseAt)

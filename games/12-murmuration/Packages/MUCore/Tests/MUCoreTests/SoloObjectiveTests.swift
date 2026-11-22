@@ -128,6 +128,8 @@ final class SoloObjectiveTests: XCTestCase {
     func testVersusUnaffectedWhenSoloTargetZero() {
         var state = makeState(birdCount: 50, hasRival: true, roostCount: 2)
         // Rival leads both roosts: flock 0 (player) has no points anywhere.
+        // The fabricated rows imply two flocks: 0 = player, 1 = rival (ADR-0033).
+        state.subFlockOwners = [0, 1]
         state.roostClaims = [[0, 3], [0, 4]]
 
         let (events, victory) = checkVictory(state: &state)

@@ -124,6 +124,9 @@ public struct Region: Codable, Sendable, Equatable, Identifiable {
     /// The engine has no rival spawn, so P2 creates the rival with a day-start
     /// split (`RegionStarter`); 0 means no rival.
     public let rivalStartBirds: Int
+    /// Rival pilot difficulty (MU-P4.1). Defaults to gentle for regions
+    /// authored before P4.
+    public let rivalDifficulty: RivalDifficulty
     /// Solo-objective target (MU-P3.2, R-13): in a no-rival region, the goal
     /// is to roost this many birds. 0 means no solo objective (region is
     /// versus or free-play).
@@ -196,6 +199,7 @@ public struct Region: Codable, Sendable, Equatable, Identifiable {
         falconCount: Int,
         hasRival: Bool,
         rivalStartBirds: Int = 0,
+        rivalDifficulty: RivalDifficulty = .gentle,
         soloTargetBirds: Int = 0,
         windSeedOffset: Int,
         seed: UInt64,
@@ -214,6 +218,7 @@ public struct Region: Codable, Sendable, Equatable, Identifiable {
         self.falconCount = falconCount
         self.hasRival = hasRival
         self.rivalStartBirds = rivalStartBirds
+        self.rivalDifficulty = rivalDifficulty
         self.soloTargetBirds = soloTargetBirds
         self.windSeedOffset = windSeedOffset
         self.seed = seed
@@ -227,7 +232,7 @@ public struct Region: Codable, Sendable, Equatable, Identifiable {
 
     private enum CodingKeys: String, CodingKey {
         case id, name, worldWidth, worldHeight, birdCount, falconCount
-        case hasRival, rivalStartBirds, soloTargetBirds, windSeedOffset, seed
+        case hasRival, rivalStartBirds, rivalDifficulty, soloTargetBirds, windSeedOffset, seed
         case roosts, fields, palette, obstacles, windPattern, falconBehavior
     }
 
@@ -244,6 +249,7 @@ public struct Region: Codable, Sendable, Equatable, Identifiable {
         falconCount = try container.decode(Int.self, forKey: .falconCount)
         hasRival = try container.decode(Bool.self, forKey: .hasRival)
         rivalStartBirds = try container.decodeIfPresent(Int.self, forKey: .rivalStartBirds) ?? 0
+        rivalDifficulty = try container.decodeIfPresent(RivalDifficulty.self, forKey: .rivalDifficulty) ?? .gentle
         soloTargetBirds = try container.decodeIfPresent(Int.self, forKey: .soloTargetBirds) ?? 0
         windSeedOffset = try container.decode(Int.self, forKey: .windSeedOffset)
         seed = try container.decode(UInt64.self, forKey: .seed)
@@ -262,6 +268,7 @@ public struct Region: Codable, Sendable, Equatable, Identifiable {
             worldWidth: worldWidth, worldHeight: worldHeight,
             birdCount: birdCount, falconCount: falconCount,
             hasRival: hasRival, rivalStartBirds: rivalStartBirds,
+            rivalDifficulty: rivalDifficulty,
             soloTargetBirds: soloTargetBirds,
             windSeedOffset: windSeedOffset, seed: seed,
             roosts: roosts, fields: fields, palette: palette,
@@ -323,6 +330,24 @@ public struct Region: Codable, Sendable, Equatable, Identifiable {
             hasRival: hasRival, rivalStartBirds: rivalStartBirds,
             soloTargetBirds: soloTargetBirds,
             windSeedOffset: windSeedOffset, seed: newSeed,
+            roosts: roosts, fields: fields, palette: palette,
+            obstacles: obstacles, windPattern: windPattern,
+            falconBehavior: falconBehavior
+        )
+    }
+
+    /// A copy with a different falcon count — the versus routing test pins
+    /// an exact two-flock stage, so its fixture runs falcon-free
+    /// (`-uitest-falcons 0`); a falcon dive legitimately mints a third
+    /// flock (ADR-0033), which is not what that test measures.
+    public func withFalconCount(_ count: Int) -> Region {
+        Region(
+            id: id, name: name,
+            worldWidth: worldWidth, worldHeight: worldHeight,
+            birdCount: birdCount, falconCount: count,
+            hasRival: hasRival, rivalStartBirds: rivalStartBirds,
+            soloTargetBirds: soloTargetBirds,
+            windSeedOffset: windSeedOffset, seed: seed,
             roosts: roosts, fields: fields, palette: palette,
             obstacles: obstacles, windPattern: windPattern,
             falconBehavior: falconBehavior
