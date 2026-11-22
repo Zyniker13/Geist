@@ -20,6 +20,11 @@ struct HUD: View {
                 Text("energy \(model.state.energy.first ?? 0)")
                     .font(.subheadline.monospacedDigit())
                     .accessibilityIdentifier("game.energy")
+                if let stage = model.campaignStage {
+                    Text("stage \(stage + 1)/12")
+                        .font(.subheadline.monospacedDigit())
+                        .accessibilityIdentifier("game.stage")
+                }
                 Spacer()
                 if model.state.isDusk {
                     Text("dusk")
