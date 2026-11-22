@@ -1208,3 +1208,11 @@ ADR-0037 (win-rate targets unreachable with the current event economy;
 all other bands met, 0 crashes, AI budget 3.7× headroom, difficulty
 wired + UI-tested). Merging to main and tagging
 `murmur/gate-G4-pass`.
+
+### P4 merged to main; CI green (2026-11-21)
+
+- Merge commit `775d8d1` on `main` (no-ff from
+  `murmur/phase/P4-ai-opponents`); tag `murmur/gate-G4-pass` pushed.
+- CI run 44982651604 (775d8d1, main): **completed success** — all six
+  jobs green (`test`, `ui-test-ios`, `ui-test-macos`, `build-ios`,
+  `build-macos`, `lint`). P4 closed.
