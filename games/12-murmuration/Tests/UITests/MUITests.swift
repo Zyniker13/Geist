@@ -39,8 +39,13 @@ final class MUGateTests: XCTestCase {
         let app = XCUIApplication()
         GameUITest.launch(app: app, region: "meadow", days: 3, fast: 120)
         let final = GameUITest.finalElement(app)
+        // CI (Release) finishes the three days in ~30 s; a Debug run on a
+        // loaded shared host can take ~6x longer (G4 evidence: one green run
+        // needed 233.6 s, and P6's per-frame shader work raised the Debug
+        // floor again). The wait budget is an infrastructure constant, not an
+        // assertion: measure the ceiling, don't race it.
         XCTAssertTrue(
-            final.waitForExistence(timeout: 240),
+            final.waitForExistence(timeout: 600),
             "three autoplay days never completed"
         )
     }
