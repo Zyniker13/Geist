@@ -1361,3 +1361,29 @@ and `make test` resolve to `/Library/Developer/CommandLineTools/usr/bin/swiftc`,
 which cannot resolve the `XCTest` module ("unable to resolve module
 dependency: 'XCTest'"); foreground sessions inherit `DEVELOPER_DIR` and build
 fine. Foreground runs are the local evidence path; CI covers the automated run.
+
+### P7 progress (2026-11-22, on `murmur/phase/P7-balance`)
+
+**MU-P7.1 (commit 20e7f4e):** MUPlatform now carries Game Center posting and
+iCloud progress per the Night Market P7 pattern (protocol + real + mock):
+- Fixed board ids `mu.daily` and `mu.campaign.<0-based stage>`; the daily
+  post's context is `<modifier>#<dayNumber>` hashed by FNV-1a (pinned test).
+- Pure `MUPostPlanner` (daily/campaign/achievements plans + merge) — 36
+  headless tests, 0 failures.
+- `GameCenterPoster` (GameKit behind canImport, zero clean-build warnings)
+  and `ICloudSync` (NSUbiquitousKeyValueStore key `mu.progress`) compile
+  unconditionally and act only when enabled.
+- App: `MetaStore` (@MainActor, injectable `syncing`) writes through to
+  iCloud on every persist and restores from the cloud on first launch;
+  `record()` posts daily + campaign-stage + newly earned achievements and
+  returns the count; `GameModel.poster` is injectable (`-uitest-poster-mock`
+  injects `MockPoster`); the `debug.posts` overlay row shows the count.
+- Verification: both targets **BUILD SUCCEEDED**; lint 0 in 106 files;
+  suites MUCore 358 / MUMeta 81 / MUContent 111 / MUAI 192 / MURender 36 /
+  MUAudio 39 / MUPlatform 36 — all 0 failures; new UI test
+  `testCompletedDayPostsScores` **passed locally (85.4 s, sim-lock)** and
+  CI run 45066421698 is green on the branch.
+- ProMotion 120 Hz verification and Game Center sandbox checks remain the
+  maintainer's (issue #11 pattern); the G7 iCloud round-trip and sandbox
+  posting checks get the §8.2 local substitute (MockSync/MockPoster paths
+  exercised headlessly + locally, real-service check filed as an issue).
