@@ -1291,3 +1291,20 @@ MAKETEST_DONE rc=0
   routing, tutorial) + CampaignUITests 2/2 (campaign stage 111.7 s,
   daily day-13 62.8 s).
 - Total across suites: 293 test executions, 0 failures.
+
+### G5 gate closed; P6 started (2026-11-22)
+
+- Committed-tree verification (skill rule 5): worktree at 91675d4 ran
+  `make lint` (0 violations) and the two largest suites fresh from the
+  committed tree — MUMeta 27/27, MUCore 120/120 (incl. 20 v17 goldens).
+- HANDOFF.md current for P5 (campaign/daily/achievements entries).
+- Merged `murmur/phase/P5-meta` into `main` with `--no-ff` (merge
+  **77fbc51**); annotated tag **`murmur/gate-G5-pass`** pushed with the
+  full evidence list in its message. CI on `main`: run 44996647685
+  **success**. Sign-off: GLM-SELF.
+- P6 (aesthetics + audio) underway on `murmur/phase/P6-aesthetics`
+  (first commit: shader wingbeat/iridescence/motion-blur with
+  BirdInstance 40 bytes + layout static_assert; MUAudio granular
+  wingbeat bed + regional pads, 11 headless tests; AudioController on
+  AVAudioEngine; GameModel+Audio per-tick metrics; PlayView lifecycle).
+  Lint 0 violations in 105 files; iOS + macOS app targets build.
