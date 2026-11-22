@@ -1387,3 +1387,49 @@ iCloud progress per the Night Market P7 pattern (protocol + real + mock):
   maintainer's (issue #11 pattern); the G7 iCloud round-trip and sandbox
   posting checks get the §8.2 local substitute (MockSync/MockPoster paths
   exercised headlessly + locally, real-service check filed as an issue).
+
+### P7 progress (2026-11-22, continued on `murmur/phase/P7-balance`)
+
+**MU-P7.2 (commit 7c1a19f): Pencil/pointer hover preview + Mac trackpad split.**
+- `RenderScene.pendingPath` (default `[]`) carries the pending leader path;
+  `makeScene(..., pendingPath:)` threads it; `FlockRenderer` draws it as a
+  brighter (alpha 0.85 vs 0.55) second line-strip through the same trace
+  pipeline, after the committed trace.
+- `GameModel` holds the preview state (`previewBuilder`, `previewFlock`,
+  `scriptedHover`) and the shared core `stepPreview(to:)` / `endPreview()`
+  (in the new `GameModel+Preview.swift` extension). The preview is
+  STATE-FREE: it never issues a `GameAction`, it only renders. `restart()`
+  clears it.
+- iOS: `UIHoverGestureRecognizer` (Pencil/pointer hover) grows the preview;
+  a hover that crosses flocks keeps steering the flock it started on; the
+  preview ends on hover end / cancel. It is registered only under
+  `-uitest-preview` because hover events cannot be synthesized under
+  XCUITest — the real gesture path and the scripted path share
+  `stepPreview`/`endPreview`.
+- Mac: pointer movement (`mouseMoved` + a tracking area, same flag gate)
+  drives the same preview; `mouseExited`/`mouseDown` end it. Trackpad
+  two-finger pan (`scrollWheel` with `hasPreciseScrollingDeltas`,
+  accumulated ≥ 60 world units within one gesture) splits flock 0 at ratio
+  0.5 — the same semantics as the iOS two-finger tap — while `magnify`
+  keeps owning condense/release.
+- Test harness: `-uitest-preview` + `-uitest-hover x,y;…` feed one world
+  point per tick through `stepPreview` (scripted hover), standing in for
+  hover-event synthesis. The overlay gains a `debug.pending` row
+  ("pending <n> L<flock>") while a preview is live.
+- Verification: both targets BUILD SUCCEEDED (Debug); lint 0 violations in
+  108 files; MUCore 120 tests / MURender 12 tests, 0 failures; the new UI
+  test `testHoverPreviewPendingPath` PASSED locally (Release, 26.1 s): it
+  asserts the pending row accumulates ≥ 3 waypoints steering L0, the leader
+  stays at its day-start position (1024,768 — no state leak; nothing else
+  moves it: falcon-free, no autoplayer), and the day completes normally
+  with the preview active. Screenshot evidence: the pending path renders as
+  a bright cyan polyline through the roost while the overlay reads
+  "pending 8 L0" and the leader row still reads L0 1024,768.
+- Real-hardware Pencil hover/trackpad feel is unverifiable in the
+  simulator; the gesture paths themselves (`UIHoverGestureRecognizer`,
+  `mouseMoved`, `scrollWheel` accumulation) ride the same code the test
+  drives. A human Pencil/trackpad pass is filed with the maintainer
+  (batched into the G7 sign-off issue).
+- GameModel splits: `GameModel+Save.swift` (save/resume), `GameModel+Hash.swift`
+  (hash label) — type-body-length lint (ADR pattern; internal access widened
+  where the extensions need it).
