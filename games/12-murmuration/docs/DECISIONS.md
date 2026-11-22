@@ -945,3 +945,36 @@ Architecture decision records. Every deviation from the roadmap is recorded here
   branch. Future balance work (P8 feel pass) should revisit the condense
   model — per-flock condense with an independent timer is the candidate —
   and the dusk-median band, which the same growth asymmetry depresses.
+
+## ADR-0038: The sky's below-horizon region is ground haze, drawn by the sky pass (2026-11-22)
+
+- **Status:** Accepted (P6)
+- **Context:** On tall viewports the letterboxed world's bottom edge sits above
+  the viewport bottom (iPad Pro 13" portrait: the world ends at uv.y ≈ 0.22,
+  leaving 22% of raw sky below it). The sky fragment's 4-stop gradient ends in
+  the apricot horizon stop, so that strip rendered as a hard-edged salmon band
+  below the hills — the aesthetic spec's ground read was wrong. A partial mix
+  (first fix, ~15% weight) still read as dusty salmon under vision review.
+- **Decision:** The sky pass owns everything outside the world rectangle. The
+  fragment falls off with `smoothstep(0.75, 0.10, uv.y)` into dusk indigo
+  #2E2A4F — a full mix by the viewport bottom — and the hills' own bottom
+  edge provides the horizon silhouette. Roosts get a two-layer disk (rim +
+  core) so they read as tree knots rather than flat holes.
+- **Consequences:** No new pass or geometry; the haze is deterministic and
+  palette-independent. Any future world-taller-than-viewport layout inherits
+  the same treatment automatically. Verified against simulator screenshots.
+
+## ADR-0039: Audio DSP is headless; the app owns AVAudioEngine (2026-11-22)
+
+- **Status:** Accepted (P6)
+- **Context:** MUAudio must stay testable and deterministic (packages are
+  pure Swift; check-imports bans AVFoundation there), but ambience needs a
+  real audio output path in the app.
+- **Decision:** All synthesis (granular wingbeat bed, regional pads, turn
+  whoosh, strike pulse) lives in MUAudio as pure sample-rate math returning
+  filled buffers; `AudioController` (app layer) owns AVAudioEngine, the
+  source node, and the render queue, pulling from MUAudio per callback.
+  Everything degrades to silence when audio is unavailable (CI, headless).
+- **Consequences:** 13 headless DSP tests cover the audible behavior;
+  scheduling quirks (sample-rate mismatch via resample ratio ≥ 0.25,
+  4-arg source-node closure) are contained in one app file.

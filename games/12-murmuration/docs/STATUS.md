@@ -1308,3 +1308,56 @@ MAKETEST_DONE rc=0
   wingbeat bed + regional pads, 11 headless tests; AudioController on
   AVAudioEngine; GameModel+Audio per-tick metrics; PlayView lifecycle).
   Lint 0 violations in 105 files; iOS + macOS app targets build.
+
+### P6 evidence (2026-11-22)
+
+**MU-P6.1 shader (commits 492aa1b, b1842d0):**
+- Wingbeat: per-bird deterministic phase `(tick*13 + i*41) % 24` (one stroke
+  per 24 ticks ≈ 0.8 s), shader advances +15°/tick through the interpolation
+  fraction, swing 0.55–1.0; paused scenes freeze mid-flap.
+- Motion blur: normalized against Q16 max speed 2621440, smearing only above
+  half speed (1310720); trailing-edge fade ×0.55.
+- Iridescence: teal-violet sheen (#3E5C6B→#6E5A99) keyed by per-bird hash and
+  wing phase, strongest on the trailing edge.
+- Dusk: sky dims ×(1−0.35·duskBlend); hill silhouettes sink 45% toward dusk
+  indigo; ground-haze smoothstep blends the below-horizon sky into dusk
+  indigo #2E2A4F (fixed the letterbox salmon band found on 2064×2752).
+- Roost: two-layer disk (0.92/0.96 alpha rim + core) reads as a tree knot.
+- `BirdInstance` is 40 bytes (Metal pads float2-containing structs to
+  8-byte alignment); enforced twice (shader static_assert + Swift layout test).
+
+**MU-P6.2 audio + haptics (commits 492aa1b, 07d1215):**
+- `MUAudio` headless DSP: `WingbeatGranular` (seeded noise grains, 48 kHz;
+  birdCount drives voices/gain, meanSpacing drives rate/brightness,
+  meanTurnRate adds energy), `RegionalPad` (six regional chords, louder at
+  dusk), `TurnWhoosh` (arms at mean turn rate 0.09 rad/tick, 0.55 s decay,
+  1.2 s cooldown, mixed 0.25). 13 tests, 0 failures.
+- App layer: `AudioController` owns AVAudioEngine + source node; degrades to
+  silence when audio is unavailable. Falcon strike → seeded noise pulse +
+  rigid haptic tap. Steering drags fire a light impact every 6 frames
+  (~20 Hz, intensity 0.4) while a session is live.
+
+**G6 aesthetic evidence (§8.2 substitutes; GLM-SELF):**
+- `docs/media/menu.png`, `day-light.png`, `day-late.png` — vision-checked:
+  layered parallax hills, ink-wash bird specks, dusk gradient, indigo ground
+  haze at the letterbox bottom (salmon band GONE), HUD legible. The two
+  "glowing orbs" at dusk are the meadow's two feeding fields (ochre disks) —
+  expected, not a defect.
+- `docs/media/slice.mp4` — 90 s recording of live flocking (captured via
+  `simctl io recordVideo`; see tooling note below).
+- The thin gray quarter-arc in the bottom-right of simulator screenshots is
+  the simulator device-mask corner edge (matches the iPad Pro 13" chassis
+  radius, byte-identical across app states, absent from app code) — capture
+  chrome, not a rendering bug; no code change.
+- `make lint` → 0 violations in 105 files (SwiftLint strict, swift-format,
+  content-lint 9 files 0 errors, check-imports OK).
+- Package suites (foreground `swift test`, all 0 failures): MUCore 358,
+  MUContent 111, MUAI 192, MURender 36, MUAudio 39, MUPlatform 1, MUMeta 81.
+- CI on the branch green through cbf2774 (runs 45000299320, 45003845926,
+  45009097215 success).
+
+**Tooling note (not a code issue):** non-interactive/background `swift test`
+and `make test` resolve to `/Library/Developer/CommandLineTools/usr/bin/swiftc`,
+which cannot resolve the `XCTest` module ("unable to resolve module
+dependency: 'XCTest'"); foreground sessions inherit `DEVELOPER_DIR` and build
+fine. Foreground runs are the local evidence path; CI covers the automated run.
