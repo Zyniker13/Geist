@@ -3,20 +3,20 @@
 This file is the single place to resume the program from. Keep every field below current after every meaningful step (see "Resuming After a Restart" in `ROADMAP.md`). Per-game detail (gate evidence and sign-offs) lives in each game's `docs/STATUS.md`.
 
 - **Current game:** Murmuration (`12-murmuration`)
-- **Phase:** G6 closed — merged to main (4584053), tag
-  `murmur/gate-G6-pass` pushed; P7 (balance + tuning) starting on
-  `murmur/phase/P7-balance`.
-- **Last done:** G6 PASSED. Wingbeat/iridescence/motion-blur shaders
-  (BirdInstance 40 B), MUAudio granular wingbeat bed + regional pads +
-  turn whoosh (39 headless tests), AVAudioEngine app layer, haptics.
-  Letterbox salmon band fixed via ADR-0038 ground haze; sim device-mask
-  corner arc documented as capture chrome. CI caught a real test bug
-  (uninitialized buffer garbage) — all 10 test buffers now zero-init.
-  Evidence: menu/day-light/day-late.png, slice.mp4, lint 0/105,
-  suites 358+111+192+36+39+1+81 all 0 failures, MUITests 2/2 local,
-  CI green branch (45060022758).
-- **Next step:** watch CI on main once; then start P7 per
-  `games/12-murmuration/ROADMAP.md` §P7.
+- **Phase:** G7 closed — merged to main (e592e34), tag
+  `murmur/gate-G7-pass` pushed; P8 (polish/accessibility/performance)
+  starting on `murmur/phase/P8-polish`.
+- **Last done:** G7 PASSED (Platform). MU-P7.1 Game Center posting +
+  iCloud write-through (MUPlatform, 36 tests, MockSync/MockPoster
+  substitutes; real-service checks filed #14); MU-P7.2 state-free
+  hover preview (iOS Pencil hover + Mac pointer, trackpad split).
+  testThreeDayAutoplay wait budget 240→600 s (Debug host floor ≈250 s
+  vs CI Release ~30 s; solo rerun PASSED 269.8 s). Lint 0; suites
+  120+27+12+37+12+13+65+1 skipped, all 0 failures, in tree and clean
+  worktree at 36e077f; CI 45080911562 green (the 7dcf821 red is a
+  docs-only diff, environment flakes, triage in game docs/STATUS.md).
+- **Next step:** watch CI on main once; then start P8 per
+  `games/12-murmuration/ROADMAP.md` §P8.
 - **Blocked on:** nothing.
 
 ## Environment Check
@@ -44,7 +44,7 @@ If Xcode 27.2 or an iOS 26-or-later runtime is missing and cannot be installed w
 | Order | No. | Folder | Game | State | Last Gate | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | 04 | [`04-night-market`](games/04-night-market/ROADMAP.md) | Night Market | Done | `night-market/gate-G10-pass` | All gates G0–G10 tagged; TestFlight/App Store steps owner-only in #12 |
-| 2 | 12 | [`12-murmuration`](games/12-murmuration/ROADMAP.md) | Murmuration | In Progress (P7→G7) | `murmur/gate-G6-pass` | G6 merged (4584053) + CI green; P7 balance/tuning starting on `murmur/phase/P7-balance` |
+| 2 | 12 | [`12-murmuration`](games/12-murmuration/ROADMAP.md) | Murmuration | In Progress (P8→G8) | `murmur/gate-G7-pass` | G7 merged (e592e34) + CI green; P8 polish/accessibility/perf starting on `murmur/phase/P8-polish` |
 | 3 | 02 | [`02-orrery`](games/02-orrery/ROADMAP.md) | Orrery | Not Started | — | — |
 | 4 | 14 | [`14-beacon-coast`](games/14-beacon-coast/ROADMAP.md) | Beacon Coast | Not Started | — | — |
 | 5 | 13 | [`13-terrace`](games/13-terrace/ROADMAP.md) | Terrace | Not Started | — | — |
@@ -155,3 +155,4 @@ One line per meaningful step, newest last: date, phase or game and stage, what w
 - 2026-11-22: Murmuration P5 (meta/replayability) implemented on `murmur/phase/P5-meta`: MUMeta campaign (12-stage route, carry floor 400 + next-region cap, resume), daily challenge (UTC epoch 2026-01-01, dayNumber % 6 modifiers, per-date wind offsets, best scores), 20 achievements + LifetimeStats fold; MetaStore persistence and menu wiring (037179b). Daily modifiers wired end-to-end (9bb1fc3): engine knobs windStrengthQ16/windRegenTicksOverride (replayContentVersion 17, 20 goldens regenerated; default-knob physics bit-identical to v16), Region.applying(dailyModifier:) mapping all six modifiers, an Int32 overflow in the 2x-wind path found and fixed with a regression test, -uitest-daily-day pin, debug.daily overlay row. Campaign-end fold fixed (1ca4af6). Coverage: MUCore 95.7% / MUAI 79.0% / MUMeta 81.7% / overall 87.0% (2990e7f). Daily-identical evidence: 30 dates distinct, timezone-independent, same-date region builds equal (9a1bdad). G5 UI tests PASS: campaign stage completes under Autoplayer (112.5 s), daily shows day+modifier (63.4 s) (e3e544a). Full make test green: 293 test executions, 0 failures (91675d4).
 - 2026-11-22 (cont.): **G5 PASSED and P5 merged to main** (merge 77fbc51, tag `murmur/gate-G5-pass` pushed). Gate close: committed-tree worktree verified at 91675d4 (lint 0, MUMeta 27/27, MUCore 120/120), HANDOFF.md current, merge --no-ff, annotated tag with the full evidence list. CI on main green (run 44996647685). P6 (aesthetics + audio) started on `murmur/phase/P6-aesthetics`: bird shader wingbeat + iridescence + speed-keyed motion blur (BirdInstance 40 bytes, layout static_assert matched), MUAudio WingbeatGranular + RegionalPad (11 headless DSP tests), AudioController on AVAudioEngine, GameModel+Audio metrics feed, PlayView lifecycle. Lint 0 in 105 files; both targets build.
 - 2026-11-22 (cont.): **G6 PASSED and P6 merged to main** (merge 4584053, tag `murmur/gate-G6-pass` pushed). Gate close: evidence in game docs/STATUS.md (shader/audio parameters, three vision-checked screenshots + 90 s slice.mp4, lint 0/105, package suites 358+111+192+36+39+1+81 all 0 failures, MUITests CampaignUITests 2/2 locally via sim-lock). ADR-0038 (sky pass owns below-horizon ground haze — fixed the letterbox salmon band), ADR-0039 (headless MUAudio DSP, app owns AVAudioEngine). CI caught a real test bug: MUAudio test buffers were allocated uninitialized and read allocator garbage on CI (denormal 4.29e-35) while local zero-filled pages masked it — all 10 buffers now zero-init (f8338a1, run 45060022758 green). Documented: background/non-interactive `swift test` resolves to CommandLineTools and cannot load XCTest locally; foreground runs + CI are the evidence path. The thin gray corner arc in sim screenshots is the device-mask edge (capture chrome, not app content).
+- 2026-11-22 (cont.): **G7 PASSED and P7 merged to main** (merge e592e34, tag `murmur/gate-G7-pass` pushed). MU-P7.1 platform services: MUPlatform gains MUPostPlanner (36 headless tests: fixed board ids mu.daily / mu.campaign.<stage>, achievement ordering, FNV-1a context hash pinned), GameCenterPoster + ICloudSync compile unconditionally and act only when entitled, MetaStore write-through + restore-on-launch with injectable syncing (-uitest-poster-mock + debug.posts row); testCompletedDayPostsScores drives the day-end pipeline in CI. MU-P7.2: state-free hover preview (GameModel+Preview extension, RenderScene.pendingPath, brighter pending strip; iOS UIHoverGestureRecognizer + Mac pointer-move; trackpad two-finger pan splits at 0.5; -uitest-preview/-uitest-hover harness; testHoverPreviewPendingPath PASSED with screenshot evidence showing the leader unmoved). Flake policy: testThreeDayAutoplay's 240 s wait budget raced the Debug host floor (~250 s after P6 shader cost; G4's last green run was 233.6 s) while CI Release finishes in 27–33 s — budget raised to 600 s (630120d), solo rerun PASSED 269.8 s, no test weakened. G7 evidence: lint 0; seven package suites 0 failures in the tree AND a clean worktree at 36e077f; CI 45080911562 full success; the one red run (7dcf821) is a docs-only diff whose two ui-test-ios failures are environment flakes green in adjacent runs. Real-service checks (Game Center sandbox, 2-device iCloud round-trip, ProMotion) filed as maintainer issues #14 and #11 per §8.2. P8 (polish/accessibility/performance) starts on murmur/phase/P8-polish.
