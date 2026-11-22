@@ -1273,3 +1273,21 @@ UITEST_DONE rc=0
 - testDailyShowsDayAndModifier launches the daily pinned to day 13
   (-uitest-daily -uitest-daily-day 13), asserts the debug.daily row
   carries the day number + modifier name, and completes the day.
+
+### G5 evidence: full `make test` green (2026-11-22, fab5941)
+
+```
+** TEST SUCCEEDED **
+MAKETEST_DONE rc=0
+```
+
+- Package suites: MUCore 120/120 (182.9 s, includes the 20 v17 golden
+  replays + 7 DailyWindKnobTests), MUContent 37/37, MUAI 27/27,
+  MURender 20/20, MUAudio 12/12, MUPlatform 11/11, MUMeta 27/27
+  (13 campaign/daily/achievements + 10 modifier-mapping + 4
+  thirty-date evidence tests).
+- iOS UI suite 11/11 (670.0 s): MUGateTests 9/9 (perf 32.4 s, autoplay,
+  pause/resume hash 168.3 s, difficulty picker + launch arg, versus
+  routing, tutorial) + CampaignUITests 2/2 (campaign stage 111.7 s,
+  daily day-13 62.8 s).
+- Total across suites: 293 test executions, 0 failures.
