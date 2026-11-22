@@ -86,14 +86,16 @@ public func applyTick(to state: GameState, rng: inout SeededRNG) -> (GameState, 
     var state = state
     var events: [GameEvent] = []
 
-    // 0. Regenerate the wind field every 600 ticks (R-1: per-256-cell seeded
-    // vectors, changing every 20 seconds at 30 Hz; pattern branches in P3).
-    if state.tick % GameState.windRegenTicks == 0 {
-        let generation = state.tick / GameState.windRegenTicks
+    // 0. Regenerate the wind field every `effectiveWindRegenTicks` ticks
+    // (R-1: per-256-cell seeded vectors, changing every 20 seconds at 30 Hz
+    // by default; pattern branches in P3; the fog daily halves the cadence).
+    if state.tick % state.effectiveWindRegenTicks == 0 {
+        let generation = state.tick / state.effectiveWindRegenTicks
         let (wx, wy) = GameState.windField(
             generation: generation, seed: state.seed, windSeedOffset: state.windSeedOffset,
             worldWidth: state.worldWidth, worldHeight: state.worldHeight,
-            pattern: state.windPattern
+            pattern: state.windPattern,
+            strengthQ16: state.windStrengthQ16
         )
         state.windCellsX = wx
         state.windCellsY = wy

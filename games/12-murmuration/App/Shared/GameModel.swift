@@ -73,6 +73,8 @@ final class GameModel: ObservableObject {
     /// The daily challenge's modifier when this session is the daily
     /// (MU-P5.2); nil in every other mode.
     let dailyModifier: DailyModifier?
+    /// The played daily's day number (MU-P5.2); nil outside the daily.
+    let dailyDayNumber: Int?
     /// Ticks advanced per display frame in fast-forward (UI tests).
     let ticksPerFrame: Int
 
@@ -138,6 +140,7 @@ final class GameModel: ObservableObject {
         versus: Bool = false,
         rivalDifficulty: RivalDifficulty? = nil,
         dailyModifier: DailyModifier? = nil,
+        dailyDayNumber: Int? = nil,
         campaignStage: Int? = nil
     ) {
         self.region = region
@@ -146,6 +149,7 @@ final class GameModel: ObservableObject {
         self.versus = versus
         self.rivalDifficulty = rivalDifficulty ?? region.rivalDifficulty
         self.dailyModifier = dailyModifier
+        self.dailyDayNumber = dailyDayNumber
         self.campaignStage = campaignStage
         self.ticksPerFrame = max(ticksPerFrame, 1)
         if let save = save, save.regionID == region.id {
@@ -401,7 +405,8 @@ final class GameModel: ObservableObject {
             isCampaignEnd: false
         )
         let dailyDayNumber = dailyModifier != nil
-            ? DailyChallenge(date: DailyChallenge.epoch).dayNumber
+            ? (self.dailyDayNumber
+                ?? DailyChallenge(date: DailyChallenge.epoch).dayNumber)
             : nil
         _ = MetaStore.record(outcome, dayCompleted: true, dailyDayNumber: dailyDayNumber)
         if let stage = campaignStage {
