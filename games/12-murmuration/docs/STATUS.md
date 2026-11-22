@@ -1133,3 +1133,43 @@ scheme name, `Murmuration` instead of `MU`).
 - **Package suites on the final tree** — 7 suites, 113 tests green
   (2026-11-21 morning run before c18c378; MUCore 113/113 after ADR-0036).
   Full `make test` + `make lint` re-run at the merge below.
+
+### CI run 44921826085 re-flake + stable-read fix (2026-11-21, c18c378 tree)
+
+Run 44921826085 (sha 39e31ba, docs-only commit after the fix) failed
+`ui-test-ios` on `testVersusTwoFlockRouting` in both attempts with the
+same signature as the original bug: after0 = L0 1024,768 (the unmoved
+split origin), flock 1 carrying the full drag (368/391 px). The tree
+differs from the passing run only by STATUS.md, so the single
+sleep-then-read after `pause.tap()` is racing the overlay's 0.5 s poll:
+on a slow runner the read lands before the poll publishes frozen
+positions and the drag aims at the stale pre-pause string. Fix
+(2d4da4b): `GameUITest.stableRowText(of:)` reads the row, sleeps one
+poll cycle, and re-reads until two consecutive reads agree (max 4
+rounds); both post-pause reads in the versus test now use it.
+
+- Local lint: `make lint` green on the fixed tree.
+- Local re-run (Debug, iPad Pro 13-inch (M5), sim-lock'd, commit 2d4da4b):
+  `xcodebuild test -only-testing:MUITests/MUGateTests/testVersusTwoFlockRouting`
+  → `Test Case '-[MUITests.MUGateTests testVersusTwoFlockRouting]' passed
+  (27.782 seconds)`, `** TEST SUCCEEDED **`, rc=0
+  (scratch uitest-versus-rerun3.log).
+- Full `make test` on the fixed tree: see below.
+
+### Full `make test` on the fixed tree (2026-11-21, 2d4da4b)
+
+- Attempt 1 (21:05–21:23 local): `make test` failed 2 iOS UI tests
+  (`testPerfFrameBudgetWithThreeThousandBirds` FPS peak 44 < 55, frame
+  median 54.08 ms > 16 ms; `testThreeDayAutoplay` no `game.final` within
+  240 s) while all 7 package suites were green (113 tests) and
+  `testVersusTwoFlockRouting` PASSED (47.3 s) — the stable-read fix
+  works. Load at the time: 9–20 with a foreign 100%-CPU node process
+  (another profile's stray probe, killed) and an ANE service at 500% —
+  the ADR-0014/0017 co-tenant-load pattern, now on this host instead of
+  CI.
+- Attempt 2 (21:40–21:56 local, load 2.8, no foreign builds):
+  `** TEST SUCCEEDED **`, rc=0. 7 package suites green — 113 tests, 0
+  failures in 162.6 s; MUGateTests 9/9 including
+  `testPerfFrameBudgetWithThreeThousandBirds` (32.5 s) and
+  `testThreeDayAutoplay` (233.6 s); `testVersusTwoFlockRouting` green.
+  Scratch g4-final-maketest3.log.
