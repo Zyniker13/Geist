@@ -3,25 +3,18 @@
 This file is the single place to resume the program from. Keep every field below current after every meaningful step (see "Resuming After a Restart" in `ROADMAP.md`). Per-game detail (gate evidence and sign-offs) lives in each game's `docs/STATUS.md`.
 
 - **Current game:** Murmuration (`12-murmuration`)
-- **Phase:** P4 (AI Opponents) in progress on
-  `murmur/phase/P4-ai-opponents`; P3 complete, G3 gate pass tagged.
-- **Last done:** ADR-0036 committed (7e88060, v16): the falcon grab
-  budget now scales with `birdsOnSideCount` (every sub-flock owned by
-  the struck flock's side) instead of the single struck flock's
-  `flockSize`, closing the split-farming asymmetry the G4 sweeps
-  exposed; `replayContentVersion` 15 → 16, all 20 goldens regenerated,
-  MUCore 113/113 green. Versus UI test flake fixed (c18c378):
-  `testVersusTwoFlockRouting` read the leaders row before pausing and
-  aimed the drag at the stale pre-pause positions, so on a slow runner
-  the touch routed to the wrong flock; now re-reads the row after the
-  pause (overlay polls every 0.5 s) so the drag aims at the frozen
-  positions. Not a regression (falcon-free test; recent commits don't
-  touch versus routing).
-- **Next step:** G4 500-days-per-region sweep re-running on the v16
-  binary (3 tiers × 6 regions, gentle tier in progress); on completion
-  compute per-tier win rates 85/60/35 ± band, dusk medians, falcon
-  losses, then re-run the versus UI test on the fixed code, app
-  `make test` + lint, merge P4, tag G4.
+- **Phase:** P4 complete — merged to main (775d8d1), tag
+  `murmur/gate-G4-pass` pushed; P5 (meta/replayability) starting on
+  `murmur/phase/P5-meta`.
+- **Last done:** G4 PASSED. The committed-tree worktree check caught the
+  versus drag still misrouting — routing keys on the bird centroid while
+  the test aimed at the frozen leader point — fixed by a
+  `debug.centroids` overlay row and centroid-aimed drags (d2a7e73).
+  Committed tree verified: lint 0, MUCore 113/113, iOS UI suite 9/9
+  TEST SUCCEEDED. ADR-0037 ships win rates as measured
+  (72.7/84.4/79.6 vs 85/60/35 targets).
+- **Next step:** watch CI on main (run 44982651604) once; then start P5
+  per `games/12-murmuration/ROADMAP.md` §P5.
 - **Blocked on:** nothing.
 
 ## Environment Check
@@ -49,7 +42,7 @@ If Xcode 27.2 or an iOS 26-or-later runtime is missing and cannot be installed w
 | Order | No. | Folder | Game | State | Last Gate | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | 04 | [`04-night-market`](games/04-night-market/ROADMAP.md) | Night Market | Done | `night-market/gate-G10-pass` | All gates G0–G10 tagged; TestFlight/App Store steps owner-only in #12 |
-| 2 | 12 | [`12-murmuration`](games/12-murmuration/ROADMAP.md) | Murmuration | In Progress (P4) | `murmur/gate-G3-pass` | P4.1: ADR-0036 committed (v16, side-scaled falcon grab budget); G4 500-day sweep re-running on v16 |
+| 2 | 12 | [`12-murmuration`](games/12-murmuration/ROADMAP.md) | Murmuration | In Progress (P4→P5) | `murmur/gate-G4-pass` | P4 merged to main (775d8d1), G4 tag pushed; CI running on main; P5 meta/replayability next |
 | 3 | 02 | [`02-orrery`](games/02-orrery/ROADMAP.md) | Orrery | Not Started | — | — |
 | 4 | 14 | [`14-beacon-coast`](games/14-beacon-coast/ROADMAP.md) | Beacon Coast | Not Started | — | — |
 | 5 | 13 | [`13-terrace`](games/13-terrace/ROADMAP.md) | Terrace | Not Started | — | — |
@@ -156,3 +149,4 @@ One line per meaningful step, newest last: date, phase or game and stage, what w
 - 2026-11-21 (cont.): probe rounds 1–3 + CI fixes — the versus UI test now runs falcon-free (`-uitest-falcons`, `Region.withFalconCount`); hard routes its two existing dusk flocks instead of issuing a per-side-capped split; lint violations fixed (a252b4e/adf2748, CI green). Forced-split trigger tightened to `diveRadius` around the stoop path (v15, f6d3049; the 2× catchment minted a flock per dive and handed gentle commons to the rival, 43.3% player wins). Tier-scaled rival start wired into `RegionStarter` (provisional 1.0/1.25/1.5). docs/BALANCE.md drafted. Probe round 4 (v15 re-baseline, 10 cells) running.
 - 2026-11-21 (cont.): ADR-0036 committed (7e88060, v16) — the falcon grab budget scales with `birdsOnSideCount` (every sub-flock owned by the struck flock's side) instead of the single struck flock's `flockSize`, closing the split-farming asymmetry; `replayContentVersion` 15 → 16, 20 goldens regenerated, MUCore 113/113 green. G4 500-day sweep re-running on the v16 binary (3 tiers × 6 regions).
 - 2026-11-21 (cont.): versus UI test flake fixed (c18c378) — `testVersusTwoFlockRouting` read the leaders row before pausing and aimed the drag at the stale pre-pause positions, so on a slow runner the touch routed to the wrong flock (2 assertion failures in the full `make test` run; 7 package suites green, 113 tests). Now re-reads the row after the pause (overlay polls every 0.5 s) so the drag aims at the frozen positions; applied to both drags. Not a regression (falcon-free test; recent commits don't touch versus routing). G4 v16 sweep still running (gentle tier).
+- 2026-11-21 (cont.): **G4 PASSED and P4 merged to main** (775d8d1, tag `murmur/gate-G4-pass` pushed). Final stretch: the committed-tree worktree check caught the versus drag still misrouting — routing keys on the bird centroid while the test aimed at the frozen leader point; overlay gained a `debug.centroids` row and the test aims at the centroid (d2a7e73). Committed tree verified: lint 0, MUCore 113/113, iOS UI suite 9/9 `TEST SUCCEEDED` (worktree). ADR-0037 ships the win rates as measured (72.7/84.4/79.6 vs 85/60/35; probe-grid evidence). CI on main in progress (run 44982651604). P5 (meta/replayability) next on `murmur/phase/P5-meta`.
