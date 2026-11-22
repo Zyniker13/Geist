@@ -1447,3 +1447,63 @@ iCloud progress per the Night Market P7 pattern (protocol + real + mock):
   budget") is unchanged; only the infrastructure constant moved. Day
   completion was never in doubt: testCompletedDayPostsScores drives a
   full day to completion locally in 71 s.
+
+### G7 evidence: platform gate (2026-11-22, branch tip 36e077f)
+
+**P7.1 platform services (§8.2 substitutes):**
+- iCloud round-trip: `MockSync` round-trip test (`save`/`load`/overwrite)
+  plus `MetaStore` write-through on every persist and restore-on-first-
+  launch with the injected `syncing` — headless and UI-tested
+  (`testCompletedDayPostsScores` drives the day-end post pipeline through
+  MockPoster, green locally and in CI).
+- Leaderboards: pure `MUPostPlanner` (36 headless tests, 0 failures) pins
+  board ids `mu.daily` / `mu.campaign.<0-based stage>` and the FNV-1a
+  context hash (`testContextHashIsStable`); `GameCenterPoster` compiles
+  unconditionally and posts only with an entitled session.
+- Real-service checks (Game Center sandbox sign-in, two-device iCloud
+  round-trip, ProMotion 120 Hz) are owner-only: filed as maintainer issue
+  **#14** (ProMotion already on #11). G7 closes on the substitutes with
+  #14 open as the real-service check.
+
+**MU-P7.2 (commits 7c1a19f, 630120d):** state-free hover preview
+(`GameModel+Preview.swift`, `RenderScene.pendingPath`, brighter pending
+strip; iOS `UIHoverGestureRecognizer`, Mac pointer-move + two-finger
+trackpad split; `-uitest-preview`/`-uitest-hover` harness; overlay row
+`debug.pending`). Screenshot evidence: pending polyline through the roost,
+leader at its day-start position (no state leak). New UI test
+`testHoverPreviewPendingPath` PASSED (68.1 s).
+
+**Lint + suites (working tree, branch tip):**
+- `make lint`: SwiftLint strict + swift-format + content-lint 9 files
+  0 errors + check-imports OK — 0 violations.
+- Package suites, 0 failures: MUCore 120, MUMeta 27, MUPlatform 12,
+  MUContent 37, MURender 12, MUAudio 13, MUAI 65 (1 skipped by the
+  `MU_MERGE_DIAG=1` env guard — verified passing with the env set).
+
+**Committed-tree verification (skill rule 5):** worktree at 36e077f —
+`make lint` 0 violations (WT_LINT_EXIT=0) and all seven package suites
+fresh from the committed tree: MUCore 120, MUMeta 27, MUPlatform 12,
+MUContent 37, MURender 12, MUAudio 13, MUAI 65+1 skipped — 0 failures
+(scratch g7-wt-*.log).
+
+**UI suite (Debug, sim-lock'd, iPad Pro 13"):** full run 13 tests — 12
+passed, 1 failed (`testThreeDayAutoplay`, wait budget). Budget raised
+240→600 s (commit 630120d, evidence: two quiet-host timeouts at 253/254 s
+bracket a ≈250 s Debug floor vs CI Release 27–33 s; G4's pre-P6 green run
+needed 233.6 s). Solo rerun of the same test PASSED (269.8 s) — all 13 UI
+tests green across the two runs, same code.
+
+**CI on the branch:** 630120d (last code commit) full run **success** —
+all six jobs including ui-test-ios and ui-test-macos. The only red run,
+7dcf821, is a **docs-only** commit whose ui-test-ios flaked twice
+(campaign stage row never appeared + "Application is not running";
+versus routing sample 1010 vs 1074) — both test names green in the
+adjacent runs 45075767803 and 45080911562 with the same code; the
+docs-only diff changed no code. Environment flake, not a regression.
+
+**Gate checks (GATE G7 — Platform; Sign-off: GLM-SELF):**
+- iCloud round-trip — SUBSTITUTE PASS (MockSync round-trip + MetaStore
+  write-through/restore tests, 0 failures); real-service check filed (#14).
+- Leaderboards post in sandbox — SUBSTITUTE PASS (MUPostPlanner pins +
+  MockPoster pipeline through the day-end path in CI-green UI test);
+  sandbox sign-in check filed (#14).
