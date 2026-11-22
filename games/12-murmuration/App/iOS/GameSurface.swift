@@ -84,6 +84,19 @@ struct GameSurface: UIViewRepresentable {
         pinch.delegate = context.coordinator
         view.addGestureRecognizer(pinch)
 
+        // Pencil/pointer hover preview (MU-P7.2): while a Pencil (or mouse
+        // pointer) hovers above the surface, accumulate a preview leader
+        // path; it commits on touch-down and vanishes otherwise. Enabled
+        // only with -uitest-preview in UI tests (hover events are not
+        // synthesizable under XCUITest) and harmless elsewhere.
+        if ProcessInfo.processInfo.arguments.contains("-uitest-preview") {
+            let hover = UIHoverGestureRecognizer(
+                target: context.coordinator, action: #selector(GameInput.hover(_:))
+            )
+            hover.delegate = context.coordinator
+            view.addGestureRecognizer(hover)
+        }
+
         return view
     }
 
@@ -194,6 +207,29 @@ final class GameInput: NSObject, MTKViewDelegate, UIGestureRecognizerDelegate {
     func touchEnded(touch: UITouch) {
         sessions[ObjectIdentifier(touch)] = nil
         steerHapticStop()
+    }
+
+    // MARK: - Pencil/pointer hover preview (MU-P7.2)
+
+    /// While the pointer hovers, grow a preview leader path for the flock
+    /// the hover point routes to. The preview renders through
+    /// `GameModel.previewBuilder` (dashed-bright in the renderer) but does
+    /// NOT touch game state — the path commits only on touch-down.
+    @objc func hover(_ gesture: UIHoverGestureRecognizer) {
+        guard let view = gesture.view as? MTKView else { return }
+        switch gesture.state {
+        case .began, .changed:
+            let world = Self.worldPoint(gesture.location(in: view), in: view, world: worldSize)
+            let flock = routeFlock(for: world)
+            // One live preview at a time; a hover that crosses to the
+            // other flock in versus keeps steering the flock it started on.
+            guard model.previewFlock.map({ $0 == flock }) ?? true else { return }
+            model.stepPreview(to: world)
+        case .ended, .cancelled, .failed:
+            model.endPreview()
+        default:
+            break
+        }
     }
 
     // MARK: - Steering haptics (MU-P6)

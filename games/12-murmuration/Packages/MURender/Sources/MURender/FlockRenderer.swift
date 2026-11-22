@@ -98,6 +98,7 @@ public final class FlockRenderer: NSObject, MTKViewDelegate {
     private var birdInstanceCount = 0
     private var diskInstances: [DiskInstance] = []
     private var traceVertices: [TraceVertex] = []
+    private var pendingVertices: [TraceVertex] = []
     private var duskBlend: Float = 0
 
     private var lastTickTime: Double = 0
@@ -319,6 +320,28 @@ public final class FlockRenderer: NSObject, MTKViewDelegate {
             )
         }
 
+        // 4b. Pending-path hover preview (MU-P7.2): brighter, thinner alpha
+        // than the committed trace so it reads as "about to draw".
+        if pendingVertices.count >= 2 {
+            encoder.setRenderPipelineState(tracePipeline)
+            encoder.setVertexBytes(
+                pendingVertices,
+                length: MemoryLayout<TraceVertex>.stride * pendingVertices.count,
+                index: 0
+            )
+            encoder.setVertexBytes(params, length: MemoryLayout<Float>.stride * 4, index: 1)
+            let traceColor = paletteData.claimPlayer
+            var previewColorData: [Float] = [
+                traceColor.x, traceColor.y, traceColor.z, 0.85,
+            ]
+            encoder.setFragmentBytes(
+                &previewColorData, length: MemoryLayout<Float>.stride * 4, index: 0
+            )
+            encoder.drawPrimitives(
+                type: .lineStrip, vertexStart: 0, vertexCount: pendingVertices.count
+            )
+        }
+
         // 5. Birds and falcons.
         if birdInstanceCount > 0 {
             encoder.setRenderPipelineState(birdPipeline)
@@ -488,6 +511,9 @@ public final class FlockRenderer: NSObject, MTKViewDelegate {
             traceVertices.append(TraceVertex(
                 pos: SIMD2(point.x, point.y), age: min(max(point.age, 0), 1)
             ))
+        }
+        pendingVertices = scene.pendingPath.map {
+            TraceVertex(pos: SIMD2($0.x, $0.y), age: 0)
         }
     }
 

@@ -46,6 +46,10 @@ struct GameLaunchConfig {
     /// UI-test override for the daily's day number (0 = today). Real
     /// launches are always today.
     var dailyDayOverride: Int?
+    /// Scripted hover path (MU-P7.2): waypoint pairs "x,y" separated by
+    /// `;`, fed one per frame through the hover preview while
+    /// `-uitest-preview` is active. Nil = no scripted hover.
+    var hoverScript: [SIMD2<Float>]?
 
     /// Parse the effective UI-test flags (file config on macOS, else argv).
     static func resolved() -> GameLaunchConfig {
@@ -84,6 +88,15 @@ struct GameLaunchConfig {
         if args.contains("-uitest-daily") { config.daily = true }
         if let day = value("-uitest-daily-day"), let n = Int(day) {
             config.dailyDayOverride = n
+        }
+        if let script = value("-uitest-hover") {
+            config.hoverScript = script.split(separator: ";").compactMap { part in
+                let pair = part.split(separator: ",")
+                guard pair.count == 2, let x = Float(pair[0]), let y = Float(pair[1]) else {
+                    return nil
+                }
+                return SIMD2(x, y)
+            }
         }
         return config
     }
@@ -174,6 +187,7 @@ struct PlayView: View {
         // Applied after init via the view's task (published-mutable only).
         _pendingPauseAt = State(initialValue: config.pauseAt)
         _pendingHash = State(initialValue: config.hashUpdates)
+        launchConfig = config
     }
 
     @State private var pendingPauseAt: Int?
@@ -181,6 +195,10 @@ struct PlayView: View {
     /// The ambience engine (MU-P6.2). Owned by the view so it starts and
     /// stops with the play screen; `@State` keeps it across re-renders.
     @State private var audio: AudioController?
+
+    /// The launch config this view was built from; the .task closure needs
+    /// it for flags (scripted hover) that arrive after init.
+    private let launchConfig: GameLaunchConfig
 
     var body: some View {
         ZStack {
@@ -207,6 +225,13 @@ struct PlayView: View {
         .task {
             model.pauseAtTick = pendingPauseAt
             model.hashUpdates = pendingHash
+            // Scripted hover (MU-P7.2): when -uitest-preview is active and
+            // a hover script was given, queue its points; one is consumed
+            // per engine tick through the real preview path.
+            if launchConfig.hoverScript != nil
+                && MULaunch.arguments().contains("-uitest-preview") {
+                model.scriptedHover = launchConfig.hoverScript ?? []
+            }
             if MULaunch.arguments().contains("-uitest-trace") {
                 model.enablePlaybackTrace()
             }
