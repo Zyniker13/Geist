@@ -275,6 +275,8 @@ public final class FlockRenderer: NSObject, MTKViewDelegate {
         encoder.setRenderPipelineState(hillPipeline)
         encoder.setVertexBuffer(hillBuffer, offset: 0, index: 0)
         encoder.setVertexBytes(params, length: MemoryLayout<Float>.stride * 4, index: 1)
+        var hillDusk: [Float] = [duskBlend]
+        encoder.setVertexBytes(&hillDusk, length: MemoryLayout<Float>.stride, index: 2)
         for range in hillRanges {
             encoder.drawPrimitives(
                 type: .triangleStrip, vertexStart: range.offset, vertexCount: range.count
@@ -441,12 +443,21 @@ public final class FlockRenderer: NSObject, MTKViewDelegate {
             ))
         }
         for roost in scene.roosts {
+            // The roost (MU-P6.1): a soft dark knot of trees on the
+            // skyline — layered rim rather than a flat black hole.
             diskInstances.append(DiskInstance(
                 centerX: Float(roost.centerX),
                 centerY: Float(roost.centerY),
                 radius: Float(roost.radius),
                 pad: 0,
-                color: SIMD4(0.06, 0.06, 0.09, 1)
+                color: SIMD4(0.11, 0.10, 0.15, 0.92)
+            ))
+            diskInstances.append(DiskInstance(
+                centerX: Float(roost.centerX),
+                centerY: Float(roost.centerY),
+                radius: Float(roost.radius) * 0.72,
+                pad: 0,
+                color: SIMD4(0.06, 0.06, 0.09, 0.96)
             ))
             // Claim fill: the majority flock's share of accrued points, with
             // exact ties (R-12 accrues nothing) left unfilled.

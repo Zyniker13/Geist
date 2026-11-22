@@ -47,7 +47,14 @@ enum ShaderSource {
         float f = t - float(i);
         float4 c = mix(stops[i], stops[i + 1], f);
         c.rgb *= (1.0 - 0.35 * params[0]);
-        return c;
+        // Below the horizon (the letterboxed world's bottom edge sits above
+        // the viewport's bottom on tall screens) the sky must read as
+        // ground-haze, not the apricot horizon stop: full falloff to dusk
+        // indigo by the bottom of the viewport.
+        // uv.y runs 1 at the TOP of the viewport, 0 at the bottom.
+        float below = smoothstep(0.75, 0.10, in.uv.y);
+        float3 ground = mix(c.rgb, float3(0.180, 0.165, 0.310), below);
+        return float4(ground, c.a);
     }
 
     // MARK: - Hills (and any solid per-vertex-colored triangles)
@@ -64,11 +71,16 @@ enum ShaderSource {
 
     vertex SolidOut hillVertex(uint vid [[vertex_id]],
                                constant HillVertex *verts [[buffer(0)]],
-                               constant float *params [[buffer(1)]]) {
+                               constant float *params [[buffer(1)]],
+                               constant float *extra [[buffer(2)]]) {
         HillVertex v = verts[vid];
         SolidOut out;
         out.position = float4(toNDC(v.pos, params), 0.0, 1.0);
-        out.color = v.color;
+        // Dusk (MU-P6.1): the silhouettes sink toward the dusk-indigo
+        // horizon with the sky, deepening the layered landscape read.
+        // extra = {duskBlend}.
+        float dusk = saturate(extra[0]);
+        out.color = float4(mix(v.color.rgb, float3(0.180, 0.165, 0.310), dusk * 0.45), v.color.a);
         return out;
     }
 
