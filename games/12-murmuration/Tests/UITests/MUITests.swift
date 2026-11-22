@@ -160,9 +160,10 @@ final class MUGateTests: XCTestCase {
         pause.tap()
         // Re-read the row after the pause so the drag aims at the *frozen*
         // positions, not the pre-pause snapshot the flocks have orbited past.
-        // The overlay polls the model every 0.5 s, so wait one poll cycle.
-        Thread.sleep(forTimeInterval: 0.7)
-        leaders = GameUITest.rowText(of: leadersRow)
+        // The overlay polls the model every 0.5 s, so a single sleep-then-
+        // read can still catch a stale string on a slow runner (CI run
+        // 44921826085); wait until two consecutive reads agree.
+        leaders = GameUITest.stableRowText(of: leadersRow)
         let positions = GameUITest.parseLeaders(leaders)
         XCTAssertEqual(positions.count, 2, "expected two leaders, got \(positions.count): \(leaders)")
 
@@ -202,8 +203,8 @@ final class MUGateTests: XCTestCase {
         pause.tap()
         // Re-read after the pause so the drag aims at flock 1's frozen
         // position, not the post-drag-0 snapshot the flocks orbited past.
-        Thread.sleep(forTimeInterval: 0.7)
-        leaders = GameUITest.rowText(of: leadersRow)
+        // Two consecutive reads must agree (run-44921826085 flake).
+        leaders = GameUITest.stableRowText(of: leadersRow)
         let frozen1 = GameUITest.parseLeaders(leaders)
         XCTAssertEqual(frozen1.count, 2, "expected two leaders before drag 1: \(leaders)")
         let start1 = GameUITest.normalizedPoint(

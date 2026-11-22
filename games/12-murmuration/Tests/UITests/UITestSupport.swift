@@ -167,6 +167,25 @@ enum GameUITest {
         return row.staticTexts.firstMatch.label
     }
 
+    /// A row text that has stopped changing. The overlay polls the model
+    /// every 0.5 s, so a read right after pausing can still carry the
+    /// pre-pause snapshot (the poll fires late on a slow runner); aiming a
+    /// gesture at that stale string is the run-44921826085 flake. Read,
+    /// wait one poll cycle, and re-read until two consecutive reads agree
+    /// (or give up after `rounds` and return the last read).
+    static func stableRowText(
+        of row: XCUIElement, rounds: Int = 4, interval: TimeInterval = 0.6
+    ) -> String {
+        var last = rowText(of: row)
+        for _ in 0..<rounds {
+            Thread.sleep(forTimeInterval: interval)
+            let next = rowText(of: row)
+            if next == last { return next }
+            last = next
+        }
+        return last
+    }
+
     /// Read an integer from an overlay row labelled "<prefix> <value>".
     static func intValue(of row: XCUIElement, prefix: String) -> Int? {
         guard row.exists else { return nil }
