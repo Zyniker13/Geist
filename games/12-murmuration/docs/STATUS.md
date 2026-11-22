@@ -1251,3 +1251,25 @@ wired + UI-tested). Merging to main and tagging
   days differ.
 - Package suites: MUCore 120/120, MUMeta 23/23. Both platform builds
   green. iOS campaign/daily UI test running.
+
+### G5 evidence: campaign + daily UI tests pass (2026-11-22, 82f4077)
+
+`sim-lock xcodebuild test -scheme MU -destination 'platform=iOS
+Simulator,name=zGeist_bot-iPad-Pro-13' -configuration Debug
+-only-testing:MUITests/CampaignUITests`:
+
+```
+Test Case '-[MUITests.CampaignUITests testCampaignStageCompletesUnderAutoplayer]' passed (112.500 seconds).
+Test Case '-[MUITests.CampaignUITests testDailyShowsDayAndModifier]' passed (63.385 seconds).
+Executed 2 tests, with 0 failures (0 unexpected) in 175.884 (175.898) seconds
+** TEST SUCCEEDED **
+UITEST_DONE rc=0
+```
+
+- testCampaignStageCompletesUnderAutoplayer launches stage 3 (0-based)
+  with a carried flock of 800 (-uitest-campaign 3 -uitest-carry 800),
+  asserts the HUD row reads "stage 4/12", and the Autoplayer drives two
+  days to program done.
+- testDailyShowsDayAndModifier launches the daily pinned to day 13
+  (-uitest-daily -uitest-daily-day 13), asserts the debug.daily row
+  carries the day number + modifier name, and completes the day.
