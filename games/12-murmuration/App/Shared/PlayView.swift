@@ -7,6 +7,7 @@ import SwiftUI
 import MUCore
 import MUContent
 import MUMeta
+import MUPlatform
 
 /// Launch-time configuration for a play session (UI-test harness and menu).
 struct GameLaunchConfig {
@@ -18,6 +19,9 @@ struct GameLaunchConfig {
     var pauseAt: Int?
     var hashUpdates = false
     var seed: UInt64?
+    /// Poster injection for UI tests (MU-P7.1): "-uitest-poster mock" uses
+    /// the deterministic MockPoster instead of Game Center.
+    var poster: ScoresPosting?
     /// When true, launch the five-step tutorial (P3.2) in its solo region.
     var tutorial = false
     /// When true, run the local two-flock versus (MU-P3.3): the rival flock
@@ -42,6 +46,10 @@ struct GameLaunchConfig {
     /// UI-test override for the daily's day number (0 = today). Real
     /// launches are always today.
     var dailyDayOverride: Int?
+    /// Scripted hover path (MU-P7.2): waypoint pairs "x,y" separated by
+    /// `;`, fed one per frame through the hover preview while
+    /// `-uitest-preview` is active. Nil = no scripted hover.
+    var hoverScript: [SIMD2<Float>]?
 
     /// Parse the effective UI-test flags (file config on macOS, else argv).
     static func resolved() -> GameLaunchConfig {
@@ -60,6 +68,7 @@ struct GameLaunchConfig {
         if let birds = value("-uitest-birds"), let n = Int(birds) { config.birdOverride = n }
         if let at = value("-uitest-pause-at"), let n = Int(at) { config.pauseAt = n }
         if args.contains("-uitest-hash") { config.hashUpdates = true }
+        if args.contains("-uitest-poster-mock") { config.poster = MockPoster() }
         if args.contains("-uitest-tutorial") { config.tutorial = true }
         if args.contains("-uitest-versus") { config.versus = true }
         if let difficulty = value("-uitest-difficulty"),
@@ -79,6 +88,15 @@ struct GameLaunchConfig {
         if args.contains("-uitest-daily") { config.daily = true }
         if let day = value("-uitest-daily-day"), let n = Int(day) {
             config.dailyDayOverride = n
+        }
+        if let script = value("-uitest-hover") {
+            config.hoverScript = script.split(separator: ";").compactMap { part in
+                let pair = part.split(separator: ",")
+                guard pair.count == 2, let x = Float(pair[0]), let y = Float(pair[1]) else {
+                    return nil
+                }
+                return SIMD2(x, y)
+            }
         }
         return config
     }
@@ -163,11 +181,13 @@ struct PlayView: View {
                 rivalDifficulty: config.rivalDifficulty,
                 dailyModifier: dailyModifier,
                 dailyDayNumber: dailyModifier != nil ? dailyDayNumber : nil,
-                campaignStage: config.campaignStage
+                campaignStage: config.campaignStage,
+                poster: config.poster
             ))
         // Applied after init via the view's task (published-mutable only).
         _pendingPauseAt = State(initialValue: config.pauseAt)
         _pendingHash = State(initialValue: config.hashUpdates)
+        launchConfig = config
     }
 
     @State private var pendingPauseAt: Int?
@@ -175,6 +195,10 @@ struct PlayView: View {
     /// The ambience engine (MU-P6.2). Owned by the view so it starts and
     /// stops with the play screen; `@State` keeps it across re-renders.
     @State private var audio: AudioController?
+
+    /// The launch config this view was built from; the .task closure needs
+    /// it for flags (scripted hover) that arrive after init.
+    private let launchConfig: GameLaunchConfig
 
     var body: some View {
         ZStack {
@@ -201,6 +225,13 @@ struct PlayView: View {
         .task {
             model.pauseAtTick = pendingPauseAt
             model.hashUpdates = pendingHash
+            // Scripted hover (MU-P7.2): when -uitest-preview is active and
+            // a hover script was given, queue its points; one is consumed
+            // per engine tick through the real preview path.
+            if launchConfig.hoverScript != nil
+                && MULaunch.arguments().contains("-uitest-preview") {
+                model.scriptedHover = launchConfig.hoverScript ?? []
+            }
             if MULaunch.arguments().contains("-uitest-trace") {
                 model.enablePlaybackTrace()
             }

@@ -98,7 +98,41 @@ final class MacGameView: MTKView {
 
     // MARK: - Mouse
 
+    // MARK: - Hover preview (MU-P7.2): pointer movement (no button) draws
+    // a dashed preview of the leader path it would commit. Enabled only
+    // with -uitest-preview (mouse-moved delivery is unreliable in headless
+    // XCUITest runs) and harmless otherwise.
+
+    override func updateTrackingAreas() {
+        super.updateTrackingAreas()
+        if trackingAreas.isEmpty || trackingAreas.allSatisfy({ $0.owner !== self }) {
+            addTrackingArea(NSTrackingArea(
+                rect: bounds,
+                options: [.mouseMoved, .activeInKeyWindow],
+                owner: self,
+                userInfo: nil
+            ))
+        }
+    }
+
+    override func mouseMoved(with event: NSEvent) {
+        guard let model = model else { return super.mouseMoved(with: event) }
+        guard ProcessInfo.processInfo.arguments.contains("-uitest-preview") else {
+            return super.mouseMoved(with: event)
+        }
+        guard let world = worldPoint(of: event) else { return super.mouseMoved(with: event) }
+        model.stepPreview(to: world)
+        super.mouseMoved(with: event)
+    }
+
+    override func mouseEntered(with event: NSEvent) {}
+    override func mouseExited(with event: NSEvent) {
+        model?.endPreview()
+        super.mouseExited(with: event)
+    }
+
     override func mouseDown(with event: NSEvent) {
+        model?.endPreview()
         guard let model = model else { return }
         if event.modifierFlags.contains(.option) {
             let path = model.state.leaderPaths[1]
@@ -142,6 +176,32 @@ final class MacGameView: MTKView {
     }
 
     // MARK: - Coordinates
+
+    // MARK: - Trackpad two-finger pan = split (MU-P7.2). The pinch handler
+    // owns magnification; a deliberate two-finger swipe (no magnification,
+    // steady horizontal or vertical translation) splits the flock. Matches
+    // the iOS two-finger-tap semantics: only while a second flock is still
+    // possible, always from flock 0 at ratio 0.5.
+
+    private var panAccumulated: SIMD2<Float> = .zero
+
+    override func scrollWheel(with event: NSEvent) {
+        guard let model = model else { return super.scrollWheel(with: event) }
+        if event.phase == .began {
+            panAccumulated = .zero
+        }
+        // hasPreciseScrollingDeltas: a trackpad pan, not a wheel tick.
+        if event.hasPreciseScrollingDeltas, model.state.subFlockCount < 2 {
+            panAccumulated += SIMD2(Float(event.scrollingDeltaX), Float(event.scrollingDeltaY))
+            let distance = (panAccumulated.x * panAccumulated.x
+                + panAccumulated.y * panAccumulated.y).squareRoot()
+            if distance > 60 {
+                panAccumulated = .zero
+                model.apply(.splitFlock(from: 0, ratio: 0.5))
+            }
+        }
+        super.scrollWheel(with: event)
+    }
 
     private func worldPoint(of event: NSEvent) -> SIMD2<Float>? {
         guard let model = model else { return nil }

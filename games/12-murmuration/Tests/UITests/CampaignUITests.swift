@@ -54,4 +54,29 @@ final class CampaignUITests: XCTestCase {
             "the daily day never completed"
         )
     }
+
+    /// MU-P7.1: a completed day posts to Game Center (the poster is
+    /// deterministic in UI-test runs; the posts row must go non-zero).
+    func testCompletedDayPostsScores() throws {
+        let app = XCUIApplication()
+        GameUITest.launch(
+            app: app, region: "meadow", days: 1, fast: 120,
+            extra: ["-uitest-poster-mock", "-uitest-daily", "-uitest-daily-day", "13"]
+        )
+        let final = GameUITest.finalElement(app)
+        XCTAssertTrue(
+            final.waitForExistence(timeout: 240),
+            "the daily day never completed"
+        )
+        let postsRow = GameUITest.overlayRow(app: app, identifier: "debug.posts")
+        XCTAssertTrue(
+            postsRow.waitForExistence(timeout: 30),
+            "the posts row never appeared"
+        )
+        let value = GameUITest.rowText(of: postsRow).trimmingCharacters(in: .whitespaces)
+        XCTAssertNotEqual(
+            value, "0/0",
+            "the posts row must go non-zero after a completed day, got: \(value)"
+        )
+    }
 }

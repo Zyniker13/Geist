@@ -14,7 +14,8 @@ public func makeScene(
     state: GameState,
     previousBirds: BirdSoA,
     falconPrev: [SIMD2<Float>],
-    trace: [TracePoint]
+    trace: [TracePoint],
+    pendingPath: [TracePoint] = []
 ) -> RenderScene {
     let day = GameState.dayTicks
     let duskSpan = day - GameState.duskStart
@@ -31,6 +32,7 @@ public func makeScene(
         fields: state.fields,
         roosts: state.roosts,
         trace: trace,
+        pendingPath: pendingPath,
         duskBlend: duskBlend,
         tick: state.tick
     )

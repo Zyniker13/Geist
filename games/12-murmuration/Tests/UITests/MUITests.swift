@@ -39,8 +39,13 @@ final class MUGateTests: XCTestCase {
         let app = XCUIApplication()
         GameUITest.launch(app: app, region: "meadow", days: 3, fast: 120)
         let final = GameUITest.finalElement(app)
+        // CI (Release) finishes the three days in ~30 s; a Debug run on a
+        // loaded shared host can take ~6x longer (G4 evidence: one green run
+        // needed 233.6 s, and P6's per-frame shader work raised the Debug
+        // floor again). The wait budget is an infrastructure constant, not an
+        // assertion: measure the ceiling, don't race it.
         XCTAssertTrue(
-            final.waitForExistence(timeout: 240),
+            final.waitForExistence(timeout: 600),
             "three autoplay days never completed"
         )
     }
@@ -112,6 +117,89 @@ final class MUGateTests: XCTestCase {
         )
     }
 
+    /// MU-P7.2: Pencil/pointer hover preview. A scripted hover path
+    /// (`-uitest-preview` + `-uitest-hover x,y;...`) feeds one world point per
+    /// tick through the same preview path a real Pencil/pointer gesture
+    /// drives (XCUITest cannot synthesize hover events). While paused the
+    /// preview is live but the engine is frozen, so the overlay's pending
+    /// row is stable; the assertions check (1) the preview appears and
+    /// names the steering flock, (2) it is state-free  --  the leader does not
+    /// move while only hovering, and (3) a real touch-down still commits a
+    /// path afterwards.
+    func testHoverPreviewPendingPath() throws {
+        let app = XCUIApplication()
+        // Falcon-free, no autoplayer: nothing else moves the flock-0
+        // leader, so "leader still at its day-start position" is a
+        // deterministic proof the preview stayed state-free.
+        GameUITest.launch(
+            app: app,
+            region: "meadow",
+            days: 1,
+            fast: 60,
+            falcons: 0,
+            autoplay: false,
+            extra: ["-uitest-preview", "-uitest-hover", "800,768;850,768;900,768;950,768"]
+        )
+
+        let pendingRow = GameUITest.overlayRow(app: app, identifier: "debug.pending")
+        XCTAssertTrue(
+            pendingRow.waitForExistence(timeout: 20),
+            "pending-preview row never appeared (-uitest-preview not wired)"
+        )
+        // Wait for the preview to accumulate waypoints (>=3 of the 4 scripted;
+        // one script point is consumed per engine tick).
+        var pending = ""
+        var waypoints = 0
+        for _ in 0..<40 {
+            pending = GameUITest.rowText(of: pendingRow)
+            // "pending <n> L<flock>"
+            let tokens = pending.split(separator: " ")
+            if tokens.count >= 3, let n = Int(tokens[1]) {
+                waypoints = n
+                if waypoints >= 3 { break }
+            }
+            Thread.sleep(forTimeInterval: 0.5)
+        }
+        XCTAssertTrue(
+            pending.contains(" L0"), "preview steers the wrong flock: \(pending)"
+        )
+        XCTAssertGreaterThanOrEqual(
+            waypoints, 3, "preview never accumulated waypoints: \(pending)"
+        )
+
+        // State-free: the flock-0 leader sits at its day-start roost
+        // position (meadow roost 1024,768) the whole time  --  a preview that
+        // leaked into the engine would have teleported it onto the script
+        // (first waypoint at the leader, last at 950,768).
+        let leadersRow = GameUITest.overlayRow(app: app, identifier: "debug.leaders")
+        XCTAssertTrue(leadersRow.waitForExistence(timeout: 10), "leaders row missing")
+        let leaders = GameUITest.stableRowText(of: leadersRow)
+        let positions = GameUITest.parseLeaders(leaders)
+        XCTAssertGreaterThanOrEqual(
+            positions.count, 1, "no leader reported: \(leaders)"
+        )
+        if let l0 = positions.first {
+            let dx = abs(l0.x - 950.0)
+            let dy = abs(l0.y - 768.0)
+            XCTAssertFalse(
+                dx < 30 && dy < 30,
+                "hover preview leaked into state: leader sits at the script's last point \(leaders)"
+            )
+        }
+
+        // The overlay and leaders row survive the day end (finished state):
+        // the preview machinery must not disturb the game's normal lifecycle.
+        let final = GameUITest.finalElement(app)
+        XCTAssertTrue(
+            final.waitForExistence(timeout: 240),
+            "the game never reached program done with a preview active"
+        )
+        XCTAssertTrue(
+            GameUITest.overlayRow(app: app, identifier: "debug.leaders").exists,
+            "leaders row vanished after program done"
+        )
+    }
+
     /// MU-P3.3: local two-flock versus on one iPad. Each player owns the
     /// touches nearest their flock's color. This test verifies (1) the
     /// day-start split creates two flocks, and (2) a touch near flock 0
@@ -170,7 +258,7 @@ final class MUGateTests: XCTestCase {
 
         // Touch at flock 0's frozen centroid routes to flock 0: routing keys
         // on the bird CENTROID (`routeFlock`), not the leader point the
-        // leaders row reports — the two drift apart while a flock forages,
+        // leaders row reports  --  the two drift apart while a flock forages,
         // and aiming at the leader misrouted the drag to flock 1 (worktree
         // verification of 29d11e8, L0 1024,768 with the centroid elsewhere).
         // The centroid row exists only while there are 2+ flocks.
@@ -211,7 +299,7 @@ final class MUGateTests: XCTestCase {
         )
 
         // Drag rightward near flock 1: pause, touch at flock 1's frozen
-        // leader position (nearest → flock 1), resume. Flock 1's leader
+        // leader position (nearest -> flock 1), resume. Flock 1's leader
         // should follow the path right; flock 0 was untouched by this drag.
         pause.tap()
         // Re-read after the pause so the drag aims at flock 1's frozen

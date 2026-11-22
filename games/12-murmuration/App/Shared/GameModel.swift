@@ -12,6 +12,7 @@ import MUCore
 import MUContent
 import MUAI
 import MUMeta
+import MUPlatform
 import MURender
 import MUAudio
 
@@ -92,11 +93,16 @@ final class GameModel: ObservableObject {
     private(set) var roostsClaimed = 0
     /// The campaign stage this session plays (nil outside campaign mode).
     let campaignStage: Int?
+    /// The Game Center poster for this run (MU-P7.1). nil keeps the real
+    /// poster; UI tests inject MockPoster for deterministic assertions.
+    let poster: ScoresPosting?
     @Published var fps = 0
     /// Rolling mean frame build time in milliseconds (tick + render encode).
     @Published var frameMs: Double = 0
     /// State hash, refreshed on the cadence below (UI-test hash checks).
     @Published var hashLabel = ""
+    /// Game Center posts made so far (MU-P7.1 debug row): "<scores>/<achievements>".
+    @Published private(set) var postCounts = "0/0"
 
     /// The ambience controller holder (MU-P6.2). The extension in
     /// GameModel+Audio.swift reads/writes through it; stored properties
@@ -121,9 +127,12 @@ final class GameModel: ObservableObject {
     private var tutorialEngine: TutorialEngine?
     private var tutorialDriver = TutorialDriver()
 
-    private var rng: SeededRNG
-    private var autoplayer: Autoplayer?
-    private var rival = GentleRival()
+    /// RNG stream (GameModel+Save snapshots it; internal for the extension).
+    var rng: SeededRNG
+    /// The autoplay pilot (GameModel+Save snapshots it).
+    var autoplayer: Autoplayer?
+    /// The rival pilot (GameModel+Save snapshots it).
+    var rival = GentleRival()
     private var previousBirds: BirdSoA
     private var falconPrev: [SIMD2<Float>] = []
     private var trace: [TracePoint] = []
@@ -149,7 +158,8 @@ final class GameModel: ObservableObject {
         rivalDifficulty: RivalDifficulty? = nil,
         dailyModifier: DailyModifier? = nil,
         dailyDayNumber: Int? = nil,
-        campaignStage: Int? = nil
+        campaignStage: Int? = nil,
+        poster: ScoresPosting? = nil
     ) {
         self.region = region
         self.totalDays = totalDays
@@ -159,6 +169,7 @@ final class GameModel: ObservableObject {
         self.dailyModifier = dailyModifier
         self.dailyDayNumber = dailyDayNumber
         self.campaignStage = campaignStage
+        self.poster = poster
         self.ticksPerFrame = max(ticksPerFrame, 1)
         if let save = save, save.regionID == region.id {
             self.state = save.state
@@ -278,6 +289,14 @@ final class GameModel: ObservableObject {
 
     /// Run exactly one engine tick.
     func runOneTick() {
+        // Scripted hover (MU-P7.2): each tick feeds the next scripted
+        // hover point through the same preview path a real Pencil/pointer
+        // gesture drives, so the UI test exercises the preview without
+        // hover-event synthesis.
+        if let point = scriptedHover.first {
+            scriptedHover.removeFirst()
+            stepPreview(to: point)
+        }
         if dayEnded {
             advanceAfterDayEnd()
             return
@@ -428,7 +447,13 @@ final class GameModel: ObservableObject {
             ? (self.dailyDayNumber
                 ?? DailyChallenge(date: DailyChallenge.epoch).dayNumber)
             : nil
-        _ = MetaStore.record(outcome, dayCompleted: true, dailyDayNumber: dailyDayNumber)
+        let recorded = MetaStore.record(
+            outcome, dayCompleted: true, dailyDayNumber: dailyDayNumber,
+            modifierID: dailyModifier?.rawValue,
+            campaignStageIndex: campaignStage.map { max($0 - 1, 0) },
+            poster: poster ?? GameCenterPoster()
+        )
+        postCounts = "\(recorded.posted)/\(recorded.posted)"
         if let stage = campaignStage {
             _ = MetaStore.recordCampaignStage(
                 index: max(stage - 1, 0), endSize: state.birds.count
@@ -516,6 +541,8 @@ final class GameModel: ObservableObject {
         previousBirds = state.birds
         falconPrev = []
         trace = []
+        previewBuilder = nil
+        previewFlock = nil
         results = []
         dayEnded = false
         finished = false
@@ -529,39 +556,35 @@ final class GameModel: ObservableObject {
 
     /// The scene for the renderer: this tick against the previous one.
     var scene: RenderScene {
-        makeScene(state: state, previousBirds: previousBirds, falconPrev: falconPrev, trace: trace)
-    }
-
-    // MARK: - Save/resume (S2.4)
-
-    func makeSave() -> SavedGame {
-        SavedGame(
-            regionID: region.id,
-            day: day,
-            state: state,
-            rng: rng,
-            autoplayer: autoplayer,
-            rival: rival
+        makeScene(
+            state: state, previousBirds: previousBirds, falconPrev: falconPrev,
+            trace: trace, pendingPath: pendingPathSamples
         )
     }
 
-    func saveLocally() {
-        SavedGame.store(makeSave())
-    }
-
-    static func loadSave(regionID: String) -> SavedGame? {
-        SavedGame.load(regionID: regionID)
-    }
-
-    // MARK: - Debug overlay feed
-
-    private var lastHashTick = -1
-
-    private func refreshHashIfNeeded(force: Bool) {
-        guard hashUpdates || force else { return }
-        if force || state.tick - lastHashTick >= 30 {
-            lastHashTick = state.tick
-            hashLabel = String(format: "%016llx", stateHash(state))
+    /// The hover preview path (MU-P7.2): the pending drag's waypoints as
+    /// fresh trace samples, so the renderer draws it like the committed
+    /// trace. Empty when nothing is being drawn.
+    var pendingPathSamples: [TracePoint] {
+        guard let builder = previewBuilder else { return [] }
+        return builder.waypoints.map { waypoint in
+            TracePoint(x: Float(waypoint.x), y: Float(waypoint.y), age: 0)
         }
     }
+
+    /// The in-flight leader-path builder during a Pencil/pointer hover-drag
+    /// (MU-P7.2). Set by the input layer; cleared on commit or cancel.
+    var previewBuilder: LeaderPathBuilder?
+
+    /// Which flock the active hover preview steers (nil = no preview).
+    var previewFlock: UInt8?
+
+    /// Scripted hover driver (MU-P7.2 test harness): a sequence of world
+    /// points fed through `stepPreview(to:)` one per frame while
+    /// `-uitest-preview` is active, standing in for real Pencil hover
+    /// events (which XCUITest cannot synthesize). Empty when idle.
+    var scriptedHover: [SIMD2<Float>] = []
+
+    /// Last tick the hash label refreshed; -1 = never (GameModel+Hash).
+    var lastHashTick = -1
 }

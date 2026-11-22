@@ -35,6 +35,9 @@ public struct RenderScene {
     public var roosts: [RoostState]
     /// Leader-path trace samples (newest last).
     public var trace: [TracePoint]
+    /// Hover preview (MU-P7.2): the pending leader path a Pencil/pointer is
+    /// about to commit, drawn dashed before it lands. Empty when idle.
+    public var pendingPath: [TracePoint]
     /// 0 = day, 1 = full dusk (dims the sky).
     public var duskBlend: Float
     /// The engine tick this scene was built from. Drives the wingbeat
@@ -51,6 +54,7 @@ public struct RenderScene {
         fields: [FieldState],
         roosts: [RoostState],
         trace: [TracePoint],
+        pendingPath: [TracePoint] = [],
         duskBlend: Float,
         tick: Int
     ) {
@@ -61,6 +65,7 @@ public struct RenderScene {
         self.fields = fields
         self.roosts = roosts
         self.trace = trace
+        self.pendingPath = pendingPath
         self.duskBlend = duskBlend
         self.tick = tick
     }

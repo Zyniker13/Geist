@@ -57,6 +57,8 @@ struct GameDebugOverlay: View, Equatable {
         var centroids = ""
         var difficulty = ""
         var daily = ""
+        var posts = ""
+        var pending = ""
     }
 
     /// All parent-created instances are equal: the body reads only the
@@ -96,6 +98,12 @@ struct GameDebugOverlay: View, Equatable {
                     .accessibilityLabel("daily \(sample.daily)")
                     .accessibilityIdentifier("debug.daily")
             }
+            if !sample.posts.isEmpty {
+                Text("posts \(sample.posts)")
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel("posts \(sample.posts)")
+                    .accessibilityIdentifier("debug.posts")
+            }
             if !sample.leaders.isEmpty {
                 Text(sample.leaders)
                     .accessibilityElement(children: .ignore)
@@ -107,6 +115,12 @@ struct GameDebugOverlay: View, Equatable {
                     .accessibilityElement(children: .ignore)
                     .accessibilityLabel(sample.centroids)
                     .accessibilityIdentifier("debug.centroids")
+            }
+            if !sample.pending.isEmpty {
+                Text("pending \(sample.pending)")
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel("pending \(sample.pending)")
+                    .accessibilityIdentifier("debug.pending")
             }
         }
         .font(.system(size: 11, weight: .semibold, design: .monospaced))
@@ -132,10 +146,21 @@ struct GameDebugOverlay: View, Equatable {
                 difficulty: model.region.hasRival ? model.rivalDifficulty.rawValue : "",
                 daily: model.dailyModifier.map {
                     "\(model.dailyDayNumber ?? -1) \($0.displayName)"
-                } ?? ""
+                } ?? "",
+                posts: model.postCounts,
+                pending: Self.pendingLabel(model)
             )
             try? await Task.sleep(nanoseconds: 500_000_000)
         }
+    }
+
+    /// "P n L<flock>" while a hover preview is live (MU-P7.2): the number
+    /// of previewed waypoints and which flock it steers. Empty when idle.
+    @MainActor static func pendingLabel(_ model: GameModel) -> String {
+        guard let builder = model.previewBuilder, let flock = model.previewFlock else {
+            return ""
+        }
+        return "\(builder.waypoints.count) L\(flock)"
     }
 
     /// "L0 x,y L1 x,y" for each flock's leader (MU-P3.3 evidence).
