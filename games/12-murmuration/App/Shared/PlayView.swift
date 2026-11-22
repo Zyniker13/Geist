@@ -7,6 +7,7 @@ import SwiftUI
 import MUCore
 import MUContent
 import MUMeta
+import MUPlatform
 
 /// Launch-time configuration for a play session (UI-test harness and menu).
 struct GameLaunchConfig {
@@ -18,6 +19,9 @@ struct GameLaunchConfig {
     var pauseAt: Int?
     var hashUpdates = false
     var seed: UInt64?
+    /// Poster injection for UI tests (MU-P7.1): "-uitest-poster mock" uses
+    /// the deterministic MockPoster instead of Game Center.
+    var poster: ScoresPosting?
     /// When true, launch the five-step tutorial (P3.2) in its solo region.
     var tutorial = false
     /// When true, run the local two-flock versus (MU-P3.3): the rival flock
@@ -60,6 +64,7 @@ struct GameLaunchConfig {
         if let birds = value("-uitest-birds"), let n = Int(birds) { config.birdOverride = n }
         if let at = value("-uitest-pause-at"), let n = Int(at) { config.pauseAt = n }
         if args.contains("-uitest-hash") { config.hashUpdates = true }
+        if args.contains("-uitest-poster-mock") { config.poster = MockPoster() }
         if args.contains("-uitest-tutorial") { config.tutorial = true }
         if args.contains("-uitest-versus") { config.versus = true }
         if let difficulty = value("-uitest-difficulty"),
@@ -163,7 +168,8 @@ struct PlayView: View {
                 rivalDifficulty: config.rivalDifficulty,
                 dailyModifier: dailyModifier,
                 dailyDayNumber: dailyModifier != nil ? dailyDayNumber : nil,
-                campaignStage: config.campaignStage
+                campaignStage: config.campaignStage,
+                poster: config.poster
             ))
         // Applied after init via the view's task (published-mutable only).
         _pendingPauseAt = State(initialValue: config.pauseAt)

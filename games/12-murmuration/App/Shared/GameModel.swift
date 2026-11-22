@@ -12,6 +12,7 @@ import MUCore
 import MUContent
 import MUAI
 import MUMeta
+import MUPlatform
 import MURender
 import MUAudio
 
@@ -92,11 +93,16 @@ final class GameModel: ObservableObject {
     private(set) var roostsClaimed = 0
     /// The campaign stage this session plays (nil outside campaign mode).
     let campaignStage: Int?
+    /// The Game Center poster for this run (MU-P7.1). nil keeps the real
+    /// poster; UI tests inject MockPoster for deterministic assertions.
+    let poster: ScoresPosting?
     @Published var fps = 0
     /// Rolling mean frame build time in milliseconds (tick + render encode).
     @Published var frameMs: Double = 0
     /// State hash, refreshed on the cadence below (UI-test hash checks).
     @Published var hashLabel = ""
+    /// Game Center posts made so far (MU-P7.1 debug row): "<scores>/<achievements>".
+    @Published private(set) var postCounts = "0/0"
 
     /// The ambience controller holder (MU-P6.2). The extension in
     /// GameModel+Audio.swift reads/writes through it; stored properties
@@ -149,7 +155,8 @@ final class GameModel: ObservableObject {
         rivalDifficulty: RivalDifficulty? = nil,
         dailyModifier: DailyModifier? = nil,
         dailyDayNumber: Int? = nil,
-        campaignStage: Int? = nil
+        campaignStage: Int? = nil,
+        poster: ScoresPosting? = nil
     ) {
         self.region = region
         self.totalDays = totalDays
@@ -159,6 +166,7 @@ final class GameModel: ObservableObject {
         self.dailyModifier = dailyModifier
         self.dailyDayNumber = dailyDayNumber
         self.campaignStage = campaignStage
+        self.poster = poster
         self.ticksPerFrame = max(ticksPerFrame, 1)
         if let save = save, save.regionID == region.id {
             self.state = save.state
@@ -428,7 +436,13 @@ final class GameModel: ObservableObject {
             ? (self.dailyDayNumber
                 ?? DailyChallenge(date: DailyChallenge.epoch).dayNumber)
             : nil
-        _ = MetaStore.record(outcome, dayCompleted: true, dailyDayNumber: dailyDayNumber)
+        let recorded = MetaStore.record(
+            outcome, dayCompleted: true, dailyDayNumber: dailyDayNumber,
+            modifierID: dailyModifier?.rawValue,
+            campaignStageIndex: campaignStage.map { max($0 - 1, 0) },
+            poster: poster ?? GameCenterPoster()
+        )
+        postCounts = "\(recorded.posted)/\(recorded.posted)"
         if let stage = campaignStage {
             _ = MetaStore.recordCampaignStage(
                 index: max(stage - 1, 0), endSize: state.birds.count

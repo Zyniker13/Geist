@@ -12,12 +12,13 @@ let package = Package(
         .library(name: "MUPlatform", targets: ["MUPlatform"])
     ],
     dependencies: [
-        .package(path: "../MUCore")
+        .package(path: "../MUCore"),
+        .package(path: "../MUMeta"),
     ],
     targets: [
         .target(
             name: "MUPlatform",
-            dependencies: ["MUCore"],
+            dependencies: ["MUCore", "MUMeta"],
         ),
         .testTarget(
             name: "MUPlatformTests",

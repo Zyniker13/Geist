@@ -57,6 +57,7 @@ struct GameDebugOverlay: View, Equatable {
         var centroids = ""
         var difficulty = ""
         var daily = ""
+        var posts = ""
     }
 
     /// All parent-created instances are equal: the body reads only the
@@ -96,6 +97,12 @@ struct GameDebugOverlay: View, Equatable {
                     .accessibilityLabel("daily \(sample.daily)")
                     .accessibilityIdentifier("debug.daily")
             }
+            if !sample.posts.isEmpty {
+                Text("posts \(sample.posts)")
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel("posts \(sample.posts)")
+                    .accessibilityIdentifier("debug.posts")
+            }
             if !sample.leaders.isEmpty {
                 Text(sample.leaders)
                     .accessibilityElement(children: .ignore)
@@ -132,7 +139,8 @@ struct GameDebugOverlay: View, Equatable {
                 difficulty: model.region.hasRival ? model.rivalDifficulty.rawValue : "",
                 daily: model.dailyModifier.map {
                     "\(model.dailyDayNumber ?? -1) \($0.displayName)"
-                } ?? ""
+                } ?? "",
+                posts: model.postCounts
             )
             try? await Task.sleep(nanoseconds: 500_000_000)
         }
