@@ -1433,3 +1433,17 @@ iCloud progress per the Night Market P7 pattern (protocol + real + mock):
 - GameModel splits: `GameModel+Save.swift` (save/resume), `GameModel+Hash.swift`
   (hash label) — type-body-length lint (ADR pattern; internal access widened
   where the extensions need it).
+- G7 §8.2 substitute filed as maintainer issue **#14** (Game Center
+  sandbox posting + real iCloud round-trip + ProMotion, owner-only).
+  G7 closes on the substitute evidence with the issue open as the
+  real-service check.
+- `testThreeDayAutoplay` wait budget 240 s → 600 s (commit 630120d): the
+  240 s budget raced the Debug host floor. Evidence: G4's one green local
+  run needed 233.6 s (7 s margin) before P6's per-frame shader cost
+  existed; after P6 the same test timed out twice on a quiet host (253 s,
+  254 s — the two failures bracket a constant floor ≈ 250 s + jitter)
+  while CI Release completes it in 27–33 s. With the budget raised, the
+  solo rerun PASSED at 269.8 s. The assertion itself ("game.final within
+  budget") is unchanged; only the infrastructure constant moved. Day
+  completion was never in doubt: testCompletedDayPostsScores drives a
+  full day to completion locally in 71 s.
