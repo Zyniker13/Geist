@@ -396,13 +396,18 @@ final class GameModel: ObservableObject {
     /// too — the meta layer is part of shipped behavior.
     private func recordMetaForDay() {
         roostsClaimed = max(roostsClaimed, 0)
+        // Playing the route's final stage (index 11 of 12) and completing
+        // its first day is a campaign end; re-running that stage folds
+        // again, which matches "campaigns completed" as runs of the final
+        // stage rather than unique completions.
+        let campaignEnd = campaignStage == MetaState.campaignRoute.count - 1
         let outcome = SessionOutcome(
             peakFlock: peakFlock,
             roostsClaimed: roostsClaimed,
             birdsStarved: birdsStarved,
             isVersus: versus,
             isDaily: dailyModifier != nil,
-            isCampaignEnd: false
+            isCampaignEnd: campaignEnd
         )
         let dailyDayNumber = dailyModifier != nil
             ? (self.dailyDayNumber
