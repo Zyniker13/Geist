@@ -1094,3 +1094,42 @@ regression: recent commits (ADR-0036, format, NoUsage) don't touch
 versus routing or pause, and the test runs falcon-free. Re-run of the
 single test pending on the fixed code (the first re-run used the wrong
 scheme name, `Murmuration` instead of `MU`).
+
+### G4 gate evidence (2026-11-21, v16 tree)
+
+**Checks:**
+
+- **500 days per region, 0 crashes** — `sim --balance <tier> --days 500`
+  over all six shipped regions per tier (one seeded day per row,
+  `region.reseeded(day)`), 9,000 days total across the three tiers. Every
+  run completed with rc=0 and a full CSV (500 rows per region + header;
+  gentle CSV 212,329 bytes, normal 211,901, hard 205,593). One row in the
+  gentle gorge column ends `winner=-1` (day 109: no roost claimed, an
+  unclaimed-day draw, not a crash; `checkVictory` returns nil).
+- **Win rates within targets or ADR** — measured overall player win
+  rates: gentle **72.7%** (2181/3000), normal **84.4%** (2531/3000),
+  hard **79.6%** (2387/3000) vs the ROADMAP §6 targets 85/60/35. Targets
+  missed; **ADR-0037** records the deviation, the probe-grid evidence
+  (claim gate inert, start share bounded 65.6–78.5%), the day-1 event
+  trace (player +4,084 grow vs rival +1,303 over 3 days on meadow), and
+  the condense-timer finding (state-level rival condense never fires —
+  0 `condense sf1 on` events in 9,600 traced ticks; patch verified
+  no-op and reverted). Dusk medians 357–2,360 across tiers (gorge/ridge/
+  fenlands below the 1,000–2,500 band; meadow/delta inside it).
+  Falcon losses 1.0–2.0% of peak (band 5–20%; corridor-bound per the
+  ADR-0035 note, confirmed at 500-day scale).
+- **AI budget met** — Release sim, per-CSV columns: worst rival pilot
+  cost across all 9,000 days **133.9 µs/tick** (commons gentle day 257);
+  autoplayer worst **20.8 µs/tick**. Budget: 0.5 ms/tick. Met with 3.7×
+  headroom on the worst day.
+- **Difficulty wiring (MU-P4.1)** — three-tier `RivalDifficulty` +
+  `RegionStarter.startScale` (1.0/1.25/1.5), menu picker +
+  `-uitest-difficulty`, `debug.difficulty` overlay row,
+  `testDifficultyPickerSelectsTier` and `testDifficultyLaunchArgument`
+  UI tests green (P4.1 evidence above).
+- **Versus UI flake re-verified on the fixed code** —
+  `testVersusTwoFlockRouting` passed locally on c18c378 (26.3 s,
+  `** TEST SUCCEEDED **`, rc=0; scratch uitest-versus-rerun2.log).
+- **Package suites on the final tree** — 7 suites, 113 tests green
+  (2026-11-21 morning run before c18c378; MUCore 113/113 after ADR-0036).
+  Full `make test` + `make lint` re-run at the merge below.

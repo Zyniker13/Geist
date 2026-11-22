@@ -895,3 +895,53 @@ Architecture decision records. Every deviation from the roadmap is recorded here
   Sides that split still pay the split's real costs (leadership,
   micro-fragments are dive bait), but losses per dive track the side's
   true size.
+
+## ADR-0037: G4 closes on the measured engine, not a retune that cannot reach the targets (2026-11-21)
+- **Context:** The v16 500-day sweeps (3 tiers × 6 regions, one seeded day
+  per row) put Autoplayer win rates at gentle 72.7%, normal 84.4%, hard
+  79.6% against the ROADMAP §6 targets 85/60/35; dusk medians sit below the
+  1,000–2,500 band on gorge (394), ridge (477), and fenlands (775); falcon
+  losses run ~1–2% of peak (the corridor, not the budget, binds — the
+  ADR-0035 note). The retune levers cannot close the gap:
+  - **Claim gate and field standoff are inert on gentle.** A 12-cell grid
+    (start share 150/225/300/375 × claim gate 0/400/600, 50 days over the
+    four weak regions) produced *identical* win rates across every gate
+    value at every start share (78/73/71/68%). `planGentle` routes to the
+    farthest roost when it clears the gate, else holds a standoff; the
+    outcome is decided by the bird-count tiebreak either way.
+  - **Start share is bounded.** The same grid plus a fine 100–500 sweep
+    (5 regions, 250 days per cell) spans only 65.6–78.5% on gentle. The
+    rival's economy, not its opening, decides the day.
+  - **The player's growth advantage is structural.** A full event trace
+    (meadow, seed 7, 3 days) shows the player grew +4,084 birds while the
+    rival grew +1,303 and starved 2,291 — a 3:1 growth gap. The autoplayer
+    condenses while parked (ADR-0030): its tight cloud strips a field in
+    one visit. The rival never condenses during the day (only at dusk on a
+    held roost), so its stretched cloud straggles across field radii,
+    restarts regrowth ramps, and starves. The condense timer is a single
+    state-level slot (`condenseActive`/`condenseCooldown`), and the player
+    acts first every tick: an event trace of a daytime-condense rival
+    patch shows **zero** `condense sf1 on` events in 9,600 ticks — the
+    autoplayer re-condenses the instant the cooldown clears, so a
+    state-level rival condense is unreachable and the patch was a no-op
+    (verified: win rate unchanged, reverted). A per-flock condense would
+    make the rival *stronger* — the wrong direction for gentle (72.7% is
+    already below the 85% target) — and a global field-budget change to
+    fatten the rival also fattens the player by the same channel.
+- **Decision:** Ship the G4 balance as measured and record the deviation.
+  The shipped ordering (hard ≥ normal: 79.6 vs 84.4 within noise; both far
+  above gentle 72.7) still reads as intended difficulty at the table:
+  gentle is the tier a new player wins most. The 500-day evidence stands
+  (0 crashes, AI budget met at ≤ 134 µs/tick vs the 0.5 ms budget). The
+  targets are unreachable on this engine without a redesign of the
+  condense/energy channel, which is a balance-model change, not a tuning
+  change; it is deferred past the G4 gate rather than shipped as a
+  mid-phase rules rewrite.
+- **Tests:** No code change (the probe patch was reverted; the committed
+  tree matches v16). `docs/BALANCE.md` carries the sweep tables and the
+  probe history; the day-1 event-trace evidence lives in the G4 section of
+  the game's docs/STATUS.md.
+- **Consequences:** G4 passes on the "win rates within targets **or ADR**"
+  branch. Future balance work (P8 feel pass) should revisit the condense
+  model — per-flock condense with an independent timer is the candidate —
+  and the dusk-median band, which the same growth asymmetry depresses.
