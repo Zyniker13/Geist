@@ -8,14 +8,14 @@ gen:
 	xcodegen generate --spec project.yml
 
 build: gen
-	xcodebuild build -scheme NM -destination 'platform=iOS Simulator,name=iPad Pro 13-inch (M5)' -configuration Debug
+	xcodebuild build -scheme NM -destination 'platform=iOS Simulator,name=zGeist_bot-iPad-Pro-13' -configuration Debug
 	xcodebuild build -scheme NM-macOS -destination 'platform=macOS' -configuration Debug
 
 test: gen
 	swift test --package-path Packages/NMCore
 	swift test --package-path Packages/NMContent
 	swift test --package-path Packages/NMAI
-	xcodebuild test -scheme NM -destination 'platform=iOS Simulator,name=iPad Pro 13-inch (M5)' -configuration Debug
+	xcodebuild test -scheme NM -destination 'platform=iOS Simulator,name=zGeist_bot-iPad-Pro-13' -configuration Debug
 
 lint:
 	swiftlint --strict --config .swiftlint.yml
@@ -26,10 +26,10 @@ content-lint:
 	./Tools/content-lint
 
 snapshot: gen
-	xcodebuild test -scheme NM -destination 'platform=iOS Simulator,name=iPad Pro 13-inch (M5)' -configuration Debug -only-testing:Snapshots
+	xcodebuild test -scheme NM -destination 'platform=iOS Simulator,name=zGeist_bot-iPad-Pro-13' -configuration Debug -only-testing:Snapshots
 
 perf: gen
-	xcodebuild test -scheme NM -destination 'platform=iOS Simulator,name=iPad Pro 13-inch (M5)' -configuration Debug -only-testing:PerfTests
+	xcodebuild test -scheme NM -destination 'platform=iOS Simulator,name=zGeist_bot-iPad-Pro-13' -configuration Debug -only-testing:PerfTests
 
 # Headless rules-engine check (S1.3): N seeded nights, invariants, deterministic.
 sim:
