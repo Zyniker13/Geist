@@ -2,15 +2,18 @@
 
 This file is the single place to resume the program from. Keep every field below current after every meaningful step (see "Resuming After a Restart" in `ROADMAP.md`). Per-game detail (gate evidence and sign-offs) lives in each game's `docs/STATUS.md`.
 
-- **Current game:** Orrery (`02-orrery`) — P0 complete, gate G0 passed
-- **Phase:** P0 → G0 PASSED (2026-11-23). Branch `orrery/phase/P0-setup`
-  (commit cc71ad0 + docs); merging to main and tagging
-  `orrery/gate-G0-pass`, then CI check, then P1 (Rules Engine Prototype).
-- **Last done:** Orrery scaffold — 7 SwiftPM packages, XcodeGen iOS/Mac
-  targets, SeededRNG+Fixed foundation, `Angle48` (OR-P0.1) with ±1…±96
-  wraparound tests, replay harness + committed golden replay, lint/import
-  gates, CI workflow, docs skeleton, debug overlay; 38 Swift tests + iPad UI
-  smoke green; iOS and Mac builds green; launch screenshot in docs/media/.
+- **Current game:** Orrery (`02-orrery`) — P0 complete, gate G0 passed; P1 in progress
+- **Phase:** P0 → G0 PASSED (2026-11-23). P1 (Rules Engine Prototype) underway on
+  `orrery/phase/P1-rules`.
+- **Last done:** 2026-11-23 — CI-red fix on main after the P0 merge: the Orrery CI run
+  (45275269683) failed on (a) XcodeGen spec validation — `Resources` missing on the CI
+  clean checkout, already fixed by `70968a0` (`.gitkeep` files) and (b) `TrivialState`
+  declared `hashValue()`, colliding with the `Hashable` synthesized requirement, and
+  `Replay.run` hashed through it (would have broken the committed golden
+  `8398107817133141332` once it compiled, since `Hashable.hashValue` is
+  process-random). Renamed to `canonicalHash()`, `Replay.run` and the empty-replay
+  test now use it, ORCore 32/32 green with the golden hash unchanged; fix committed to
+  main as `7194bf0` and pushed; P1 rebased onto it.
 
 ## Environment Check
 
