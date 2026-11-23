@@ -997,3 +997,17 @@ Architecture decision records. Every deviation from the roadmap is recorded here
   profile for later same-suite runs, but the perf/determinism/hash suites
   are now immune to it. Local runs reproduce CI's fresh-sim environment
   without erasing simulator data.
+
+## ADR-0041: The closed G10 gate is tagged `murmur/gate-G10-pass-v2` (2026-11-23)
+
+- **Context:** The gate checklist ends with an iPad shutdown and size
+  check inside sim-lock. The annotated tag `murmur/gate-G10-pass` was
+  pushed against the merge commit (c8a30dc) before that last item ran,
+  so at tagging time the gate was not fully closed. Pushed tags must not
+  be moved or deleted.
+- **Decision:** A second annotated tag, `murmur/gate-G10-pass-v2`, points
+  at the same merge commit and is the tag recorded in `STATUS.md` as the
+  closed gate. The earlier tag stays in place untouched; both name the
+  same commit, so there is no history divergence.
+- **Consequences:** Future gates run every checklist item before tagging;
+  when a gate must be re-marked, append `-v2` rather than retagging.
