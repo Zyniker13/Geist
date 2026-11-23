@@ -1,0 +1,17 @@
+{
+  "name": "trivial-golden-1",
+  "seed": 42,
+  "contentVersion": "or-0.1",
+  "actions": [
+    { "tick": 0, "action": { "bump": {} } },
+    { "tick": 10, "action": { "bump": {} } },
+    { "tick": 20, "action": { "bump": {} } },
+    { "tick": 30, "action": { "bump": {} } },
+    { "tick": 40, "action": { "bump": {} } },
+    { "tick": 50, "action": { "bump": {} } },
+    { "tick": 60, "action": { "bump": {} } }
+  ],
+  "expectedHash": 8398107817133141332,
+  "expectedApplied": 7,
+  "expectedSkipped": 0
+}

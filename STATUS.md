@@ -2,17 +2,15 @@
 
 This file is the single place to resume the program from. Keep every field below current after every meaningful step (see "Resuming After a Restart" in `ROADMAP.md`). Per-game detail (gate evidence and sign-offs) lives in each game's `docs/STATUS.md`.
 
-- **Current game:** Murmuration (`12-murmuration`) — Done
-- **Phase:** G10 closed — P10 merged to main (c8a30dc), tags
-  `murmur/gate-G10-pass` / `murmur/gate-G10-pass-v2` pushed. Murmuration
-  is complete; next game per the queue is Orrery (`02-orrery`), P0.
-- **Last done:** G10 PASSED (release assets). Four iPad Pro 13-inch
-  screenshots + 15–30 s preview video capture notes with frame ranges
-  (docs/release/preview.md), full App Store metadata, privacy label
-  "Data Not Collected", age rating 4+, accessibility labels, press kit,
-  asset list in docs/release/RELEASE.md; §8.2 substitutes recorded in
-  game docs/STATUS.md (GATE G10 evidence block). Owner-only release
-  actions filed as maintainer issue #16.
+- **Current game:** Orrery (`02-orrery`) — P0 complete, gate G0 passed
+- **Phase:** P0 → G0 PASSED (2026-11-23). Branch `orrery/phase/P0-setup`
+  (commit cc71ad0 + docs); merging to main and tagging
+  `orrery/gate-G0-pass`, then CI check, then P1 (Rules Engine Prototype).
+- **Last done:** Orrery scaffold — 7 SwiftPM packages, XcodeGen iOS/Mac
+  targets, SeededRNG+Fixed foundation, `Angle48` (OR-P0.1) with ±1…±96
+  wraparound tests, replay harness + committed golden replay, lint/import
+  gates, CI workflow, docs skeleton, debug overlay; 38 Swift tests + iPad UI
+  smoke green; iOS and Mac builds green; launch screenshot in docs/media/.
 
 ## Environment Check
 
@@ -40,7 +38,7 @@ If Xcode 27.2 or an iOS 26-or-later runtime is missing and cannot be installed w
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | 04 | [`04-night-market`](games/04-night-market/ROADMAP.md) | Night Market | Done | `night-market/gate-G10-pass` | All gates G0–G10 tagged; TestFlight/App Store steps owner-only in #12 |
 | 2 | 12 | [`12-murmuration`](games/12-murmuration/ROADMAP.md) | Murmuration | Done | `murmur/gate-G10-pass-v2` | All gates G0–G10 tagged; App Store Connect record, TestFlight upload, icon and asset placement owner-only in #16 |
-| 3 | 02 | [`02-orrery`](games/02-orrery/ROADMAP.md) | Orrery | Not Started | — | — |
+| 3 | 02 | [`02-orrery`](games/02-orrery/ROADMAP.md) | Orrery | In Progress | — | G0 passed 2026-11-23; P1 next |
 | 4 | 14 | [`14-beacon-coast`](games/14-beacon-coast/ROADMAP.md) | Beacon Coast | Not Started | — | — |
 | 5 | 13 | [`13-terrace`](games/13-terrace/ROADMAP.md) | Terrace | Not Started | — | — |
 | 6 | 20 | [`20-pack-and-herd`](games/20-pack-and-herd/ROADMAP.md) | Pack & Herd | Not Started | — | — |
@@ -64,7 +62,7 @@ If Xcode 27.2 or an iOS 26-or-later runtime is missing and cannot be installed w
 | 24 | 05 | [`05-dispatch`](games/05-dispatch/ROADMAP.md) | Dispatch | Not Started | — | — |
 | 25 | 07 | [`07-meridian`](games/07-meridian/ROADMAP.md) | Meridian | Not Started | — | — |
 
-**Totals:** 1 done, 1 in progress, 23 not started.
+**Totals:** 2 done, 1 in progress, 22 not started.
 
 ## Needs the Maintainer
 
@@ -173,3 +171,4 @@ One line per meaningful step, newest last: date, phase or game and stage, what w
 - 2026-11-22 (cont.): **G7 PASSED and P7 merged to main** (merge e592e34, tag `murmur/gate-G7-pass` pushed). MU-P7.1 platform services: MUPlatform gains MUPostPlanner (36 headless tests: fixed board ids mu.daily / mu.campaign.<stage>, achievement ordering, FNV-1a context hash pinned), GameCenterPoster + ICloudSync compile unconditionally and act only when entitled, MetaStore write-through + restore-on-launch with injectable syncing (-uitest-poster-mock + debug.posts row); testCompletedDayPostsScores drives the day-end pipeline in CI. MU-P7.2: state-free hover preview (GameModel+Preview extension, RenderScene.pendingPath, brighter pending strip; iOS UIHoverGestureRecognizer + Mac pointer-move; trackpad two-finger pan splits at 0.5; -uitest-preview/-uitest-hover harness; testHoverPreviewPendingPath PASSED with screenshot evidence showing the leader unmoved). Flake policy: testThreeDayAutoplay's 240 s wait budget raced the Debug host floor (~250 s after P6 shader cost; G4's last green run was 233.6 s) while CI Release finishes in 27–33 s — budget raised to 600 s (630120d), solo rerun PASSED 269.8 s, no test weakened. G7 evidence: lint 0; seven package suites 0 failures in the tree AND a clean worktree at 36e077f; CI 45080911562 full success; the one red run (7dcf821) is a docs-only diff whose two ui-test-ios failures are environment flakes green in adjacent runs. Real-service checks (Game Center sandbox, 2-device iCloud round-trip, ProMotion) filed as maintainer issues #14 and #11 per §8.2. P8 (polish/accessibility/performance) starts on murmur/phase/P8-polish.
 - 2026-11-23: **Murmuration G9 PASSED** (typo guarded: Murmuration) on `murmur/phase/P9-release-prep`: Release archives both platforms (CODE_SIGNING_ALLOWED=NO; iOS 14 MB, macOS 17 MB, ARCHIVE SUCCEEDED), beta notes (docs/BETA.md), opt-in telemetry-free stats export (MetaStore.exportStats → Documents/murmuration-stats.json; MUStatsExportTests passed 9.4 s), final-build soak: Release gate suite TEST SUCCEEDED (23/2 skipped/0 fail) + 120-day balance sweeps gentle 73.6% / normal 83.8% / hard 80.1% (720 days each; all within ~1 pt of G4) — no retune. Merge 23f08e5 to main, tag `murmur/gate-G9-pass` pushed. P10 (release assets) on murmur/phase/P10-release.
 - 2026-11-23 (cont.): **Murmuration G10 PASSED and P10 merged to main** (merge c8a30dc; tags `murmur/gate-G10-pass` and `murmur/gate-G10-pass-v2` pushed — the first tag was created before the iPads-shutdown/size-check checklist item completed, so a `-v2` tag marks the closed gate; see ADR in game DECISIONS). G10 evidence (game docs/STATUS.md): four zGeist_bot-iPad-Pro-13 screenshots, preview-video cut notes with exact frame ranges (docs/release/preview.md), App Store metadata + privacy "Data Not Collected" + age 4+ + accessibility labels + press kit + asset list in docs/release/RELEASE.md, all via §8.2 scripted substitutes. Owner-only App Store Connect/TestFlight steps filed as issue #16. iPad shut down inside sim-lock; device dir 4.8 GB (under the 5 GB erase line). **Murmuration is Done.** Next: Orrery (`02-orrery`) P0 — read its ROADMAP.md and _CONVENTIONS.md before scaffolding.
+- 2026-11-23 (cont.): **Orrery P0 scaffolded and G0 PASSED** on `orrery/phase/P0-setup` (commit cc71ad0): XcodeGen project (OR / OR-macOS + UI-test targets), seven SwiftPM packages (ORCore..ORMeta), SeededRNG xoshiro256**/SplitMix64 with independent-computation known-answer vector, magnitude-safe Fixed (Int64.min regressions), `Angle48` OR-P0.1 (wraparound ±1…±96, line indexing per R-9/R-10, clock labels), replay contract + committed golden `trivial-golden-1.json` (hash 8398107817133141332) verified twice per run, check-imports (UI/platform-import ban added) + content-lint skeletons, SwiftLint banned-API rules incl. Float-in-Core, CI workflow pinned to v4.2.2 SHAs, docs skeleton + RULES from roadmap §4 + ADR-0001…0005, debug overlay (3-finger double-tap / ⌘⇧D). Evidence (game docs/STATUS.md): ORCore 32 tests + 6 stub suites green, lint 0, iOS + Mac BUILD SUCCEEDED, iPad UI smoke TEST SUCCEEDED via sim-lock, launch screenshot docs/media/p0-launch.png. iPad shut down; device dir erased at 5.3 GB → 18 MB. Merge to main + tag `orrery/gate-G0-pass` next, then P1.

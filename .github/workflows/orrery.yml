@@ -1,0 +1,90 @@
+# Orrery CI
+name: orrery
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'games/02-orrery/**'
+      - '.github/workflows/orrery.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'games/02-orrery/**'
+      - '.github/workflows/orrery.yml'
+
+jobs:
+  lint:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Install tools
+        run: |
+          brew install --overwrite xcodegen swiftlint swift-format 2>/dev/null || true
+      - name: SwiftLint
+        working-directory: games/02-orrery
+        run: swiftlint --strict --config .swiftlint.yml
+      - name: swift-format
+        working-directory: games/02-orrery
+        run: swift-format lint --recursive Packages/ App/ Tests/ --configuration .swift-format
+      - name: check-imports
+        working-directory: games/02-orrery
+        run: ./Tools/check-imports.sh
+      - name: content-lint
+        working-directory: games/02-orrery
+        run: ./Tools/content-lint
+
+  test:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Install tools
+        run: |
+          brew install --overwrite xcodegen swiftlint swift-format 2>/dev/null || true
+      - name: Swift test (Core)
+        working-directory: games/02-orrery
+        run: swift test --package-path Packages/ORCore
+      - name: Swift test (Content)
+        working-directory: games/02-orrery
+        run: swift test --package-path Packages/ORContent
+      - name: Swift test (AI)
+        working-directory: games/02-orrery
+        run: swift test --package-path Packages/ORAI
+      - name: Swift test (Render)
+        working-directory: games/02-orrery
+        run: swift test --package-path Packages/ORRender
+      - name: Swift test (Audio)
+        working-directory: games/02-orrery
+        run: swift test --package-path Packages/ORAudio
+      - name: Swift test (Platform)
+        working-directory: games/02-orrery
+        run: swift test --package-path Packages/ORPlatform
+      - name: Swift test (Meta)
+        working-directory: games/02-orrery
+        run: swift test --package-path Packages/ORMeta
+
+  build-ios:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Install tools
+        run: |
+          brew install --overwrite xcodegen swiftlint swift-format 2>/dev/null || true
+      - name: Build iOS
+        working-directory: games/02-orrery
+        run: |
+          xcodegen generate --spec project.yml
+          xcodebuild build -scheme OR -destination 'generic/platform=iOS Simulator' -configuration Debug
+
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Install tools
+        run: |
+          brew install --overwrite xcodegen swiftlint swift-format 2>/dev/null || true
+      - name: Build macOS
+        working-directory: games/02-orrery
+        run: |
+          xcodegen generate --spec project.yml
+          xcodebuild build -scheme OR-macOS -destination 'platform=macOS' -configuration Debug

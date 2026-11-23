@@ -1,0 +1,62 @@
+disabled_rules:
+  - trailing_whitespace
+  - todo
+  - identifier_name  # single-letter vars common in math/game code
+  - cyclomatic_complexity
+  - function_body_length
+  - large_tuple  # Xoshiro state is a 4-tuple, used throughout
+  - trailing_comma  # swift-format adds trailing commas to multiline literals; formatter wins
+  - opening_brace  # swift-format puts braces of long signatures/conditions on their own line; formatter wins
+
+excluded:
+  - Packages/ORCore/.build
+  - Packages/ORContent/.build
+  - Packages/ORAI/.build
+  - Packages/ORRender/.build
+  - Packages/ORAudio/.build
+  - Packages/ORPlatform/.build
+  - Packages/ORMeta/.build
+  - Tools/sim/.build
+  - .build
+  - DerivedData
+
+opt_in_rules:
+  - explicit_init
+  - fatal_error_message
+  - overridden_super_call
+  - private_action
+  - prohibited_super_call
+  - vertical_parameter_alignment_on_call
+
+line_length:
+  warning: 200
+  error: 300
+
+type_body_length:
+  warning: 400
+  error: 600
+
+file_length:
+  warning: 1000
+  error: 1500
+
+custom_rules:
+  banned_random:
+    name: "Banned random"
+    regex: '(SystemRandomNumberGenerator|\\bInt\\.random\\(in:\\))'
+    message: "Use SeededRNG only; SystemRandomNumberGenerator and Int.random(in:) are banned in Core, Content, and AI."
+    severity: error
+  banned_date_uuid:
+    name: "Banned Date/UUID"
+    regex: '\\bDate\\(\\)\\b|\\bUUID\\(\\)'
+    message: "Date() and UUID() are banned in Core, Content, and AI."
+    severity: error
+  banned_float_core:
+    name: "Banned Float in Core"
+    regex: '\\bFloat\\b'
+    message: "Float is banned in Core, Content, and AI rules math (Int or Fixed only)."
+    severity: error
+    paths:
+      - Packages/ORCore/Sources
+      - Packages/ORContent/Sources
+      - Packages/ORAI/Sources

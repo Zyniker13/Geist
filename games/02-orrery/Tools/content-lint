@@ -1,0 +1,19 @@
+#!/bin/bash
+# content-lint — S0.3 skeleton: every JSON under Resources/Content must parse.
+# Content schemas arrive with the variant catalog (P3, OR-P3.1), at which point
+# this becomes a real schema validator.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+errors=0
+count=0
+while IFS= read -r -d '' file; do
+  count=$((count + 1))
+  if ! python3 -c "import json,sys; json.load(open(sys.argv[1]))" "$file" > /dev/null 2>&1; then
+    echo "content-lint: invalid JSON: $file"
+    errors=$((errors + 1))
+  fi
+done < <(find Resources/Content -name '*.json' -type f -print0 2>/dev/null)
+
+echo "content-lint: ${count} files, ${errors} errors"
+[ "$errors" -eq 0 ]
