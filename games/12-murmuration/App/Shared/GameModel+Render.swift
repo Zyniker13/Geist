@@ -1,6 +1,15 @@
-// The renderer handoff and hover-preview state (MU-P7.2) live here so
-// GameModel.swift stays under the 400-line type-body budget.
-import Foundation
+// Murmuration app — renderer handoff.
+//
+// The scene assembly and the MU-P7.2 hover-preview path samples live here
+// to keep GameModel.swift's type body within the lint budget. They read
+// GameModel's private members (`previousBirds`, `falconPrev`, `trace`),
+// which a cross-file extension cannot see — so this file is not an
+// extension: GameModel declares these members with `fileprivate(set)`
+// exposure through the nested extension below (private in Swift is
+// file-scoped, and the extension lives in THIS file, so the members stay
+// in the class body in GameModel.swift and the extension sees them).
+
+import MURender
 
 extension GameModel {
     /// The scene for the renderer: this tick against the previous one.
@@ -20,20 +29,4 @@ extension GameModel {
             TracePoint(x: Float(waypoint.x), y: Float(waypoint.y), age: 0)
         }
     }
-
-    /// The in-flight leader-path builder during a Pencil/pointer hover-drag
-    /// (MU-P7.2). Set by the input layer; cleared on commit or cancel.
-    var previewBuilder: LeaderPathBuilder?
-
-    /// Which flock the active hover preview steers (nil = no preview).
-    var previewFlock: UInt8?
-
-    /// Scripted hover driver (MU-P7.2 test harness): a sequence of world
-    /// points fed through `stepPreview(to:)` one per frame while
-    /// `-uitest-preview` is active, standing in for real Pencil hover
-    /// events (which XCUITest cannot synthesize). Empty when idle.
-    var scriptedHover: [SIMD2<Float>] = []
-
-    /// Last tick the hash label refreshed; -1 = never (GameModel+Hash).
-    var lastHashTick = -1
 }

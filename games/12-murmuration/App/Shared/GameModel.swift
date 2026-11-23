@@ -140,9 +140,11 @@ final class GameModel: ObservableObject {
     var autoplayer: Autoplayer?
     /// The rival pilot (GameModel+Save snapshots it).
     var rival = GentleRival()
-    private var previousBirds: BirdSoA
-    private var falconPrev: [SIMD2<Float>] = []
-    private var trace: [TracePoint] = []
+    /// Previous tick's birds for renderer interpolation; readable from
+    /// GameModel+Render.swift (internal), mutated only here.
+    internal private(set) var previousBirds: BirdSoA
+    internal private(set) var falconPrev: [SIMD2<Float>] = []
+    internal private(set) var trace: [TracePoint] = []
     private var pendingTicks = 0.0
     private var lastFrameTime: Double = 0
     private var frameTimes: [Double] = []
@@ -568,4 +570,21 @@ final class GameModel: ObservableObject {
         rival = GentleRival(difficulty: rivalDifficulty)
         startDayIfNeeded()
     }
+
+    /// The in-flight leader-path builder during a Pencil/pointer hover-drag
+    /// (MU-P7.2). Set by the input layer; cleared on commit or cancel.
+    /// Stored here; accessors live in GameModel+Render.swift.
+    var previewBuilder: LeaderPathBuilder?
+
+    /// Which flock the active hover preview steers (nil = no preview).
+    var previewFlock: UInt8?
+
+    /// Scripted hover driver (MU-P7.2 test harness): a sequence of world
+    /// points fed through `stepPreview(to:)` one per frame while
+    /// `-uitest-preview` is active, standing in for real Pencil hover
+    /// events (which XCUITest cannot synthesize). Empty when idle.
+    var scriptedHover: [SIMD2<Float>] = []
+
+    /// Last tick the hash label refreshed; -1 = never (GameModel+Hash).
+    var lastHashTick = -1
 }
