@@ -978,3 +978,22 @@ Architecture decision records. Every deviation from the roadmap is recorded here
 - **Consequences:** 13 headless DSP tests cover the audible behavior;
   scheduling quirks (sample-rate mismatch via resample ratio ≥ 0.25,
   4-arg source-node closure) are contained in one app file.
+
+## ADR-0040: UI tests run on a fresh meta profile by default (2026-11-23)
+
+- **Context:** The assist persistence test (MU-P8.2) is designed to leave
+  `falconAssist=true` in the on-disk profile when it fails mid-cleanup, and
+  every later local launch loaded that profile. Assist adds per-tick sim
+  cost, so the G8 perf gate read ~6 fps low locally while CI's fresh
+  simulator read it green — a divergence that looked like a flake but was
+  deterministic on a dirty profile.
+- **Decision:** `GameUITest.launch/launchMenu` pass `-uitest-reset` by
+  default; `MetaStore.load()` returns a fresh `MetaState` (no disk read,
+  no write-back) under the flag. The two persistence tests opt out with
+  `reset: false` on their relaunch and cleanup launches, so the disk
+  persistence the tests assert stays covered; their success path still
+  ends with the toggle flipped back OFF on disk.
+- **Consequences:** A failed persistence test can still leave a dirty
+  profile for later same-suite runs, but the perf/determinism/hash suites
+  are now immune to it. Local runs reproduce CI's fresh-sim environment
+  without erasing simulator data.

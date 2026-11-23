@@ -58,6 +58,18 @@ enum MetaStore {
     }
 
     static func load() -> MetaState {
+        // UI-test isolation (MU-P8.2): a persisted toggle from a previous
+        // test's failed cleanup (falconAssist etc.) silently alters later
+        // runs on a dirty simulator — CI's fresh sim never sees it, so the
+        // local-only divergence looks like a non-reproducible flake. The
+        // `-uitest-reset` flag makes every in-session load return a fresh
+        // profile (nothing read, nothing written back to disk), which
+        // reproduces CI's fresh-sim environment locally. Persistence
+        // tests opt OUT by not passing the flag, so real on-disk
+        // persistence stays covered.
+        if MULaunch.arguments().contains("-uitest-reset") {
+            return MetaState()
+        }
         let fresh = !FileManager.default.fileExists(atPath: url().path)
         if fresh, let cloud = syncing.load(),
             let restored = try? JSONDecoder().decode(MetaState.self, from: cloud)

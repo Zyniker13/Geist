@@ -446,27 +446,24 @@ public final class FlockRenderer: NSObject, MTKViewDelegate {
         // Reduce Motion (MU-P8.1): every Nth bird. The stride is
         // deterministic in instance order, so the drawn subset is stable
         // frame to frame (no flicker) and a stride of 1 draws everything.
+        // The stride-1 path iterates the range directly: allocating a
+        // 3,000-element index array every frame is measurable per-frame
+        // cost for zero benefit (G8 perf gate).
         let stride = max(birdStride, 1)
-        for i in stridedBirds(cur.count, by: stride) {
-            var instance = BirdInstance()
-            let canBlend = !snapAll && i < prevCount
-            instance.prevX = canBlend ? Float(prev.posX[i]) : Float(cur.posX[i])
-            instance.prevY = canBlend ? Float(prev.posY[i]) : Float(cur.posY[i])
-            instance.curX = Float(cur.posX[i])
-            instance.curY = Float(cur.posY[i])
-            // Velocity is Q16.16; the shader only needs its direction, so the
-            // raw fixed-point value is passed through unscaled.
-            instance.velX = Float(cur.velX[i])
-            instance.velY = Float(cur.velY[i])
-            instance.size = birdSize
-            instance.colorIdx = Float(cur.subFlock[i] == 0 ? 0 : 1)
-            // Wingbeat phase (MU-P6.1): a deterministic clock keyed on the
-            // scene tick and the bird's index — same frame, same flap; the
-            // per-bird offset breaks the lockstep pulse into a natural
-            // ripple. One stroke per 24 ticks (~0.8 s), i.e. slow flaps.
-            instance.phase = Float((scene.tick * 13 + i * 41) % 24) / 24.0 * 6.2831853
-            ptr[written] = instance
-            written += 1
+        let ctx = BirdWriteContext(
+            cur: cur, prev: prev, prevCount: prevCount,
+            snapAll: snapAll, tick: scene.tick, size: birdSize
+        )
+        if stride == 1 {
+            for i in 0..<cur.count {
+                writeBird(&ptr[written], index: i, ctx: ctx)
+                written += 1
+            }
+        } else {
+            for i in Swift.stride(from: 0, to: cur.count, by: stride) {
+                writeBird(&ptr[written], index: i, ctx: ctx)
+                written += 1
+            }
         }
         for i in 0..<scene.falconCur.count {
             let curPos = scene.falconCur[i]
@@ -484,13 +481,6 @@ public final class FlockRenderer: NSObject, MTKViewDelegate {
             written += 1
         }
         birdInstanceCount = written
-    }
-
-    /// Strided index sequence for the bird build loop: birds
-    /// 0, by, 2·by, … below `to`.
-    private func stridedBirds(_ count: Int, by: Int) -> [Int] {
-        guard by > 1 else { return Array(0..<count) }
-        return Swift.stride(from: 0, to: count, by: by).map { $0 }
     }
 
     private func buildDiskInstances(_ scene: RenderScene) {
@@ -688,4 +678,34 @@ public enum RenderError: Error {
     case missingFunction(String)
     case pipeline(Error)
     case bufferAllocation
+}
+
+/// The per-frame bird-write inputs: captures what the build loop needs
+/// once so the per-bird helper stays at two parameters.
+private struct BirdWriteContext {
+    let cur: BirdSoA
+    let prev: BirdSoA
+    let prevCount: Int
+    let snapAll: Bool
+    let tick: Int
+    let size: Float
+}
+
+/// Writes one bird's instance into the shared buffer slot: blend against
+/// the previous tick's position when index identity is intact, else snap;
+/// Q16.16 velocity passes through unscaled (the shader only needs
+/// direction); the wingbeat clock is deterministic in (tick, i).
+private func writeBird(_ slot: inout BirdInstance, index i: Int, ctx: BirdWriteContext) {
+    var instance = BirdInstance()
+    let canBlend = !ctx.snapAll && i < ctx.prevCount
+    instance.prevX = canBlend ? Float(ctx.prev.posX[i]) : Float(ctx.cur.posX[i])
+    instance.prevY = canBlend ? Float(ctx.prev.posY[i]) : Float(ctx.cur.posY[i])
+    instance.curX = Float(ctx.cur.posX[i])
+    instance.curY = Float(ctx.cur.posY[i])
+    instance.velX = Float(ctx.cur.velX[i])
+    instance.velY = Float(ctx.cur.velY[i])
+    instance.size = ctx.size
+    instance.colorIdx = Float(ctx.cur.subFlock[i] == 0 ? 0 : 1)
+    instance.phase = Float((ctx.tick * 13 + i * 41) % 24) / 24.0 * 6.2831853
+    slot = instance
 }

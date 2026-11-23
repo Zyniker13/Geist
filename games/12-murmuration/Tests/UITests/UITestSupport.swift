@@ -26,6 +26,7 @@ enum GameUITest {
         versus: Bool = false,
         autoplay: Bool = true,
         difficulty: String? = nil,
+        reset: Bool = true,
         extra: [String] = []
     ) {
         var args = [
@@ -63,6 +64,13 @@ enum GameUITest {
         if hash {
             args += ["-uitest-hash"]
         }
+        // Fresh profile for every launch by default: a stale persisted
+        // toggle from an earlier failed test would otherwise change sim
+        // cost and assertion outcomes for the rest of the suite. Menu-mode
+        // persistence tests pass reset: false (see launchMenu).
+        if reset {
+            args += ["-uitest-reset"]
+        }
         args += extra
         args += ["-uitest-trace"]
         #if os(macOS)
@@ -96,7 +104,13 @@ enum GameUITest {
     /// an argv-only launch stalls the SwiftUI scene pipeline before the
     /// root view builds, so `menu.play` never appears (ADR-0015). iOS
     /// keeps plain `launchArguments`.
-    static func launchMenu(app: XCUIApplication, args: [String]) {
+    static func launchMenu(app: XCUIApplication, args: [String], reset: Bool = true) {
+        var args = args
+        // Fresh profile by default (see launch()); the persistence tests
+        // pass reset: false so the relaunch reads the real on-disk profile.
+        if reset {
+            args += ["-uitest-reset"]
+        }
         #if os(macOS)
             try? args.joined(separator: "\n").write(
                 toFile: "/tmp/mu-uitest-config.txt", atomically: true, encoding: .utf8

@@ -99,7 +99,8 @@ final class AccessibilityUITests: XCTestCase {
                 "-uitest-region", "meadow",
                 "-uitest-days", "1",
                 "-uitest-trace",
-            ])
+            ],
+            reset: false) // the assertion IS disk persistence — load it
         let play2 = app.buttons["menu.play"]
         XCTAssertTrue(play2.waitForExistence(timeout: 10), "menu Play button missing on relaunch")
         let toggle2 = GameUITest.assertMenuToggle(
@@ -128,7 +129,8 @@ final class AccessibilityUITests: XCTestCase {
                 "-uitest-overlay",
                 "-uitest-region", "meadow",
                 "-uitest-days", "1",
-            ])
+            ],
+            reset: false) // read the persisted ON state so the tap writes OFF
         let toggleClean = GameUITest.assertMenuToggle(
             app: app, identifier: "menu.reduceMotion", "menu toggle missing for cleanup relaunch"
         )
