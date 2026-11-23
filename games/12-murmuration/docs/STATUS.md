@@ -1567,3 +1567,23 @@ docs-only diff changed no code. Environment flake, not a regression.
   GameUITest.launchMenu helper delivering file+defaults on macOS (argv on
   iOS), applied to all six launch sites in both tests. Validation: local
   mac Release run of both classes plus the pushed-branch CI run.
+- MU-P8.2 UI-test isolation, commit 71a3a5e: every UI-test launch passes
+  `-uitest-reset`; MetaStore.load returns a fresh profile under the flag so
+  a stale persisted toggle (e.g. falconAssist ON from a failed cleanup) can
+  no longer skew later local tests — CI's fresh sim was already immune, which
+  made the divergence look like a non-reproducible flake (ADR-0040). The two
+  disk-persistence tests opt out with `reset: false`. Evidence: clean serial
+  `make test` (Debug) — 22 tests, 2 skipped, only failures were the perf
+  gate's two assertions, and both persistence tests PASSED with the fix
+  (1 test with 0 failures in 0.051 s each in the MUGate/mac suites of
+  scratch p82-make-test.log); CI 1eb162d green on the pre-fix tree confirms
+  CI's fresh-sim baseline. Local Release like-for-like: perf test
+  `-only-testing:MUITests/MUGateTests/testPerfFrameBudgetWithThreeThousandBirds`
+  `-configuration Release` PASSED (47.1 s, ** TEST SUCCEEDED **, rc=0,
+  scratch p82-perf-release.log) — the Debug fps=44/frame 21.27 ms reads were
+  Debug-configuration sampling (skill rule: local perf evidence in CI's
+  configuration, Release), not a renderer regression. FlockRenderer per-frame
+  index-array allocation removed (stride-1 fast path) in the same commit;
+  MURender builds clean from a wiped .build (5.86 s) and `make lint` green
+  (swiftlint strict, swift-format, content-lint 9 files 0 errors,
+  check-imports OK).
