@@ -3,26 +3,18 @@
 This file is the single place to resume the program from. Keep every field below current after every meaningful step (see "Resuming After a Restart" in `ROADMAP.md`). Per-game detail (gate evidence and sign-offs) lives in each game's `docs/STATUS.md`.
 
 - **Current game:** Murmuration (`12-murmuration`)
-- **Phase:** G8 closed — P8 merged to main (650f27c), tag
-  `murmur/gate-G8-pass` pushed. P9 (beta/release prep) next per
-  `games/12-murmuration/ROADMAP.md` §P9.
-- **Last done:** G8 PASSED (Polish). MU-P8.1 accessibility (Reduce
-  Motion + Reduce Transparency + high-contrast rival marks,
-  AccessibilityRenderTests); MU-P8.2 falcon-assist steering
-  (FalconAssistTests) + UI-test profile isolation (`-uitest-reset`
-  fresh MetaStore profile, ADR-0040; disk-persistence tests opt out
-  with `reset: false`); FlockRenderer stride-1 bird-write fast path.
-  Debug/Release perf divergence root-caused as configuration sampling
-  — CI runs Release, so the local gate suite now runs Release too
-  (4cc0ac3). G8 evidence: Release gate suite 22 tests / 2 skipped /
-  0 failures, 283 s, TEST SUCCEEDED; CI green on 1eb162d + 71a3a5e;
-  sim fps=60, frame-build median 1.39 ms (Perf4000Tests); 3,000-bird
-  MUGate perf passed in Release (47.1 s); 30-min thermal soak PASS
-  (60 samples, worst thermal=0). Device-only items (120 fps iPad Pro
-  M4, 60 fps iPad A16) remain maintainer issue #11 per §8.2.
-- **Next step:** check CI on main (650f27c) once; then start P9
-  (beta and release prep) on `murmur/phase/P9-release-prep`.
-- **Blocked on:** nothing.
+- **Phase:** G9 closed — P9 merged to main (23f08e5), tag
+  `murmur/gate-G9-pass` pushed. P10 (release assets) in progress on
+  `murmur/phase/P10-release` per `games/12-murmuration/ROADMAP.md` §P9.
+- **Last done:** G9 PASSED (Beta). Release archives both platforms
+  (CODE_SIGNING_ALLOWED=NO: iOS MU.xcarchive 14 MB, macOS MU-macOS.xcarchive
+  17 MB, ARCHIVE SUCCEEDED); docs/BETA.md tester guide; opt-in telemetry-free
+  stats export (`MetaStore.exportStats()` →
+  Documents/murmuration-stats.json, `MUStatsExportTests` passed 9.4 s);
+  final-build soak: Release gate suite TEST SUCCEEDED (23 tests / 2 skipped /
+  0 failures) and 120-day `sim --balance` sweeps gentle 73.6% / normal 83.8%
+  / hard 80.1% (720 days each, all within ~1 point of the G4 rates) — no
+  retune. TestFlight upload remains maintainer issue #12 per §8.2.
 
 ## Environment Check
 
@@ -49,7 +41,7 @@ If Xcode 27.2 or an iOS 26-or-later runtime is missing and cannot be installed w
 | Order | No. | Folder | Game | State | Last Gate | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | 04 | [`04-night-market`](games/04-night-market/ROADMAP.md) | Night Market | Done | `night-market/gate-G10-pass` | All gates G0–G10 tagged; TestFlight/App Store steps owner-only in #12 |
-| 2 | 12 | [`12-murmuration`](games/12-murmuration/ROADMAP.md) | Murmuration | In Progress (G8 done, P9 next) | `murmur/gate-G8-pass` | G8 merged (650f27c) + CI green on P8; polish/accessibility/perf complete; P9 beta/release prep next |
+| 2 | 12 | [`12-murmuration`](games/12-murmuration/ROADMAP.md) | Murmuration | In Progress (G9 done, P10 next) | `murmur/gate-G9-pass` | G9 merged (23f08e5) + tag pushed; P10 release assets (screenshots, preview video, metadata) next |
 | 3 | 02 | [`02-orrery`](games/02-orrery/ROADMAP.md) | Orrery | Not Started | — | — |
 | 4 | 14 | [`14-beacon-coast`](games/14-beacon-coast/ROADMAP.md) | Beacon Coast | Not Started | — | — |
 | 5 | 13 | [`13-terrace`](games/13-terrace/ROADMAP.md) | Terrace | Not Started | — | — |
@@ -181,3 +173,4 @@ One line per meaningful step, newest last: date, phase or game and stage, what w
   worst thermal=0). Device-only 120/60 fps checks remain maintainer
   issue #11. P9 (beta/release prep) next.
 - 2026-11-22 (cont.): **G7 PASSED and P7 merged to main** (merge e592e34, tag `murmur/gate-G7-pass` pushed). MU-P7.1 platform services: MUPlatform gains MUPostPlanner (36 headless tests: fixed board ids mu.daily / mu.campaign.<stage>, achievement ordering, FNV-1a context hash pinned), GameCenterPoster + ICloudSync compile unconditionally and act only when entitled, MetaStore write-through + restore-on-launch with injectable syncing (-uitest-poster-mock + debug.posts row); testCompletedDayPostsScores drives the day-end pipeline in CI. MU-P7.2: state-free hover preview (GameModel+Preview extension, RenderScene.pendingPath, brighter pending strip; iOS UIHoverGestureRecognizer + Mac pointer-move; trackpad two-finger pan splits at 0.5; -uitest-preview/-uitest-hover harness; testHoverPreviewPendingPath PASSED with screenshot evidence showing the leader unmoved). Flake policy: testThreeDayAutoplay's 240 s wait budget raced the Debug host floor (~250 s after P6 shader cost; G4's last green run was 233.6 s) while CI Release finishes in 27–33 s — budget raised to 600 s (630120d), solo rerun PASSED 269.8 s, no test weakened. G7 evidence: lint 0; seven package suites 0 failures in the tree AND a clean worktree at 36e077f; CI 45080911562 full success; the one red run (7dcf821) is a docs-only diff whose two ui-test-ios failures are environment flakes green in adjacent runs. Real-service checks (Game Center sandbox, 2-device iCloud round-trip, ProMotion) filed as maintainer issues #14 and #11 per §8.2. P8 (polish/accessibility/performance) starts on murmur/phase/P8-polish.
+- 2026-11-23: **Murmuration G9 PASSED** (typo guarded: Murmuration) on `murmur/phase/P9-release-prep`: Release archives both platforms (CODE_SIGNING_ALLOWED=NO; iOS 14 MB, macOS 17 MB, ARCHIVE SUCCEEDED), beta notes (docs/BETA.md), opt-in telemetry-free stats export (MetaStore.exportStats → Documents/murmuration-stats.json; MUStatsExportTests passed 9.4 s), final-build soak: Release gate suite TEST SUCCEEDED (23/2 skipped/0 fail) + 120-day balance sweeps gentle 73.6% / normal 83.8% / hard 80.1% (720 days each; all within ~1 pt of G4) — no retune. Merge 23f08e5 to main, tag `murmur/gate-G9-pass` pushed. P10 (release assets) on murmur/phase/P10-release.

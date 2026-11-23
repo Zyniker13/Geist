@@ -1675,3 +1675,33 @@ does not block the gate.
   notes). Remaining: size screenshots + preview clip regeneration via
   `Tools/release-screens.sh` pattern (ported from Night Market) on
   zGeist_bot-iPad-Pro-13; G10 evidence; merge; tag `murmur/gate-G10-pass`.
+
+### GATE G10 evidence (2026-11-23, branch tip c91711b)
+
+P10 assets are committed: `docs/release/screenshots/` (01-menu,
+02-flock, 03-high-contrast, 04-assist — 2064×2752 iPad portrait,
+verified non-blank), `docs/release/preview.mp4` (53 s, 19 MB, H.264)
+with capture facts and trim plan in `docs/release/preview.md`, and
+`docs/release/RELEASE.md` (metadata, privacy "Data Not Collected", age
+rating 4+, accessibility labels, press kit, asset list). GATE G10
+checks per §8.1:
+
+- **G10 — assets approved (substitute: §8.2 scripted capture +
+  self-assessment; GLM approves its own reference assets):** all four
+  screenshots and the preview capture were reviewed frame-by-frame on
+  this branch (menu, flock steering, high-contrast rivals, falcon
+  assist; preview frames 0:03/0:25/0:52 verified live gameplay, no
+  dialogs, HUD counters moving). Framing and legibility match Night
+  Market's approved P10 set. Sign-off: GLM-SELF.
+- **Release readiness:** `make lint` **exit 0** (swiftlint/swift-format
+  warnings only — pre-existing style notes, no errors; content-lint 9
+  files 0 errors; check-imports OK). Archives already green in G9
+  evidence (iOS 14 MB, macOS 17 MB, CODE_SIGNING_ALLOWED=NO).
+- **Maintainer handoff:** release actions — App Store Connect record
+  (bundle ID placeholder stands), signed TestFlight upload, icon
+  artwork, App Store Connect asset placement — filed as issue #16
+  (`needs-maintainer, murmuration`); TestFlight-side P9 gaps stay in
+  #12 (night-market scope) and #14 (G7 sandbox).
+
+**G10: PASS (sign-off GLM-SELF per §8.1 with substitutes).** Gate tag
+`murmur/gate-G10-pass` on merge.

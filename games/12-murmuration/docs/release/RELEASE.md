@@ -61,8 +61,17 @@ themselves; it is off unless the player opts in.
   the careless edge. A deterministic simulation — the same seed always
   plays the same day — with daily challenges shared by every player and
   per-region leaderboards.
-- **Asset list:** screenshots (generated on simulators, all sizes), an
-  app preview video (`docs/release/preview.md`), and the app icon.
+- **Asset list (all generated, on `zGeist_bot-iPad-Pro-13`, committed in
+  this repo):**
+  - Screenshots: `docs/release/screenshots/01-menu.png` (main menu),
+    `02-flock.png` (mid-day flock steering), `03-high-contrast.png`
+    (high-contrast rival mode), `04-assist.png` (falcon assist prompt) —
+    2064×2752 iPad portrait, verified non-blank.
+  - App preview: `docs/release/preview.mp4` (53 s, 2064×2752, H.264,
+    19 MB) with capture facts and trim plan in
+    `docs/release/preview.md`.
+  - App icon: generated at upload time in App Store Connect —
+    maintainer item (see `docs/STATUS.md` G10).
 - **Fact sheet:** single purchase, universal (iOS/iPadOS/macOS), no
   in-app purchases, no ads, offline play, VoiceOver + high-contrast +
   falcon assist, 10 regions, 3 AI tiers, 30-day dailies, campaign mode.
