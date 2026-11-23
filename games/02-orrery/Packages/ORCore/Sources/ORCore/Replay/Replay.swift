@@ -58,6 +58,6 @@ public struct Replay: Sendable, Codable, Equatable {
             }
         }
 
-        return RunResult(finalState: state, finalHash: state.hashValue(), applied: applied, skipped: skipped)
+        return RunResult(finalState: state, finalHash: state.canonicalHash(), applied: applied, skipped: skipped)
     }
 }

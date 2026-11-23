@@ -12,7 +12,7 @@ struct ReplayTests {
         #expect(result.finalState.count == 0)
         #expect(result.applied == 0)
         #expect(result.skipped == 0)
-        #expect(result.finalHash == TrivialState().hashValue())
+        #expect(result.finalHash == TrivialState().canonicalHash())
     }
 
     @Test("same replay runs to the same hash twice (determinism)")
