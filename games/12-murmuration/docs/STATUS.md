@@ -1626,3 +1626,52 @@ with signing/App Store Connect items as maintainer issues.
   Makefiles and NM's release-screens.sh moved from the stock
   `iPad Pro 13-inch (M5)` to the profile-owned `zGeist_bot-iPad-Pro-13`
   (maintainer standing instruction, 2026-11-23).
+
+### GATE G9 evidence (2026-11-23, branch tip cde9442)
+
+All G9 checks pass on the final P9 build (79c097d + release-metadata draft
+cde9442; behavior identical — cde9442 touches only docs). Per §8.1 the
+maintainer-only TestFlight parts are filed, not faked:
+
+- **MU-P9.1 Release archives (substitute: CODE_SIGNING_ALLOWED=NO, both
+  platforms):** `xcodebuild archive -scheme MU -destination
+  'generic/platform=iOS Simulator' -configuration Release
+  CODE_SIGNING_ALLOWED=NO` → **ARCHIVE SUCCEEDED** (MU.xcarchive, MU.app,
+  14 MB, CFBundleShortVersionString 1.0); `MU-macOS` scheme on
+  `generic/platform=macOS` → **ARCHIVE SUCCEEDED** (MU-macOS.xcarchive,
+  17 MB). Logs: scratch `mu-p9-archive.log`, `mu-p9-archive-mac.log`.
+  Real signing/upload to TestFlight remains maintainer issue #12.
+- **MU-P9.2 beta notes:** `docs/BETA.md` (what this build is, 10-minute
+  test pass, what to watch, known gaps, export opt-in) — committed 79c097d.
+- **MU-P9.3 stats export:** committed 79c097d. UI test
+  `MUStatsExportTests.testStatsExportOptInAndExport` **passed** (9.44 s) in
+  the full suite below; export writes `Documents/murmuration-stats.json`
+  with `{format: "murmuration-stats", version: 1}`, opt-in is
+  session-local and off by default, nothing uploads.
+- **MU-P9.4 soak on the final build:**
+  - Full gate suite in Release via sim-lock (`make test`):
+    **TEST SUCCEEDED, rc=0** (23 tests, 2 skipped — the
+    known device-only perf/thermal skips — 0 failures; log scratch
+    `p9-maketest.log`).
+  - `Tools/sim --balance` 120-day runs on the final build, Release,
+    720 days each (6 regions × 120 days, seed-resampled per day):
+    **gentle winRate 73.6% (530/720), normal 83.8% (603/720), hard
+    80.1% (577/720)** — all within ~1 point of the G4 balance rates
+    (72.7/84.4/79.6); no retune needed. CSVs scratch
+    `mu-p9-balance-{gentle,normal,hard}.csv`, log
+    `mu-p9-balance.log`. No crashes, no assertion failures.
+  - Crash-free substitute: soak + suite clean ⇒ crash-free ≥ 99.5% holds
+    locally; device crash data is maintainer issue #12.
+
+**G9: PASS (sign-off GLM-SELF per §8.1 with substitutes).** The TestFlight
+crash-free data and upload remain `needs-maintainer` (#12); per §1.1 that
+does not block the gate.
+
+### P10 progress (2026-11-23, continuing on the P9 branch)
+
+- cde9442: `docs/release/RELEASE.md` — App Store metadata drafts (name,
+  subtitle, keywords, description, screenshots list, privacy label
+  "Data Not Collected", age rating 4+, press kit bullets, TestFlight
+  notes). Remaining: size screenshots + preview clip regeneration via
+  `Tools/release-screens.sh` pattern (ported from Night Market) on
+  zGeist_bot-iPad-Pro-13; G10 evidence; merge; tag `murmur/gate-G10-pass`.
