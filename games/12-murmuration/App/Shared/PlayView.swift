@@ -55,6 +55,10 @@ struct GameLaunchConfig {
     /// `-uitest-reduce-motion` / `-uitest-high-contrast`).
     var reduceMotion = false
     var highContrastRival = false
+    /// Falcon-assist steering (MU-P8.2): sim-level auto-avoidance of
+    /// falcons (an avoidance force in the boids kernel, seeded
+    /// deterministically). Menu toggle or `-uitest-assist`.
+    var falconAssist = false
 
     /// Parse the effective UI-test flags (file config on macOS, else argv).
     static func resolved() -> GameLaunchConfig {
@@ -97,6 +101,7 @@ struct GameLaunchConfig {
         }
         if args.contains("-uitest-reduce-motion") { config.reduceMotion = true }
         if args.contains("-uitest-high-contrast") { config.highContrastRival = true }
+        if args.contains("-uitest-assist") { config.falconAssist = true }
         if let script = value("-uitest-hover") {
             config.hoverScript = script.split(separator: ";").compactMap { part in
                 let pair = part.split(separator: ",")
@@ -179,6 +184,9 @@ struct PlayView: View {
         }
         if let falcons = config.falconOverride {
             adjusted = adjusted.withFalconCount(falcons)
+        }
+        if config.falconAssist {
+            adjusted = adjusted.withFalconAssist(true)
         }
         let accessibilityReduceMotion =
             config.reduceMotion

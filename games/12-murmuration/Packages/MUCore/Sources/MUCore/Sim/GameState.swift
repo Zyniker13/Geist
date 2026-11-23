@@ -98,6 +98,12 @@ public struct GameState: Codable, Sendable, Equatable {
     /// Falcon states (R-10).
     public var falcons: [FalconState]
 
+    /// Falcon-assist steering (MU-P8.2): when on, the player's birds get a
+    /// falcon-avoidance force (`stepBirds` reads `BoidsFrame.falconX/Y`).
+    /// Immutable for the life of the state, defaults off so existing
+    /// replays keep their trajectories.
+    public let falconAssist: Bool
+
     /// Condense cooldown timer (R-4).
     public var condenseCooldown: Int
 
@@ -177,7 +183,11 @@ public struct GameState: Codable, Sendable, Equatable {
     /// dailies scale the wind field's magnitude and its regeneration
     /// cadence); defaults reproduce v16 bit-for-bit, so only daily
     /// trajectories diverge.
-    public static let replayContentVersion = 17
+    /// v18: MU-P8.2 — `falconAssist` joins the state. The key appears in
+    /// every state hash (hash = JSON over the whole state), so the goldens
+    /// regenerate; with assist off (the default everywhere) trajectories
+    /// are bit-identical to v17.
+    public static let replayContentVersion = 18
 
     /// R-10 grab budget: successful-dive kills per 1,000 birds of the target
     /// flock (ADR-0034). Tuning constant — the balance harness overrides it
@@ -285,6 +295,7 @@ public struct GameState: Codable, Sendable, Equatable {
         windStrengthQ16: Int32 = 65_536,
         windRegenTicksOverride: Int32 = 0,
         falconBehavior: FalconBehavior = .patrol,
+        falconAssist: Bool = false,
         obstacleCenterX: [Int32] = [],
         obstacleCenterY: [Int32] = [],
         obstacleRadius: [Int32] = [],
@@ -304,6 +315,7 @@ public struct GameState: Codable, Sendable, Equatable {
         self.windStrengthQ16 = windStrengthQ16
         self.windRegenTicksOverride = windRegenTicksOverride
         self.falconBehavior = falconBehavior
+        self.falconAssist = falconAssist
         self.obstacleCenterX = obstacleCenterX
         self.obstacleCenterY = obstacleCenterY
         self.obstacleRadius = obstacleRadius
@@ -439,6 +451,7 @@ public struct GameState: Codable, Sendable, Equatable {
         && lhs.windStrengthQ16 == rhs.windStrengthQ16
         && lhs.windRegenTicksOverride == rhs.windRegenTicksOverride
         && lhs.falconBehavior == rhs.falconBehavior
+        && lhs.falconAssist == rhs.falconAssist
         && lhs.obstacleCenterX == rhs.obstacleCenterX
         && lhs.obstacleCenterY == rhs.obstacleCenterY
         && lhs.obstacleRadius == rhs.obstacleRadius

@@ -24,6 +24,9 @@ struct MetaState: Codable {
     /// sync through the same iCloud blob as the rest of the meta.
     var reduceMotion = false
     var highContrastRival = false
+    /// Falcon-assist steering (MU-P8.2): a sim-level option, persisted
+    /// with the profile so it survives relaunches and iCloud sync.
+    var falconAssist = false
 
     /// Effective reduce motion: the user toggle OR the system setting.
     /// Evaluated on the app side (the packages stay platform-free).

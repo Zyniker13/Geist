@@ -1507,3 +1507,24 @@ docs-only diff changed no code. Environment flake, not a regression.
 - Leaderboards post in sandbox — SUBSTITUTE PASS (MUPostPlanner pins +
   MockPoster pipeline through the day-end path in CI-green UI test);
   sandbox sign-in check filed (#14).
+
+### P8 progress (2026-11-22, on `murmur/phase/P8-polish`)
+
+- MU-P8.1 Reduce Motion + high-contrast rival, commit 8b54486:
+  - `GameModel` now carries `reduceMotion`/`highContrastRival` through its
+    constructor. The first draft mutated the `StateObject`'s wrappedValue
+    after init and the a11y overlay row never appeared in ANY launch
+    (manual probes with clean flag files included) — SwiftUI keeps a
+    different instance than the one init mutated. Same failure class the
+    codebase already routes around with `.task`-deferred `pauseAtTick`/
+    `hashUpdates`. Second, independent bug in the same probe: the Shell
+    `launchConfig` merge clobbered the parsed `-uitest-*` flags with the
+    menu toggle's clean-profile default; argv flags now win. Both fixed;
+    regression surface = `AccessibilityUITests` + the overlay row.
+  - Verified on-device (iPad sim screenshots): `a11y hc` renders with the
+    patterned magenta rival visible in the scene; `a11y rm` renders with
+    the 1-in-4 decimated flock (~tens of specks vs thousands), HUD bird
+    count unchanged — render-only, hashes unaffected.
+  - Note: mid-day probes show an empty `hash` row by design — hash
+    refresh only runs at pause/day-end/finish force points; the
+    pause/resume test reads it after finish. Not a bug.

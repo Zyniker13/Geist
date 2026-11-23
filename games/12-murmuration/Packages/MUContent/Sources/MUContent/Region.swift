@@ -154,6 +154,10 @@ public struct Region: Codable, Sendable, Equatable, Identifiable {
     public let windRegenTicksOverride: Int32
     /// Falcon behavior (R-10) used by this region's falcons.
     public let falconBehavior: FalconBehavior
+    /// Falcon-assist steering (MU-P8.2): when true, `makeGameState` builds
+    /// the state with the falcon-avoidance assist on. Player-set via the
+    /// menu; default off.
+    public let falconAssist: Bool
 
     /// A roost placement.
     public struct RoostDef: Codable, Sendable, Equatable {
@@ -216,7 +220,8 @@ public struct Region: Codable, Sendable, Equatable, Identifiable {
         windPattern: WindPattern = .uniform,
         windStrengthQ16: Int32 = 65_536,
         windRegenTicksOverride: Int32 = 0,
-        falconBehavior: FalconBehavior = .patrol
+        falconBehavior: FalconBehavior = .patrol,
+        falconAssist: Bool = false
     ) {
         self.id = id
         self.name = name
@@ -238,13 +243,14 @@ public struct Region: Codable, Sendable, Equatable, Identifiable {
         self.windStrengthQ16 = windStrengthQ16
         self.windRegenTicksOverride = windRegenTicksOverride
         self.falconBehavior = falconBehavior
+        self.falconAssist = falconAssist
     }
 
     private enum CodingKeys: String, CodingKey {
         case id, name, worldWidth, worldHeight, birdCount, falconCount
         case hasRival, rivalStartBirds, rivalDifficulty, soloTargetBirds, windSeedOffset, seed
         case roosts, fields, palette, obstacles, windPattern, falconBehavior
-        case windStrengthQ16, windRegenTicksOverride
+        case windStrengthQ16, windRegenTicksOverride, falconAssist
     }
 
     /// JSON decoding defaults let regions authored before P3 load unchanged:
@@ -273,6 +279,7 @@ public struct Region: Codable, Sendable, Equatable, Identifiable {
         windRegenTicksOverride =
             try container.decodeIfPresent(Int32.self, forKey: .windRegenTicksOverride) ?? 0
         falconBehavior = try container.decodeIfPresent(FalconBehavior.self, forKey: .falconBehavior) ?? .patrol
+        falconAssist = try container.decodeIfPresent(Bool.self, forKey: .falconAssist) ?? false
     }
 
     /// A copy with different obstacles — validation tests build variants.
@@ -317,6 +324,7 @@ public struct Region: Codable, Sendable, Equatable, Identifiable {
             windStrengthQ16: windStrengthQ16,
             windRegenTicksOverride: windRegenTicksOverride,
             falconBehavior: falconBehavior,
+            falconAssist: falconAssist,
             obstacleCenterX: obstacles.map(\.x),
             obstacleCenterY: obstacles.map(\.y),
             obstacleRadius: obstacles.map { Int32($0.radius) }
@@ -393,6 +401,28 @@ public struct Region: Codable, Sendable, Equatable, Identifiable {
             windStrengthQ16: windStrengthQ16,
             windRegenTicksOverride: windRegenTicksOverride,
             falconBehavior: falconBehavior
+        )
+    }
+
+    /// A copy with falcon-assist steering (MU-P8.2): the boids kernel adds
+    /// an avoidance force away from the nearest falcon inside its fear
+    /// radius, keeping early players' flocks from dissolving into dives.
+    /// Sim-level (it joins GameState and hashes), unlike the render-only
+    /// accessibility options.
+    public func withFalconAssist(_ enabled: Bool) -> Region {
+        Region(
+            id: id, name: name,
+            worldWidth: worldWidth, worldHeight: worldHeight,
+            birdCount: birdCount, falconCount: falconCount,
+            hasRival: hasRival, rivalStartBirds: rivalStartBirds,
+            soloTargetBirds: soloTargetBirds,
+            windSeedOffset: windSeedOffset, seed: seed,
+            roosts: roosts, fields: fields, palette: palette,
+            obstacles: obstacles, windPattern: windPattern,
+            windStrengthQ16: windStrengthQ16,
+            windRegenTicksOverride: windRegenTicksOverride,
+            falconBehavior: falconBehavior,
+            falconAssist: enabled
         )
     }
 

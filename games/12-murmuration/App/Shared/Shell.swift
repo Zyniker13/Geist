@@ -173,11 +173,15 @@ struct GameDebugOverlay: View, Equatable {
 
     /// "rm hc" style accessibility flags for the debug overlay (MU-P8.1):
     /// `rm` when Reduce Motion is in effect (toggle or system setting),
-    /// `hc` when the high-contrast rival palette is active. Empty otherwise.
+    /// `hc` when the high-contrast rival palette is active. `fa` when the
+    /// falcon-assist option is on (MU-P8.2, read from the state itself:
+    /// it is sim-level, so the saved/resumed state carries it). Empty
+    /// otherwise.
     @MainActor static func a11yLabel(_ model: GameModel) -> String {
         var flags = ""
         if model.reduceMotion { flags += "rm " }
-        if model.highContrastRival { flags += "hc" }
+        if model.highContrastRival { flags += "hc " }
+        if model.state.falconAssist { flags += "fa" }
         return String(flags.trimmingCharacters(in: .whitespaces))
     }
 
@@ -261,6 +265,9 @@ struct MenuView: View {
     /// back on toggle; the play surfaces read them through the model.
     @State private var reduceMotion = false
     @State private var highContrastRival = false
+    /// Falcon-assist steering (MU-P8.2): same persistence pattern, but it
+    /// rides the region into the sim (a sim-level option, unlike a11y).
+    @State private var falconAssist = false
 
     init() {
         let arguments = MULaunch.arguments()
@@ -272,6 +279,7 @@ struct MenuView: View {
         let meta = MetaStore.load()
         _reduceMotion = State(initialValue: meta.reduceMotion)
         _highContrastRival = State(initialValue: meta.highContrastRival)
+        _falconAssist = State(initialValue: meta.falconAssist)
         if autoPlay {
             MUTrace.log("shell: launching play session args=\(arguments.joined(separator: " "))")
         }
@@ -327,6 +335,8 @@ struct MenuView: View {
         // clean profile's default.
         if !config.reduceMotion { config.reduceMotion = reduceMotion }
         if !config.highContrastRival { config.highContrastRival = highContrastRival }
+        // The assist flag wins over the menu toggle, same as the a11y flags.
+        if !config.falconAssist { config.falconAssist = falconAssist }
         return config
     }
 
@@ -425,6 +435,23 @@ struct MenuView: View {
                             MetaStore.store(meta)
                         }
                         .accessibilityIdentifier("menu.highContrast")
+                }
+                .frame(maxWidth: 320)
+                // Assist steering (MU-P8.2): sim-level falcon auto-avoidance
+                // for early players. Persisted with the profile like a11y;
+                // applied at region construction (a GameState field), so a
+                // mid-session toggle takes effect on the next launch.
+                HStack {
+                    Text("Falcon assist")
+                    Spacer()
+                    Toggle(String(""), isOn: $falconAssist)
+                        .labelsHidden()
+                        .onChange(of: falconAssist) { _, newValue in
+                            var meta = MetaStore.load()
+                            meta.falconAssist = newValue
+                            MetaStore.store(meta)
+                        }
+                        .accessibilityIdentifier("menu.assist")
                 }
                 .frame(maxWidth: 320)
                 Spacer()
