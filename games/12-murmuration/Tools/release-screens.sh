@@ -6,13 +6,19 @@
 # captures are reproducible.
 set -e
 export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer
+GAME_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+cd "$GAME_DIR"
 # Look up the UDID by name: device-set maintenance can recreate a
 # simulator with a new UDID.
 UDID=$(xcrun simctl list devices | grep 'zGeist_bot-iPad-Pro-13 (' | grep -Eo '[0-9A-F-]{36}')
 test -n "$UDID" || { echo "no zGeist_bot-iPad-Pro-13 found"; exit 1; }
 echo "using $UDID"
-APP=/Users/agent/Library/Developer/Xcode/DerivedData/Murmuration-dzdzkwqxjeepzdcrassuyyflhzwf/Build/Products/Debug-iphonesimulator/MU.app
-OUT="$(dirname "$0")/../docs/release/screenshots"
+# Resolve the Debug simulator product from build settings (never hardcode
+# a machine-specific DerivedData path in the repo).
+APP=$(xcodebuild -scheme MU -configuration Debug -destination 'platform=iOS Simulator,name=zGeist_bot-iPad-Pro-13' -showBuildSettings 2>/dev/null | awk '/ BUILT_PRODUCTS_DIR =/{print $3; exit}')/MU.app
+test -d "$APP" || { echo "MU.app not built: run 'make build' (Debug) first"; exit 1; }
+echo "using $APP"
+OUT="$GAME_DIR/docs/release/screenshots"
 mkdir -p "$OUT"
 BUNDLE=com.example.murmuration
 
