@@ -396,22 +396,37 @@ struct MenuView: View {
                 // Accessibility (MU-P8.1): reduce motion (1-in-4 bird
                 // decimation + no between-tick glide) and the high-contrast
                 // rival patterning. Persisted with the profile.
-                Toggle("Reduce motion", isOn: $reduceMotion)
-                    .onChange(of: reduceMotion) { _, newValue in
-                        var meta = MetaStore.load()
-                        meta.reduceMotion = newValue
-                        MetaStore.store(meta)
-                    }
-                    .frame(maxWidth: 320)
-                    .accessibilityIdentifier("menu.reduceMotion")
-                Toggle("High-contrast rival", isOn: $highContrastRival)
-                    .onChange(of: highContrastRival) { _, newValue in
-                        var meta = MetaStore.load()
-                        meta.highContrastRival = newValue
-                        MetaStore.store(meta)
-                    }
-                    .frame(maxWidth: 320)
-                    .accessibilityIdentifier("menu.highContrast")
+                // The bare toggle (label split off into a sibling Text)
+                // exposes ONLY the switch control in the AX tree — a
+                // labeled Toggle fuses label+control into one element
+                // whose hittable point is the text, so XCUITest taps
+                // missed the switch (MU-P8.1 probe).
+                HStack {
+                    Text("Reduce motion")
+                    Spacer()
+                    Toggle(String(""), isOn: $reduceMotion)
+                        .labelsHidden()
+                        .onChange(of: reduceMotion) { _, newValue in
+                            var meta = MetaStore.load()
+                            meta.reduceMotion = newValue
+                            MetaStore.store(meta)
+                        }
+                        .accessibilityIdentifier("menu.reduceMotion")
+                }
+                .frame(maxWidth: 320)
+                HStack {
+                    Text("High-contrast rival")
+                    Spacer()
+                    Toggle(String(""), isOn: $highContrastRival)
+                        .labelsHidden()
+                        .onChange(of: highContrastRival) { _, newValue in
+                            var meta = MetaStore.load()
+                            meta.highContrastRival = newValue
+                            MetaStore.store(meta)
+                        }
+                        .accessibilityIdentifier("menu.highContrast")
+                }
+                .frame(maxWidth: 320)
                 Spacer()
             }
             .padding(24)

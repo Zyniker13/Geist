@@ -66,7 +66,17 @@ final class AccessibilityUITests: XCTestCase {
         XCTAssertTrue(play.waitForExistence(timeout: 10), "menu Play button missing")
         let toggle = app.switches["menu.reduceMotion"]
         XCTAssertTrue(toggle.waitForExistence(timeout: 10), "Reduce Motion toggle missing")
+        // Normalize the start state: a prior failed run can leave the
+        // toggle persisted ON (the cleanup below is the only thing that
+        // resets it), which would make this tap turn it OFF and the
+        // play session legitimately row-less. Force OFF, then ON, and
+        // assert the flip registered.
+        if (toggle.value as? String) == "1" { toggle.tap() }
         toggle.tap()
+        XCTAssertEqual(
+            app.switches["menu.reduceMotion"].value as? String, "1",
+            "toggle did not turn on"
+        )
         play.tap()
 
         // The play session carries the setting.
@@ -104,8 +114,22 @@ final class AccessibilityUITests: XCTestCase {
             "rm did not survive the relaunch"
         )
 
-        // Leave the profile clean for other tests.
-        toggle2.tap()
+        // Leave the profile clean for other tests: the app is mid-play
+        // here (the menu switch is not in the tree), so relaunch fresh
+        // and flip the toggle off on the real menu.
+        app.terminate()
+        app.launchArguments = [
+            "-uitest-overlay",
+            "-uitest-region", "meadow",
+            "-uitest-days", "1",
+        ]
+        app.launch()
+        let toggleClean = app.switches["menu.reduceMotion"]
+        XCTAssertTrue(
+            toggleClean.waitForExistence(timeout: 10),
+            "menu toggle missing for cleanup relaunch"
+        )
+        toggleClean.tap()
         var metaClean = false
         for _ in 0..<10 where (app.switches["menu.reduceMotion"].value as? String) == "0" {
             metaClean = true
