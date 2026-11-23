@@ -1587,3 +1587,16 @@ docs-only diff changed no code. Environment flake, not a regression.
   MURender builds clean from a wiped .build (5.86 s) and `make lint` green
   (swiftlint strict, swift-format, content-lint 9 files 0 errors,
   check-imports OK).
+- G8 gate evidence (POLISH): local gate suite green in Release after
+  aligning `make test` with CI's configuration (commit 4cc0ac3): 22 tests,
+  2 skipped, 0 failures, 283 s, `** TEST SUCCEEDED **`, rc=0
+  (scratch g8-test.log) — includes the sim perf gate green in Release and
+  both disk-persistence tests with the P8.2 isolation fix. CI: 1eb162d and
+  71a3a5e green (Release UI jobs, iOS + macOS); the committed tree is
+  verified by CI's clean checkouts of the pushed SHAs (worktree substitute).
+  Perf: sim fps=60 at host cap, frame-build median 1.39 ms <= 16 ms
+  (Perf4000Tests, d115f86) plus the three-thousand-bird MUGate perf passed
+  in Release (47.1 s, scratch p82-perf-release.log). Thermal: 30-min soak
+  PASS (60 samples, worst thermal=0, fps=60, rc=0). Device-only gate items
+  (120 fps iPad Pro M4, 60 fps iPad A16) remain maintainer issue #11 —
+  sim substitutes per _CONVENTIONS 8.2.
