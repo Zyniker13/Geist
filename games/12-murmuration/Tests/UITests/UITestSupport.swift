@@ -26,6 +26,7 @@ enum GameUITest {
         versus: Bool = false,
         autoplay: Bool = true,
         difficulty: String? = nil,
+        reset: Bool = true,
         extra: [String] = []
     ) {
         var args = [
@@ -63,6 +64,13 @@ enum GameUITest {
         if hash {
             args += ["-uitest-hash"]
         }
+        // Fresh profile for every launch by default: a stale persisted
+        // toggle from an earlier failed test would otherwise change sim
+        // cost and assertion outcomes for the rest of the suite. Menu-mode
+        // persistence tests pass reset: false (see launchMenu).
+        if reset {
+            args += ["-uitest-reset"]
+        }
         args += extra
         args += ["-uitest-trace"]
         #if os(macOS)
@@ -89,6 +97,76 @@ enum GameUITest {
             // gate run must hold the frontmost window for ticks to flow.
             app.activate()
         #endif
+    }
+
+    /// Menu-mode launches on macOS must deliver their flags through the
+    /// file/defaults channel (MULaunch resolves file → defaults → argv):
+    /// an argv-only launch stalls the SwiftUI scene pipeline before the
+    /// root view builds, so `menu.play` never appears (ADR-0015). iOS
+    /// keeps plain `launchArguments`.
+    static func launchMenu(app: XCUIApplication, args: [String], reset: Bool = true) {
+        var args = args
+        // Fresh profile by default (see launch()); the persistence tests
+        // pass reset: false so the relaunch reads the real on-disk profile.
+        if reset {
+            args += ["-uitest-reset"]
+        }
+        #if os(macOS)
+            try? args.joined(separator: "\n").write(
+                toFile: "/tmp/mu-uitest-config.txt", atomically: true, encoding: .utf8
+            )
+            try? "probe".write(toFile: probePath, atomically: true, encoding: .utf8)
+            let suite = UserDefaults(suiteName: defaultsSuite)
+            suite?.set(args, forKey: "mu-flags")
+        #else
+            app.launchArguments = args
+        #endif
+        app.launch()
+        #if os(macOS)
+            // A background/occluded window pauses MTKView's display link, so
+            // post-launch assertions need the window frontmost.
+            app.activate()
+        #endif
+    }
+
+    /// A menu toggle resolves across element types: SwiftUI Toggles expose
+    /// as Switch on iOS and as CheckBox on macOS, so a typed
+    /// `app.switches[...]` query misses the control on one platform (this
+    /// red testMenuTogglePersistsAcrossRelaunch on CI). Query by
+    /// identifier across ALL types, per the ADR-0018/0019 practice.
+    static func menuToggle(app: XCUIApplication, identifier: String) -> XCUIElement {
+        app.descendants(matching: .any).matching(identifier: identifier).element(boundBy: 0)
+    }
+
+    /// Resolve + assert existence with a failure-time AX excerpt so the
+    /// next triage names the real menu tree instead of a bare "missing".
+    @discardableResult
+    static func assertMenuToggle(
+        app: XCUIApplication, identifier: String, timeout: TimeInterval = 10, _ message: String
+    ) -> XCUIElement {
+        let el = menuToggle(app: app, identifier: identifier)
+        if !el.waitForExistence(timeout: timeout) {
+            let interesting = app.debugDescription.split(separator: "\n").filter {
+                $0.contains("menu.") || $0.contains("Switch") || $0.contains("CheckBox")
+            }
+            print("MU-AX-DUMP(\(identifier)): \(interesting.prefix(24).joined(separator: " | "))")
+            XCTFail("\(message) (no \(identifier) in the AX tree)")
+        }
+        return el
+    }
+
+    /// Toggle on/off as Bool from the element's value. XCTest normalizes
+    /// Switch and CheckBox values to "1"/"0" strings; Bool/Int covers any
+    /// platform variance. nil means neither — the assert helper's AX dump
+    /// then explains the shape.
+    static func onState(_ el: XCUIElement) -> Bool? {
+        if let s = el.value as? String {
+            if s == "1" { return true }
+            if s == "0" { return false }
+        }
+        if let b = el.value as? Bool { return b }
+        if let n = el.value as? Int { return n != 0 }
+        return nil
     }
 
     /// Plain app.launch() paths (menu tests) must not inherit a stale config

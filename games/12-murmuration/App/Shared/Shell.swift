@@ -59,6 +59,7 @@ struct GameDebugOverlay: View, Equatable {
         var daily = ""
         var posts = ""
         var pending = ""
+        var a11y = ""
     }
 
     /// All parent-created instances are equal: the body reads only the
@@ -122,6 +123,12 @@ struct GameDebugOverlay: View, Equatable {
                     .accessibilityLabel("pending \(sample.pending)")
                     .accessibilityIdentifier("debug.pending")
             }
+            if !sample.a11y.isEmpty {
+                Text("a11y \(sample.a11y)")
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel("a11y \(sample.a11y)")
+                    .accessibilityIdentifier("debug.a11y")
+            }
         }
         .font(.system(size: 11, weight: .semibold, design: .monospaced))
         .foregroundStyle(.white)
@@ -148,7 +155,8 @@ struct GameDebugOverlay: View, Equatable {
                     "\(model.dailyDayNumber ?? -1) \($0.displayName)"
                 } ?? "",
                 posts: model.postCounts,
-                pending: Self.pendingLabel(model)
+                pending: Self.pendingLabel(model),
+                a11y: Self.a11yLabel(model)
             )
             try? await Task.sleep(nanoseconds: 500_000_000)
         }
@@ -161,6 +169,20 @@ struct GameDebugOverlay: View, Equatable {
             return ""
         }
         return "\(builder.waypoints.count) L\(flock)"
+    }
+
+    /// "rm hc" style accessibility flags for the debug overlay (MU-P8.1):
+    /// `rm` when Reduce Motion is in effect (toggle or system setting),
+    /// `hc` when the high-contrast rival palette is active. `fa` when the
+    /// falcon-assist option is on (MU-P8.2, read from the state itself:
+    /// it is sim-level, so the saved/resumed state carries it). Empty
+    /// otherwise.
+    @MainActor static func a11yLabel(_ model: GameModel) -> String {
+        var flags = ""
+        if model.reduceMotion { flags += "rm " }
+        if model.highContrastRival { flags += "hc " }
+        if model.state.falconAssist { flags += "fa" }
+        return String(flags.trimmingCharacters(in: .whitespaces))
     }
 
     /// "L0 x,y L1 x,y" for each flock's leader (MU-P3.3 evidence).
@@ -239,6 +261,13 @@ struct MenuView: View {
     /// The menu's rival-difficulty choice (MU-P4.1).
     @State private var difficultyMode: RivalDifficulty = .gentle
     @State private var catalog: RegionCatalog
+    /// Accessibility settings (MU-P8.1): loaded from the profile, written
+    /// back on toggle; the play surfaces read them through the model.
+    @State private var reduceMotion = false
+    @State private var highContrastRival = false
+    /// Falcon-assist steering (MU-P8.2): same persistence pattern, but it
+    /// rides the region into the sim (a sim-level option, unlike a11y).
+    @State private var falconAssist = false
 
     init() {
         let arguments = MULaunch.arguments()
@@ -247,6 +276,10 @@ struct MenuView: View {
         _catalog = State(
             initialValue: (try? RegionCatalog.loadBundled()) ?? RegionCatalog(regions: [])
         )
+        let meta = MetaStore.load()
+        _reduceMotion = State(initialValue: meta.reduceMotion)
+        _highContrastRival = State(initialValue: meta.highContrastRival)
+        _falconAssist = State(initialValue: meta.falconAssist)
         if autoPlay {
             MUTrace.log("shell: launching play session args=\(arguments.joined(separator: " "))")
         }
@@ -284,16 +317,26 @@ struct MenuView: View {
             let next = campaign.nextStage(endSizes: meta.campaignEndSizes)
             config.campaignStage = next
             if next < meta.campaignEndSizes.count + 1, next > 0,
-               let carried = meta.campaignEndSizes[next - 1] {
+                let carried = meta.campaignEndSizes[next - 1]
+            {
                 config.campaignCarriedBirds = carried
             } else if next == 0 {
-                config.campaignCarriedBirds = catalog
+                config.campaignCarriedBirds =
+                    catalog
                     .region(id: MetaState.campaignRoute[0])?.birdCount
             }
         }
         if dailyMode { config.daily = true }
         // An explicit UI-test flag wins over the menu picker default.
         config.rivalDifficulty = config.rivalDifficulty ?? difficultyMode
+        // The launch flags set the a11y options explicitly (MU-P8.1 UI
+        // tests); otherwise the menu toggle state applies. The parsed flag
+        // wins so a `-uitest-reduce-motion` launch is not clobbered by a
+        // clean profile's default.
+        if !config.reduceMotion { config.reduceMotion = reduceMotion }
+        if !config.highContrastRival { config.highContrastRival = highContrastRival }
+        // The assist flag wins over the menu toggle, same as the a11y flags.
+        if !config.falconAssist { config.falconAssist = falconAssist }
         return config
     }
 
@@ -360,6 +403,57 @@ struct MenuView: View {
                 .labelsHidden()
                 .frame(maxWidth: 320)
                 .accessibilityIdentifier("menu.difficulty")
+                // Accessibility (MU-P8.1): reduce motion (1-in-4 bird
+                // decimation + no between-tick glide) and the high-contrast
+                // rival patterning. Persisted with the profile.
+                // The bare toggle (label split off into a sibling Text)
+                // exposes ONLY the switch control in the AX tree — a
+                // labeled Toggle fuses label+control into one element
+                // whose hittable point is the text, so XCUITest taps
+                // missed the switch (MU-P8.1 probe).
+                HStack {
+                    Text("Reduce motion")
+                    Spacer()
+                    Toggle(String(""), isOn: $reduceMotion)
+                        .labelsHidden()
+                        .onChange(of: reduceMotion) { _, newValue in
+                            var meta = MetaStore.load()
+                            meta.reduceMotion = newValue
+                            MetaStore.store(meta)
+                        }
+                        .accessibilityIdentifier("menu.reduceMotion")
+                }
+                .frame(maxWidth: 320)
+                HStack {
+                    Text("High-contrast rival")
+                    Spacer()
+                    Toggle(String(""), isOn: $highContrastRival)
+                        .labelsHidden()
+                        .onChange(of: highContrastRival) { _, newValue in
+                            var meta = MetaStore.load()
+                            meta.highContrastRival = newValue
+                            MetaStore.store(meta)
+                        }
+                        .accessibilityIdentifier("menu.highContrast")
+                }
+                .frame(maxWidth: 320)
+                // Assist steering (MU-P8.2): sim-level falcon auto-avoidance
+                // for early players. Persisted with the profile like a11y;
+                // applied at region construction (a GameState field), so a
+                // mid-session toggle takes effect on the next launch.
+                HStack {
+                    Text("Falcon assist")
+                    Spacer()
+                    Toggle(String(""), isOn: $falconAssist)
+                        .labelsHidden()
+                        .onChange(of: falconAssist) { _, newValue in
+                            var meta = MetaStore.load()
+                            meta.falconAssist = newValue
+                            MetaStore.store(meta)
+                        }
+                        .accessibilityIdentifier("menu.assist")
+                }
+                .frame(maxWidth: 320)
                 Spacer()
             }
             .padding(24)

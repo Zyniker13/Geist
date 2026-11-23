@@ -19,6 +19,20 @@ struct MetaState: Codable {
     var stats = LifetimeStats()
     /// Achievement ids already awarded (so new ones can be surfaced).
     var earnedAchievements: [String] = []
+    /// Accessibility settings (MU-P8.1): reduce-motion and high-contrast
+    /// toggles persist with the profile so they survive relaunches and
+    /// sync through the same iCloud blob as the rest of the meta.
+    var reduceMotion = false
+    var highContrastRival = false
+    /// Falcon-assist steering (MU-P8.2): a sim-level option, persisted
+    /// with the profile so it survives relaunches and iCloud sync.
+    var falconAssist = false
+
+    /// Effective reduce motion: the user toggle OR the system setting.
+    /// Evaluated on the app side (the packages stay platform-free).
+    func reduceMotionEffective(systemEnabled: Bool) -> Bool {
+        reduceMotion || systemEnabled
+    }
 
     /// The campaign route the progress applies to; re-derive stages from
     /// the shipped route each load.
@@ -44,9 +58,22 @@ enum MetaStore {
     }
 
     static func load() -> MetaState {
+        // UI-test isolation (MU-P8.2): a persisted toggle from a previous
+        // test's failed cleanup (falconAssist etc.) silently alters later
+        // runs on a dirty simulator — CI's fresh sim never sees it, so the
+        // local-only divergence looks like a non-reproducible flake. The
+        // `-uitest-reset` flag makes every in-session load return a fresh
+        // profile (nothing read, nothing written back to disk), which
+        // reproduces CI's fresh-sim environment locally. Persistence
+        // tests opt OUT by not passing the flag, so real on-disk
+        // persistence stays covered.
+        if MULaunch.arguments().contains("-uitest-reset") {
+            return MetaState()
+        }
         let fresh = !FileManager.default.fileExists(atPath: url().path)
         if fresh, let cloud = syncing.load(),
-           let restored = try? JSONDecoder().decode(MetaState.self, from: cloud) {
+            let restored = try? JSONDecoder().decode(MetaState.self, from: cloud)
+        {
             store(restored)
             return restored
         }
@@ -83,14 +110,16 @@ enum MetaStore {
                 DailyScore(dayNumber: dayNumber, score: score),
                 into: state.dailyScores
             )
-            posts.append(MUPostPlanner.dailyPlan(
-                dayNumber: dayNumber, modifierID: modifierID, score: score
-            ))
+            posts.append(
+                MUPostPlanner.dailyPlan(
+                    dayNumber: dayNumber, modifierID: modifierID, score: score
+                ))
         }
         if let stage = campaignStageIndex {
-            posts.append(MUPostPlanner.campaignPlan(
-                stage: max(stage, 0), endSize: outcome.peakFlock
-            ))
+            posts.append(
+                MUPostPlanner.campaignPlan(
+                    stage: max(stage, 0), endSize: outcome.peakFlock
+                ))
         }
         let nowEarned = Achievements.earned(at: state.stats)
         let fresh = nowEarned.subtracting(Set(state.earnedAchievements.compactMap(Achievement.init(rawValue:))))
@@ -104,8 +133,10 @@ enum MetaStore {
         for id in merged.achievements {
             poster.reportAchievement(id: id, percentComplete: 100)
         }
-        return (state, Array(fresh).sorted { $0.rawValue < $1.rawValue },
-                posted: merged.scores.count + merged.achievements.count)
+        return (
+            state, Array(fresh).sorted { $0.rawValue < $1.rawValue },
+            posted: merged.scores.count + merged.achievements.count
+        )
     }
 
     /// Record a campaign stage's end size and carry it forward.

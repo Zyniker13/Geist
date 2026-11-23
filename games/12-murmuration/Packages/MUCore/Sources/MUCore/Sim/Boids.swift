@@ -18,6 +18,10 @@ public struct BoidsParams: Sendable, Codable {
     public var edgeMargin: Int32 = 64         // steer inward within this band
     public var edgeWeight: Int32 = 65_536     // 1.0
     public var obstacleWeight: Int32 = 98_304 // 1.5 — P3: rock beats flock
+    /// Falcon-avoid weight (MU-P8.2 assist steering): 0 = assist off
+    /// (every existing replay's trajectories are unchanged). On, the
+    /// player's birds push away from live falcons like from obstacles.
+    public var falconAssistWeight: Int32 = 0
     /// Leader brake (P4): inside this radius of the leader point the bird's
     /// velocity is damped each tick so the flock settles onto the point
     /// instead of swinging past it and back forever (undamped pendulum).
@@ -54,6 +58,9 @@ public struct BoidsFrame: Sendable, Codable {
     public var obstacleCenterX: [Int32]
     public var obstacleCenterY: [Int32]
     public var obstacleRadius: [Int32]
+    /// Live falcon positions (MU-P8.2 assist steering); empty = no falcons.
+    public var falconX: [Int32]
+    public var falconY: [Int32]
 
     public init(
         leaderX: Int32, leaderY: Int32,
@@ -68,7 +75,9 @@ public struct BoidsFrame: Sendable, Codable {
         windCellSize: Int32 = 256,
         obstacleCenterX: [Int32] = [],
         obstacleCenterY: [Int32] = [],
-        obstacleRadius: [Int32] = []
+        obstacleRadius: [Int32] = [],
+        falconX: [Int32] = [],
+        falconY: [Int32] = []
     ) {
         self.leaderX = leaderX
         self.leaderY = leaderY
@@ -86,6 +95,8 @@ public struct BoidsFrame: Sendable, Codable {
         self.obstacleCenterX = obstacleCenterX
         self.obstacleCenterY = obstacleCenterY
         self.obstacleRadius = obstacleRadius
+        self.falconX = falconX
+        self.falconY = falconY
     }
 
     /// The leader point acting on a bird of sub-flock `sf`.
@@ -137,6 +148,37 @@ public struct BoidsFrame: Sendable, Codable {
         if d == 0 { return (0, 1) } // exactly on center: push down
         let n = 65_536 / d // Q16.16 inverse distance
         return (Int32((Int64(fx) * n) >> 16), Int32((Int64(fy) * n) >> 16))
+    }
+
+    /// The falcon-avoid direction (MU-P8.2 assist steering): the raw delta
+    /// away from the nearest live falcon when it is inside the 480-unit
+    /// fear radius, else zeros. stepBirds feeds this through
+    /// normalizedScaled, giving a constant-weight push in the exact away
+    /// direction (the same path the obstacle force takes — a pre-quantized
+    /// unit vector loses most directions to integer truncation). Returns
+    /// (0, 1) when the bird sits exactly on the falcon center. Pure
+    /// integer (INV-3), no division.
+    @inline(__always)
+    public func falconForce(at px: Int32, _ py: Int32) -> (x: Int32, y: Int32) {
+        guard !falconX.isEmpty, !falconY.isEmpty else { return (0, 0) }
+        var bestD2 = Int64.max
+        var fx: Int32 = 0
+        var fy: Int32 = 0
+        for i in 0..<min(falconX.count, falconY.count) {
+            let dx = px - falconX[i]
+            let dy = py - falconY[i]
+            let d2 = Int64(dx) * Int64(dx) + Int64(dy) * Int64(dy)
+            if d2 < bestD2 {
+                bestD2 = d2
+                fx = dx
+                fy = dy
+            }
+        }
+        guard bestD2 < Int64.max else { return (0, 0) }
+        let reach: Int64 = 480
+        guard bestD2 < reach * reach else { return (0, 0) }
+        if bestD2 == 0 { return (0, 1) } // exactly on center: push down
+        return (fx, fy)
     }
 
     /// Project a world point to the nearest position at least `minDist`
@@ -310,6 +352,17 @@ public func stepBirds(
             let obsF = normalizedScaled(Int64(obsX), Int64(obsY), params.obstacleWeight)
             forceX += obsF.x
             forceY += obsF.y
+        }
+
+        // Falcon assist (MU-P8.2): when enabled, the same inverse-distance
+        // profile pushes birds away from the nearest live falcon.
+        if params.falconAssistWeight > 0 {
+            let (favX, favY) = frame.falconForce(at: birds.posX[i], birds.posY[i])
+            if favX != 0 || favY != 0 {
+                let favF = normalizedScaled(Int64(favX), Int64(favY), params.falconAssistWeight)
+                forceX += favF.x
+                forceY += favF.y
+            }
         }
 
         // World-edge avoidance (the R-6 obstacle-avoidance force against the

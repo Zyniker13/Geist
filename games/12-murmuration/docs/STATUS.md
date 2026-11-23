@@ -1507,3 +1507,96 @@ docs-only diff changed no code. Environment flake, not a regression.
 - Leaderboards post in sandbox — SUBSTITUTE PASS (MUPostPlanner pins +
   MockPoster pipeline through the day-end path in CI-green UI test);
   sandbox sign-in check filed (#14).
+
+### P8 progress (2026-11-22, on `murmur/phase/P8-polish`)
+
+- MU-P8.1 Reduce Motion + high-contrast rival, commit 8b54486:
+  - `GameModel` now carries `reduceMotion`/`highContrastRival` through its
+    constructor. The first draft mutated the `StateObject`'s wrappedValue
+    after init and the a11y overlay row never appeared in ANY launch
+    (manual probes with clean flag files included) — SwiftUI keeps a
+    different instance than the one init mutated. Same failure class the
+    codebase already routes around with `.task`-deferred `pauseAtTick`/
+    `hashUpdates`. Second, independent bug in the same probe: the Shell
+    `launchConfig` merge clobbered the parsed `-uitest-*` flags with the
+    menu toggle's clean-profile default; argv flags now win. Both fixed;
+    regression surface = `AccessibilityUITests` + the overlay row.
+  - Verified on-device (iPad sim screenshots): `a11y hc` renders with the
+    patterned magenta rival visible in the scene; `a11y rm` renders with
+    the 1-in-4 decimated flock (~tens of specks vs thousands), HUD bird
+    count unchanged — render-only, hashes unaffected.
+  - Note: mid-day probes show an empty `hash` row by design — hash
+    refresh only runs at pause/day-end/finish force points; the
+    pause/resume test reads it after finish. Not a bug.
+
+- MU-P8.2 falcon-assist steering, commit d816643: seeded avoidance force
+  in the sim (regression-tested in MUCoreTests), menu toggle, profile
+  persistence.
+- MU-P8 split fix, commit 7296d00→d115f86: the P8.2 split of GameModel's
+  render handoff into `GameModel+Render.swift` put STORED properties in an
+  extension — Swift rejects that, and CI went red on all four non-lint
+  jobs. Fixed in d115f86: stored preview/hash members back in GameModel,
+  the extension keeps only computed members, and
+  `previousBirds`/`falconPrev`/`trace` widen to `internal private(set)`
+  so the extension can read them. Lesson: a type_body_length split must
+  demote moved members only to `private(set)`-internal, never leave them
+  `private` in the main file while moving stored state out.
+- MU-P8.3/G8 4,000-bird perf evidence (LOCAL SUBSTITUTE, Release, iPad
+  sim `zGeist_bot-iPad-Pro-13`), env-gated `Perf4000Tests` (commit d115f86):
+  `fps=60 frameMs=1.39`, `** TEST SUCCEEDED **` — fps at the host's 60 Hz
+  cap, frame-build median 1.39 ms ≤ 16 ms (ADR-0017 budget). The gate's
+  120 fps iPad Pro M4 / 60 fps iPad (A16) device numbers remain maintainer
+  item #11. First Release attempt in Debug had read fps=14: Debug
+  configuration perf is not evidence (CI UI jobs run Release).
+- MU-P8.3 thermal soak launched on the final tree (Release, TEST_RUNNER_MU_SOAK=1,
+  30 min real-time, thermal=0 fps=60 through the early samples); result
+  recorded below when the run completes.
+- MU-P8.3 thermal soak result (PASS, final tree, Release): 60 samples over
+  the full 30 min, worst thermal=0 (nominal), fps=60 throughout, soak log
+  line `soak done samples=60 worst=0 fpsFloor=19`, xcresult
+  `ThermalSoakTests testThirtyMinuteThermalSoak passed (1815.7s)`, rc=0.
+  (Sim-soak substitute; device thermal data remains maintainer item #11.)
+- CI triage on the P8.2/P8.3 push: ui-test-macos red —
+  testMenuTogglePersistsAcrossRelaunch and testMenuAssistTogglePersistsAcrossRelaunch
+  failed at their FIRST menu.play wait ("menu Play button missing"), while
+  testMenuLaunches and every iOS equivalent passed. Root cause per
+  ADR-0015: those two tests were the only mac tests still delivering flags
+  through app.launchArguments (argv), whose bare-exec launch stalls the mac
+  SwiftUI scene pipeline before the root view builds; every established mac
+  test routes flags through the file/defaults channel. Fix (9c01172): new
+  GameUITest.launchMenu helper delivering file+defaults on macOS (argv on
+  iOS), applied to all six launch sites in both tests. Validation: local
+  mac Release run of both classes plus the pushed-branch CI run.
+- MU-P8.2 UI-test isolation, commit 71a3a5e: every UI-test launch passes
+  `-uitest-reset`; MetaStore.load returns a fresh profile under the flag so
+  a stale persisted toggle (e.g. falconAssist ON from a failed cleanup) can
+  no longer skew later local tests — CI's fresh sim was already immune, which
+  made the divergence look like a non-reproducible flake (ADR-0040). The two
+  disk-persistence tests opt out with `reset: false`. Evidence: clean serial
+  `make test` (Debug) — 22 tests, 2 skipped, only failures were the perf
+  gate's two assertions, and both persistence tests PASSED with the fix
+  (1 test with 0 failures in 0.051 s each in the MUGate/mac suites of
+  scratch p82-make-test.log); CI 1eb162d green on the pre-fix tree confirms
+  CI's fresh-sim baseline. Local Release like-for-like: perf test
+  `-only-testing:MUITests/MUGateTests/testPerfFrameBudgetWithThreeThousandBirds`
+  `-configuration Release` PASSED (47.1 s, ** TEST SUCCEEDED **, rc=0,
+  scratch p82-perf-release.log) — the Debug fps=44/frame 21.27 ms reads were
+  Debug-configuration sampling (skill rule: local perf evidence in CI's
+  configuration, Release), not a renderer regression. FlockRenderer per-frame
+  index-array allocation removed (stride-1 fast path) in the same commit;
+  MURender builds clean from a wiped .build (5.86 s) and `make lint` green
+  (swiftlint strict, swift-format, content-lint 9 files 0 errors,
+  check-imports OK).
+- G8 gate evidence (POLISH): local gate suite green in Release after
+  aligning `make test` with CI's configuration (commit 4cc0ac3): 22 tests,
+  2 skipped, 0 failures, 283 s, `** TEST SUCCEEDED **`, rc=0
+  (scratch g8-test.log) — includes the sim perf gate green in Release and
+  both disk-persistence tests with the P8.2 isolation fix. CI: 1eb162d and
+  71a3a5e green (Release UI jobs, iOS + macOS); the committed tree is
+  verified by CI's clean checkouts of the pushed SHAs (worktree substitute).
+  Perf: sim fps=60 at host cap, frame-build median 1.39 ms <= 16 ms
+  (Perf4000Tests, d115f86) plus the three-thousand-bird MUGate perf passed
+  in Release (47.1 s, scratch p82-perf-release.log). Thermal: 30-min soak
+  PASS (60 samples, worst thermal=0, fps=60, rc=0). Device-only gate items
+  (120 fps iPad Pro M4, 60 fps iPad A16) remain maintainer issue #11 —
+  sim substitutes per _CONVENTIONS 8.2.

@@ -140,6 +140,23 @@ final class GameInput: NSObject, MTKViewDelegate, UIGestureRecognizerDelegate {
             ),
             hillSeed: model.region.seed
         )
+        applyAccessibilityOptions()
+    }
+
+    /// Push the model's accessibility options into the renderer (MU-P8.1).
+    /// Called on attach and whenever the settings change.
+    func applyAccessibilityOptions() {
+        guard let renderer else { return }
+        if model.reduceMotion {
+            // 1-in-4 decimation keeps the swarm read while quartering the
+            // instance load; flutter snaps (no between-tick blend).
+            renderer.birdStride = 4
+            renderer.reducesFlutter = true
+        } else {
+            renderer.birdStride = 1
+            renderer.reducesFlutter = false
+        }
+        renderer.highContrastRival = model.highContrastRival
     }
 
     // MARK: - MTKViewDelegate
@@ -182,9 +199,11 @@ final class GameInput: NSObject, MTKViewDelegate, UIGestureRecognizerDelegate {
         let paths = model.state.leaderPaths
         let path = Int(flock) < paths.count ? paths[Int(flock)] : LeaderPath(points: [])
         var builder = LeaderPathBuilder()
-        guard let action = builder.begin(
-            leaderX: path.currentX, leaderY: path.currentY, subFlock: flock
-        ) else {
+        guard
+            let action = builder.begin(
+                leaderX: path.currentX, leaderY: path.currentY, subFlock: flock
+            )
+        else {
             return
         }
         model.apply(action)

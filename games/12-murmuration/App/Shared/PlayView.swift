@@ -50,6 +50,15 @@ struct GameLaunchConfig {
     /// `;`, fed one per frame through the hover preview while
     /// `-uitest-preview` is active. Nil = no scripted hover.
     var hoverScript: [SIMD2<Float>]?
+    /// Accessibility options (MU-P8.1): Reduce Motion and high-contrast
+    /// rival patterning. Set from the menu toggles (or the UI-test flags
+    /// `-uitest-reduce-motion` / `-uitest-high-contrast`).
+    var reduceMotion = false
+    var highContrastRival = false
+    /// Falcon-assist steering (MU-P8.2): sim-level auto-avoidance of
+    /// falcons (an avoidance force in the boids kernel, seeded
+    /// deterministically). Menu toggle or `-uitest-assist`.
+    var falconAssist = false
 
     /// Parse the effective UI-test flags (file config on macOS, else argv).
     static func resolved() -> GameLaunchConfig {
@@ -72,7 +81,8 @@ struct GameLaunchConfig {
         if args.contains("-uitest-tutorial") { config.tutorial = true }
         if args.contains("-uitest-versus") { config.versus = true }
         if let difficulty = value("-uitest-difficulty"),
-           let tier = RivalDifficulty(rawValue: difficulty) {
+            let tier = RivalDifficulty(rawValue: difficulty)
+        {
             config.rivalDifficulty = tier
         }
         if let seed = value("-uitest-seed"), let n = UInt64(seed) { config.seed = n }
@@ -89,6 +99,9 @@ struct GameLaunchConfig {
         if let day = value("-uitest-daily-day"), let n = Int(day) {
             config.dailyDayOverride = n
         }
+        if args.contains("-uitest-reduce-motion") { config.reduceMotion = true }
+        if args.contains("-uitest-high-contrast") { config.highContrastRival = true }
+        if args.contains("-uitest-assist") { config.falconAssist = true }
         if let script = value("-uitest-hover") {
             config.hoverScript = script.split(separator: ";").compactMap { part in
                 let pair = part.split(separator: ",")
@@ -128,15 +141,17 @@ struct PlayView: View {
         if config.tutorial, let t = try? Tutorial.loadBundled() {
             tutorial = t
             if let solo = try? RegionCatalog.loadSoloBundled(),
-               let soloRegion = solo.region(id: t.region) {
+                let soloRegion = solo.region(id: t.region)
+            {
                 base = soloRegion
             }
         }
         // Campaign (MU-P5.1): the stage's region replaces the launch
         // region; the carried flock size becomes the bird override.
         if let stage = config.campaignStage,
-           stage < MetaState.campaignRoute.count,
-           let campaignRegion = catalog.region(id: MetaState.campaignRoute[stage]) {
+            stage < MetaState.campaignRoute.count,
+            let campaignRegion = catalog.region(id: MetaState.campaignRoute[stage])
+        {
             base = campaignRegion
         }
         // Daily (MU-P5.2): today's wind map replaces the region's own; the
@@ -170,6 +185,12 @@ struct PlayView: View {
         if let falcons = config.falconOverride {
             adjusted = adjusted.withFalconCount(falcons)
         }
+        if config.falconAssist {
+            adjusted = adjusted.withFalconAssist(true)
+        }
+        let accessibilityReduceMotion =
+            config.reduceMotion
+            || Accessibility.platformReduceMotionEnabled()
         _model = StateObject(
             wrappedValue: GameModel(
                 region: adjusted,
@@ -182,7 +203,9 @@ struct PlayView: View {
                 dailyModifier: dailyModifier,
                 dailyDayNumber: dailyModifier != nil ? dailyDayNumber : nil,
                 campaignStage: config.campaignStage,
-                poster: config.poster
+                poster: config.poster,
+                reduceMotion: accessibilityReduceMotion,
+                highContrastRival: config.highContrastRival
             ))
         // Applied after init via the view's task (published-mutable only).
         _pendingPauseAt = State(initialValue: config.pauseAt)
@@ -229,7 +252,8 @@ struct PlayView: View {
             // a hover script was given, queue its points; one is consumed
             // per engine tick through the real preview path.
             if launchConfig.hoverScript != nil
-                && MULaunch.arguments().contains("-uitest-preview") {
+                && MULaunch.arguments().contains("-uitest-preview")
+            {
                 model.scriptedHover = launchConfig.hoverScript ?? []
             }
             if MULaunch.arguments().contains("-uitest-trace") {

@@ -116,7 +116,9 @@ public func applyTick(to state: GameState, rng: inout SeededRNG) -> (GameState, 
         windCellSize: Int32(GameState.windCellSize),
         obstacleCenterX: state.obstacleCenterX,
         obstacleCenterY: state.obstacleCenterY,
-        obstacleRadius: state.obstacleRadius
+        obstacleRadius: state.obstacleRadius,
+        falconX: state.falconAssist ? state.falcons.map { $0.currentX } : [],
+        falconY: state.falconAssist ? state.falcons.map { $0.currentY } : []
         )
 
     // Rebuild spatial hash.
@@ -239,6 +241,11 @@ public func effectiveParams(_ state: GameState) -> BoidsParams {
     var params = state.boidsParams
     if state.condenseActive > 0 {
         params.cohWeight = Int32(clamping: Int64(params.cohWeight) * Int64(GameState.condenseCohesionMultiplier))
+    }
+    // Falcon assist (MU-P8.2): the avoidance force rides in at 1.25× the
+    // rock weight when the option is on; 0 keeps trajectories identical.
+    if state.falconAssist && params.falconAssistWeight == 0 {
+        params.falconAssistWeight = 122_880
     }
     return params
 }

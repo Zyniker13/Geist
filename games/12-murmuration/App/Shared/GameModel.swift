@@ -117,6 +117,13 @@ final class GameModel: ObservableObject {
     /// When true, `hashLabel` refreshes every 30 ticks and at pause/finish.
     var hashUpdates = false
 
+    /// Accessibility render options (MU-P8.1), applied by the surfaces to
+    /// their renderer each attach. Separate from the sim: they change only
+    /// what is drawn, never the engine state, so replays and hashes are
+    /// unaffected.
+    var reduceMotion = false
+    var highContrastRival = false
+
     /// The five-step tutorial (P3.2). When present, the model drives it:
     /// the `tutorialDriver` issues the current step's action each tick and
     /// the `tutorialEngine` samples the post-tick state to advance the step.
@@ -133,9 +140,11 @@ final class GameModel: ObservableObject {
     var autoplayer: Autoplayer?
     /// The rival pilot (GameModel+Save snapshots it).
     var rival = GentleRival()
-    private var previousBirds: BirdSoA
-    private var falconPrev: [SIMD2<Float>] = []
-    private var trace: [TracePoint] = []
+    /// Previous tick's birds for renderer interpolation; readable from
+    /// GameModel+Render.swift (internal), mutated only here.
+    internal private(set) var previousBirds: BirdSoA
+    internal private(set) var falconPrev: [SIMD2<Float>] = []
+    internal private(set) var trace: [TracePoint] = []
     private var pendingTicks = 0.0
     private var lastFrameTime: Double = 0
     private var frameTimes: [Double] = []
@@ -159,13 +168,21 @@ final class GameModel: ObservableObject {
         dailyModifier: DailyModifier? = nil,
         dailyDayNumber: Int? = nil,
         campaignStage: Int? = nil,
-        poster: ScoresPosting? = nil
+        poster: ScoresPosting? = nil,
+        reduceMotion: Bool = false,
+        highContrastRival: Bool = false
     ) {
         self.region = region
         self.totalDays = totalDays
         self.autoplay = autoplay
         self.versus = versus
         self.rivalDifficulty = rivalDifficulty ?? region.rivalDifficulty
+        // Accessibility render options ride in through the constructor like
+        // every other config value: a post-init mutation of a StateObject's
+        // wrappedValue is unreliable (SwiftUI may keep a different instance
+        // than the one init mutated), and the a11y overlay row reads these.
+        self.reduceMotion = reduceMotion
+        self.highContrastRival = highContrastRival
         self.dailyModifier = dailyModifier
         self.dailyDayNumber = dailyDayNumber
         self.campaignStage = campaignStage
@@ -321,8 +338,9 @@ final class GameModel: ObservableObject {
         // Tutorial (P3.2): issue the current step's action before the tick so
         // it takes effect this tick; the engine samples the post-tick state.
         if !tutorialComplete,
-           let step = tutorialEngine?.currentStep,
-           let action = tutorialDriver.action(goal: step.goal, state: state) {
+            let step = tutorialEngine?.currentStep,
+            let action = tutorialDriver.action(goal: step.goal, state: state)
+        {
             apply(action)
         }
 
@@ -443,7 +461,8 @@ final class GameModel: ObservableObject {
             isDaily: dailyModifier != nil,
             isCampaignEnd: campaignEnd
         )
-        let dailyDayNumber = dailyModifier != nil
+        let dailyDayNumber =
+            dailyModifier != nil
             ? (self.dailyDayNumber
                 ?? DailyChallenge(date: DailyChallenge.epoch).dayNumber)
             : nil
@@ -552,28 +571,9 @@ final class GameModel: ObservableObject {
         startDayIfNeeded()
     }
 
-    // MARK: - Rendering handoff
-
-    /// The scene for the renderer: this tick against the previous one.
-    var scene: RenderScene {
-        makeScene(
-            state: state, previousBirds: previousBirds, falconPrev: falconPrev,
-            trace: trace, pendingPath: pendingPathSamples
-        )
-    }
-
-    /// The hover preview path (MU-P7.2): the pending drag's waypoints as
-    /// fresh trace samples, so the renderer draws it like the committed
-    /// trace. Empty when nothing is being drawn.
-    var pendingPathSamples: [TracePoint] {
-        guard let builder = previewBuilder else { return [] }
-        return builder.waypoints.map { waypoint in
-            TracePoint(x: Float(waypoint.x), y: Float(waypoint.y), age: 0)
-        }
-    }
-
     /// The in-flight leader-path builder during a Pencil/pointer hover-drag
     /// (MU-P7.2). Set by the input layer; cleared on commit or cancel.
+    /// Stored here; accessors live in GameModel+Render.swift.
     var previewBuilder: LeaderPathBuilder?
 
     /// Which flock the active hover preview steers (nil = no preview).

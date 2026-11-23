@@ -57,6 +57,23 @@ final class MacDrawCoordinator: NSObject, MTKViewDelegate {
         if renderer == nil {
             MUTrace.log("surface: renderer init failed")
         }
+        applyAccessibilityOptions()
+    }
+
+    /// Push the model's accessibility options into the renderer (MU-P8.1).
+    /// Called on attach and whenever the settings change.
+    func applyAccessibilityOptions() {
+        guard let renderer else { return }
+        if model.reduceMotion {
+            // 1-in-4 decimation keeps the swarm read while quartering the
+            // instance load; flutter snaps (no between-tick blend).
+            renderer.birdStride = 4
+            renderer.reducesFlutter = true
+        } else {
+            renderer.birdStride = 1
+            renderer.reducesFlutter = false
+        }
+        renderer.highContrastRival = model.highContrastRival
     }
 
     func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {}
@@ -106,12 +123,13 @@ final class MacGameView: MTKView {
     override func updateTrackingAreas() {
         super.updateTrackingAreas()
         if trackingAreas.isEmpty || trackingAreas.allSatisfy({ $0.owner !== self }) {
-            addTrackingArea(NSTrackingArea(
-                rect: bounds,
-                options: [.mouseMoved, .activeInKeyWindow],
-                owner: self,
-                userInfo: nil
-            ))
+            addTrackingArea(
+                NSTrackingArea(
+                    rect: bounds,
+                    options: [.mouseMoved, .activeInKeyWindow],
+                    owner: self,
+                    userInfo: nil
+                ))
         }
     }
 
@@ -193,7 +211,8 @@ final class MacGameView: MTKView {
         // hasPreciseScrollingDeltas: a trackpad pan, not a wheel tick.
         if event.hasPreciseScrollingDeltas, model.state.subFlockCount < 2 {
             panAccumulated += SIMD2(Float(event.scrollingDeltaX), Float(event.scrollingDeltaY))
-            let distance = (panAccumulated.x * panAccumulated.x
+            let distance =
+                (panAccumulated.x * panAccumulated.x
                 + panAccumulated.y * panAccumulated.y).squareRoot()
             if distance > 60 {
                 panAccumulated = .zero
