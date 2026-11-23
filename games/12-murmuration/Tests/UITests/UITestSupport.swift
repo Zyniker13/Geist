@@ -91,6 +91,30 @@ enum GameUITest {
         #endif
     }
 
+    /// Menu-mode launches on macOS must deliver their flags through the
+    /// file/defaults channel (MULaunch resolves file → defaults → argv):
+    /// an argv-only launch stalls the SwiftUI scene pipeline before the
+    /// root view builds, so `menu.play` never appears (ADR-0015). iOS
+    /// keeps plain `launchArguments`.
+    static func launchMenu(app: XCUIApplication, args: [String]) {
+        #if os(macOS)
+            try? args.joined(separator: "\n").write(
+                toFile: "/tmp/mu-uitest-config.txt", atomically: true, encoding: .utf8
+            )
+            try? "probe".write(toFile: probePath, atomically: true, encoding: .utf8)
+            let suite = UserDefaults(suiteName: defaultsSuite)
+            suite?.set(args, forKey: "mu-flags")
+        #else
+            app.launchArguments = args
+        #endif
+        app.launch()
+        #if os(macOS)
+            // A background/occluded window pauses MTKView's display link, so
+            // post-launch assertions need the window frontmost.
+            app.activate()
+        #endif
+    }
+
     /// Plain app.launch() paths (menu tests) must not inherit a stale config
     /// file from an earlier gate test, or the app would auto-play.
     static func clearFileConfig() {

@@ -54,13 +54,12 @@ final class AccessibilityUITests: XCTestCase {
     /// toggle comes back on.
     func testMenuTogglePersistsAcrossRelaunch() throws {
         let app = XCUIApplication()
-        app.launchArguments = [
+        GameUITest.launchMenu(app: app, args: [
             "-uitest-overlay",
             "-uitest-region", "meadow",
             "-uitest-days", "1",
             "-uitest-trace",
-        ]
-        app.launch()
+        ])
 
         let play = app.buttons["menu.play"]
         XCTAssertTrue(play.waitForExistence(timeout: 10), "menu Play button missing")
@@ -90,13 +89,12 @@ final class AccessibilityUITests: XCTestCase {
         // Relaunch with no arguments: the persisted profile re-applies it.
         GameUITest.clearFileConfig()
         app.terminate()
-        app.launchArguments = [
+        GameUITest.launchMenu(app: app, args: [
             "-uitest-overlay",
             "-uitest-region", "meadow",
             "-uitest-days", "1",
             "-uitest-trace",
-        ]
-        app.launch()
+        ])
         let play2 = app.buttons["menu.play"]
         XCTAssertTrue(play2.waitForExistence(timeout: 10), "menu Play button missing on relaunch")
         let toggle2 = app.switches["menu.reduceMotion"]
@@ -118,12 +116,11 @@ final class AccessibilityUITests: XCTestCase {
         // here (the menu switch is not in the tree), so relaunch fresh
         // and flip the toggle off on the real menu.
         app.terminate()
-        app.launchArguments = [
+        GameUITest.launchMenu(app: app, args: [
             "-uitest-overlay",
             "-uitest-region", "meadow",
             "-uitest-days", "1",
-        ]
-        app.launch()
+        ])
         let toggleClean = app.switches["menu.reduceMotion"]
         XCTAssertTrue(
             toggleClean.waitForExistence(timeout: 10),
