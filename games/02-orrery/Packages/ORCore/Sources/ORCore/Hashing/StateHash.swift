@@ -5,8 +5,14 @@
 /// encoding is versioned: `ENCODING_VERSION` bumps whenever the field set
 /// changes, invalidating old golden hashes on purpose.
 public enum StateHash {
-    /// Bumped when the encoded state changes shape (v1: P0 trivial state).
+    /// Bumped when the encoded state changes shape (v1: P0 trivial state;
+    /// v2: full GameState encoding).
     public static let encodingVersion: UInt8 = 1
+
+    /// The GameState encoding version (independent of the trivial state's
+    /// encoding, so adding fields to GameState never invalidates the P0
+    /// trivial golden files).
+    public static let gameStateEncodingVersion: UInt8 = 2
 
     /// Human-readable 16-hex-digit form of a digest.
     public static func hexDigest(_ digest: UInt64) -> String {
