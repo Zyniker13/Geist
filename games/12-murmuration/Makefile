@@ -19,7 +19,7 @@ test: gen
 	swift test --package-path Packages/MUAudio
 	swift test --package-path Packages/MUPlatform
 	swift test --package-path Packages/MUMeta
-	xcodebuild test -scheme MU -destination 'platform=iOS Simulator,name=iPad Pro 13-inch (M5)' -configuration Debug
+	xcodebuild test -scheme MU -destination 'platform=iOS Simulator,name=iPad Pro 13-inch (M5)' -configuration Release
 
 lint:
 	swiftlint --strict --config .swiftlint.yml
