@@ -268,6 +268,10 @@ struct MenuView: View {
     /// Falcon-assist steering (MU-P8.2): same persistence pattern, but it
     /// rides the region into the sim (a sim-level option, unlike a11y).
     @State private var falconAssist = false
+    /// Telemetry-free stats export (MU-P9.3): session-local opt-in; the
+    /// exported file is written to Documents when the player taps export.
+    @State private var statsExportOptIn = false
+    @State private var exportNote: String?
 
     init() {
         let arguments = MULaunch.arguments()
@@ -454,6 +458,31 @@ struct MenuView: View {
                         .accessibilityIdentifier("menu.assist")
                 }
                 .frame(maxWidth: 320)
+                // Telemetry-free stats export (MU-P9.3): in-game opt-in
+                // only. Nothing uploads; the player shares the Documents
+                // file themselves. Hidden behind the opt-in toggle like
+                // Night Market's menu row.
+                HStack {
+                    Text("Include my stats in exports")
+                    Spacer()
+                    Toggle(String(""), isOn: $statsExportOptIn)
+                        .labelsHidden()
+                        .accessibilityIdentifier("menu.statsOptIn")
+                }
+                .frame(maxWidth: 320)
+                if statsExportOptIn {
+                    Button("Export Stats to Documents") {
+                        exportNote = MetaStore.exportStats()
+                    }
+                    .font(.system(.caption, design: .monospaced))
+                    .accessibilityIdentifier("menu.statsExport")
+                    if let exportNote {
+                        Text(exportNote)
+                            .font(.system(.caption2, design: .monospaced))
+                            .opacity(0.7)
+                            .accessibilityIdentifier("menu.statsNote")
+                    }
+                }
                 Spacer()
             }
             .padding(24)

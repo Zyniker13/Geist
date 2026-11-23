@@ -1600,3 +1600,29 @@ docs-only diff changed no code. Environment flake, not a regression.
   PASS (60 samples, worst thermal=0, fps=60, rc=0). Device-only gate items
   (120 fps iPad Pro M4, 60 fps iPad A16) remain maintainer issue #11 —
   sim substitutes per _CONVENTIONS 8.2.
+
+### P9 progress (2026-11-23, on `murmur/phase/P9-release-prep`)
+
+Scope per _CONVENTIONS §8.1 (P9+P10 standard tasks) and this game's
+G9/G10 gates: (1) MU-P9.1 Release archives with signing disabled;
+(2) MU-P9.2 beta notes/tester guide (`docs/BETA.md`); (3) MU-P9.3 the
+telemetry-free, in-game, opt-in stats export; (4) MU-P9.4 long
+simulator soak (scripted UI tests + `Tools/sim --balance`) on the final
+build; then G9 evidence. P10 adds `docs/release/` (metadata drafts,
+size screenshots, preview video, privacy label, age rating, press kit)
+with signing/App Store Connect items as maintainer issues.
+
+- MU-P9.3 stats export, in progress: `MetaStore.exportStats()` encodes
+  lifetime stats, daily scores, and campaign end sizes with a
+  `{format: "murmuration-stats", version: 1}` header to
+  `Documents/murmuration-stats.json` (nothing uploaded; no identifiers).
+  Menu rows after falcon assist: opt-in toggle (`menu.statsOptIn`,
+  session-local, off by default) gating an export button
+  (`menu.statsExport`) whose confirmation note (`menu.statsNote`)
+  reports the saved filename. UI test `MUStatsExportTests` asserts
+  default-hidden, opt-in reveal, export, and the note. Night Market's
+  ProfileStore.exportStatsToFile is the pattern source.
+- fdd1ccb (first P9 commit): simulator destinations in both games'
+  Makefiles and NM's release-screens.sh moved from the stock
+  `iPad Pro 13-inch (M5)` to the profile-owned `zGeist_bot-iPad-Pro-13`
+  (maintainer standing instruction, 2026-11-23).
