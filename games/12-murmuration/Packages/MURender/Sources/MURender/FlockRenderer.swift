@@ -110,6 +110,32 @@ public final class FlockRenderer: NSObject, MTKViewDelegate {
     /// Falcon body size in world units.
     private let falconSize: Float = 26.0
 
+    // MARK: Accessibility render options (MU-P8.1)
+
+    /// Reduce Motion: render every Nth bird (1 = all birds). Deterministic
+    /// stride over the instance order, so a stride of k draws birds
+    /// 0, k, 2k, … — a stable subset, not a flickering random sample.
+    /// The engine keeps the full flock; only the draw decimates.
+    public var birdStride: Int = 1
+    /// Reduce Motion, flutter leg: snap every frame to the settled tick
+    /// position instead of blending between ticks (whole-flock glide is
+    /// the vestibular trigger; per-bird wingbeat scale is not).
+    public var reducesFlutter: Bool = false
+    /// High-contrast rival patterning: when true, the rival's birds render
+    /// in a strongly separated magenta against the ink player flock (and
+    /// the leader traces tint to match), so the two flocks are distinguishable
+    /// at a glance and under color-vision deficiency.
+    public var highContrastRival: Bool = false {
+        didSet {
+            if highContrastRival != oldValue {
+                paletteData = Self.paletteData(Self.activePalette(base, highContrastRival))
+            }
+        }
+    }
+    /// The palette the options derive from (kept so high-contrast can
+    /// re-derive when toggled).
+    private var base: RegionPalette
+
     /// Creates the renderer for `mtkView`. Throws when Metal is unavailable
     /// or the shader library fails to build.
     public init(
@@ -135,7 +161,8 @@ public final class FlockRenderer: NSObject, MTKViewDelegate {
         self.worldSize = worldSize
         self.tickInterval = tickInterval
         self.commandQueue = queue
-        self.paletteData = Self.paletteData(palette)
+        self.base = palette
+        paletteData = Self.paletteData(Self.activePalette(palette, highContrastRival))
 
         self.skyPipeline = try Self.pipeline(
             device: device, library: library, view: mtkView,
@@ -201,7 +228,22 @@ public final class FlockRenderer: NSObject, MTKViewDelegate {
 
     /// Install a region palette (sky stops, hill colors, bird colors).
     public func setPalette(_ palette: RegionPalette) {
-        paletteData = Self.paletteData(palette)
+        base = palette
+        paletteData = Self.paletteData(Self.activePalette(palette, highContrastRival))
+    }
+
+    /// The palette the renderer actually draws with: the region's palette,
+    /// or the high-contrast variant (MU-P8.1) — the rival's sepia moves to a
+    /// saturated magenta (large ΔE from both the ink player color and the
+    /// ochre/green landscape), the falcon to near-black crimson, and the
+    /// claim traces separate cleanly.
+    static func activePalette(_ base: RegionPalette, _ highContrast: Bool) -> RegionPalette {
+        guard highContrast else { return base }
+        var p = base
+        p.rival = RGBAColor(r: 0.871, g: 0.180, b: 0.612)  // saturated magenta
+        p.falcon = RGBAColor(r: 0.400, g: 0.020, b: 0.060)  // dark crimson
+        p.birdHighlight = RGBAColor(r: 0.960, g: 0.960, b: 0.960)  // white edge
+        return p
     }
 
     private static func paletteData(_ palette: RegionPalette) -> PaletteData {
@@ -231,7 +273,12 @@ public final class FlockRenderer: NSObject, MTKViewDelegate {
         buildTraceVertices(scene)
         lastTickTime = CACurrentMediaTime()
         sawTick = true
-        instantNextDraw = instant
+        // Reduce Motion (MU-P8.1): `reducesFlutter` snaps every draw to the
+        // settled tick position (no between-tick blend), so the flock moves
+        // in discrete 30 Hz steps instead of gliding — the motion-reduced
+        // read for vestibular sensitivity. Wingbeat breathing stays (it is
+        // per-bird scale, not whole-flock translation).
+        instantNextDraw = instant || reducesFlutter
     }
 
     // MARK: - MTKViewDelegate
@@ -396,7 +443,11 @@ public final class FlockRenderer: NSObject, MTKViewDelegate {
             to: BirdInstance.self, capacity: birdCapacity
         )
         var written = 0
-        for i in 0..<cur.count {
+        // Reduce Motion (MU-P8.1): every Nth bird. The stride is
+        // deterministic in instance order, so the drawn subset is stable
+        // frame to frame (no flicker) and a stride of 1 draws everything.
+        let stride = max(birdStride, 1)
+        for i in stridedBirds(cur.count, by: stride) {
             var instance = BirdInstance()
             let canBlend = !snapAll && i < prevCount
             instance.prevX = canBlend ? Float(prev.posX[i]) : Float(cur.posX[i])
@@ -433,6 +484,13 @@ public final class FlockRenderer: NSObject, MTKViewDelegate {
             written += 1
         }
         birdInstanceCount = written
+    }
+
+    /// Strided index sequence for the bird build loop: birds
+    /// 0, by, 2·by, … below `to`.
+    private func stridedBirds(_ count: Int, by: Int) -> [Int] {
+        guard by > 1 else { return Array(0..<count) }
+        return Swift.stride(from: 0, to: count, by: by).map { $0 }
     }
 
     private func buildDiskInstances(_ scene: RenderScene) {
