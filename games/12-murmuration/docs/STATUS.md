@@ -1551,3 +1551,19 @@ docs-only diff changed no code. Environment flake, not a regression.
 - MU-P8.3 thermal soak launched on the final tree (Release, TEST_RUNNER_MU_SOAK=1,
   30 min real-time, thermal=0 fps=60 through the early samples); result
   recorded below when the run completes.
+- MU-P8.3 thermal soak result (PASS, final tree, Release): 60 samples over
+  the full 30 min, worst thermal=0 (nominal), fps=60 throughout, soak log
+  line `soak done samples=60 worst=0 fpsFloor=19`, xcresult
+  `ThermalSoakTests testThirtyMinuteThermalSoak passed (1815.7s)`, rc=0.
+  (Sim-soak substitute; device thermal data remains maintainer item #11.)
+- CI triage on the P8.2/P8.3 push: ui-test-macos red —
+  testMenuTogglePersistsAcrossRelaunch and testMenuAssistTogglePersistsAcrossRelaunch
+  failed at their FIRST menu.play wait ("menu Play button missing"), while
+  testMenuLaunches and every iOS equivalent passed. Root cause per
+  ADR-0015: those two tests were the only mac tests still delivering flags
+  through app.launchArguments (argv), whose bare-exec launch stalls the mac
+  SwiftUI scene pipeline before the root view builds; every established mac
+  test routes flags through the file/defaults channel. Fix (9c01172): new
+  GameUITest.launchMenu helper delivering file+defaults on macOS (argv on
+  iOS), applied to all six launch sites in both tests. Validation: local
+  mac Release run of both classes plus the pushed-branch CI run.
