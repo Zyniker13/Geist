@@ -52,23 +52,26 @@ final class AssistUITests: XCTestCase {
     /// toggle comes back on.
     func testMenuAssistTogglePersistsAcrossRelaunch() throws {
         let app = XCUIApplication()
-        GameUITest.launchMenu(app: app, args: [
-            "-uitest-overlay",
-            "-uitest-region", "meadow",
-            "-uitest-days", "1",
-            "-uitest-trace",
-        ])
+        GameUITest.launchMenu(
+            app: app,
+            args: [
+                "-uitest-overlay",
+                "-uitest-region", "meadow",
+                "-uitest-days", "1",
+                "-uitest-trace",
+            ])
 
         let play = app.buttons["menu.play"]
         XCTAssertTrue(play.waitForExistence(timeout: 10), "menu Play button missing")
-        let toggle = app.switches["menu.assist"]
-        XCTAssertTrue(toggle.waitForExistence(timeout: 10), "Falcon assist toggle missing")
+        let toggle = GameUITest.assertMenuToggle(
+            app: app, identifier: "menu.assist", "Falcon assist toggle missing"
+        )
         // Normalize: force OFF first, then ON, so a stale persisted state
         // cannot make this tap turn it off.
-        if (toggle.value as? String) == "1" { toggle.tap() }
+        if GameUITest.onState(toggle) == true { toggle.tap() }
         toggle.tap()
         XCTAssertEqual(
-            app.switches["menu.assist"].value as? String, "1",
+            GameUITest.onState(GameUITest.menuToggle(app: app, identifier: "menu.assist")), true,
             "toggle did not turn on"
         )
         play.tap()
@@ -84,21 +87,24 @@ final class AssistUITests: XCTestCase {
         // Relaunch with no arguments: the persisted profile re-applies it.
         GameUITest.clearFileConfig()
         app.terminate()
-        GameUITest.launchMenu(app: app, args: [
-            "-uitest-overlay",
-            "-uitest-region", "meadow",
-            "-uitest-days", "1",
-            "-uitest-trace",
-        ])
+        GameUITest.launchMenu(
+            app: app,
+            args: [
+                "-uitest-overlay",
+                "-uitest-region", "meadow",
+                "-uitest-days", "1",
+                "-uitest-trace",
+            ])
         let play2 = app.buttons["menu.play"]
         XCTAssertTrue(play2.waitForExistence(timeout: 10), "menu Play button missing on relaunch")
-        let toggle2 = app.switches["menu.assist"]
-        XCTAssertTrue(
-            toggle2.waitForExistence(timeout: 10),
-            "Falcon assist toggle missing on relaunch"
+        let toggle2 = GameUITest.assertMenuToggle(
+            app: app, identifier: "menu.assist", "Falcon assist toggle missing on relaunch"
         )
-        let value2 = toggle2.value as? String
-        XCTAssertEqual(value2, "1", "toggle did not persist across relaunch: \(String(describing: value2))")
+        let value2 = GameUITest.onState(toggle2)
+        XCTAssertEqual(
+            value2, true,
+            "toggle did not persist across relaunch (raw: \(String(describing: toggle2.value)))"
+        )
         play2.tap()
         let row2 = GameUITest.overlayRow(app: app, identifier: "debug.a11y")
         XCTAssertTrue(row2.waitForExistence(timeout: 30), "a11y row missing after relaunch")
@@ -109,19 +115,20 @@ final class AssistUITests: XCTestCase {
 
         // Leave the profile clean for other tests.
         app.terminate()
-        GameUITest.launchMenu(app: app, args: [
-            "-uitest-overlay",
-            "-uitest-region", "meadow",
-            "-uitest-days", "1",
-        ])
-        let toggleClean = app.switches["menu.assist"]
-        XCTAssertTrue(
-            toggleClean.waitForExistence(timeout: 10),
-            "menu toggle missing for cleanup relaunch"
+        GameUITest.launchMenu(
+            app: app,
+            args: [
+                "-uitest-overlay",
+                "-uitest-region", "meadow",
+                "-uitest-days", "1",
+            ])
+        let toggleClean = GameUITest.assertMenuToggle(
+            app: app, identifier: "menu.assist", "menu toggle missing for cleanup relaunch"
         )
         toggleClean.tap()
         var metaClean = false
-        for _ in 0..<10 where (app.switches["menu.assist"].value as? String) == "0" {
+        for _ in 0..<10
+        where GameUITest.onState(GameUITest.menuToggle(app: app, identifier: "menu.assist")) == false {
             metaClean = true
             break
         }

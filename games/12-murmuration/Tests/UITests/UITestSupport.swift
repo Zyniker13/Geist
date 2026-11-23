@@ -115,6 +115,46 @@ enum GameUITest {
         #endif
     }
 
+    /// A menu toggle resolves across element types: SwiftUI Toggles expose
+    /// as Switch on iOS and as CheckBox on macOS, so a typed
+    /// `app.switches[...]` query misses the control on one platform (this
+    /// red testMenuTogglePersistsAcrossRelaunch on CI). Query by
+    /// identifier across ALL types, per the ADR-0018/0019 practice.
+    static func menuToggle(app: XCUIApplication, identifier: String) -> XCUIElement {
+        app.descendants(matching: .any).matching(identifier: identifier).element(boundBy: 0)
+    }
+
+    /// Resolve + assert existence with a failure-time AX excerpt so the
+    /// next triage names the real menu tree instead of a bare "missing".
+    @discardableResult
+    static func assertMenuToggle(
+        app: XCUIApplication, identifier: String, timeout: TimeInterval = 10, _ message: String
+    ) -> XCUIElement {
+        let el = menuToggle(app: app, identifier: identifier)
+        if !el.waitForExistence(timeout: timeout) {
+            let interesting = app.debugDescription.split(separator: "\n").filter {
+                $0.contains("menu.") || $0.contains("Switch") || $0.contains("CheckBox")
+            }
+            print("MU-AX-DUMP(\(identifier)): \(interesting.prefix(24).joined(separator: " | "))")
+            XCTFail("\(message) (no \(identifier) in the AX tree)")
+        }
+        return el
+    }
+
+    /// Toggle on/off as Bool from the element's value. XCTest normalizes
+    /// Switch and CheckBox values to "1"/"0" strings; Bool/Int covers any
+    /// platform variance. nil means neither — the assert helper's AX dump
+    /// then explains the shape.
+    static func onState(_ el: XCUIElement) -> Bool? {
+        if let s = el.value as? String {
+            if s == "1" { return true }
+            if s == "0" { return false }
+        }
+        if let b = el.value as? Bool { return b }
+        if let n = el.value as? Int { return n != 0 }
+        return nil
+    }
+
     /// Plain app.launch() paths (menu tests) must not inherit a stale config
     /// file from an earlier gate test, or the app would auto-play.
     static func clearFileConfig() {

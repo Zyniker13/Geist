@@ -54,26 +54,29 @@ final class AccessibilityUITests: XCTestCase {
     /// toggle comes back on.
     func testMenuTogglePersistsAcrossRelaunch() throws {
         let app = XCUIApplication()
-        GameUITest.launchMenu(app: app, args: [
-            "-uitest-overlay",
-            "-uitest-region", "meadow",
-            "-uitest-days", "1",
-            "-uitest-trace",
-        ])
+        GameUITest.launchMenu(
+            app: app,
+            args: [
+                "-uitest-overlay",
+                "-uitest-region", "meadow",
+                "-uitest-days", "1",
+                "-uitest-trace",
+            ])
 
         let play = app.buttons["menu.play"]
         XCTAssertTrue(play.waitForExistence(timeout: 10), "menu Play button missing")
-        let toggle = app.switches["menu.reduceMotion"]
-        XCTAssertTrue(toggle.waitForExistence(timeout: 10), "Reduce Motion toggle missing")
+        let toggle = GameUITest.assertMenuToggle(
+            app: app, identifier: "menu.reduceMotion", "Reduce Motion toggle missing"
+        )
         // Normalize the start state: a prior failed run can leave the
         // toggle persisted ON (the cleanup below is the only thing that
         // resets it), which would make this tap turn it OFF and the
         // play session legitimately row-less. Force OFF, then ON, and
         // assert the flip registered.
-        if (toggle.value as? String) == "1" { toggle.tap() }
+        if GameUITest.onState(toggle) == true { toggle.tap() }
         toggle.tap()
         XCTAssertEqual(
-            app.switches["menu.reduceMotion"].value as? String, "1",
+            GameUITest.onState(GameUITest.menuToggle(app: app, identifier: "menu.reduceMotion")), true,
             "toggle did not turn on"
         )
         play.tap()
@@ -89,21 +92,24 @@ final class AccessibilityUITests: XCTestCase {
         // Relaunch with no arguments: the persisted profile re-applies it.
         GameUITest.clearFileConfig()
         app.terminate()
-        GameUITest.launchMenu(app: app, args: [
-            "-uitest-overlay",
-            "-uitest-region", "meadow",
-            "-uitest-days", "1",
-            "-uitest-trace",
-        ])
+        GameUITest.launchMenu(
+            app: app,
+            args: [
+                "-uitest-overlay",
+                "-uitest-region", "meadow",
+                "-uitest-days", "1",
+                "-uitest-trace",
+            ])
         let play2 = app.buttons["menu.play"]
         XCTAssertTrue(play2.waitForExistence(timeout: 10), "menu Play button missing on relaunch")
-        let toggle2 = app.switches["menu.reduceMotion"]
-        XCTAssertTrue(
-            toggle2.waitForExistence(timeout: 10),
-            "Reduce Motion toggle missing on relaunch"
+        let toggle2 = GameUITest.assertMenuToggle(
+            app: app, identifier: "menu.reduceMotion", "Reduce Motion toggle missing on relaunch"
         )
-        let value2 = toggle2.value as? String
-        XCTAssertEqual(value2, "1", "toggle did not persist across relaunch: \(String(describing: value2))")
+        let value2 = GameUITest.onState(toggle2)
+        XCTAssertEqual(
+            value2, true,
+            "toggle did not persist across relaunch (raw: \(String(describing: toggle2.value)))"
+        )
         play2.tap()
         let row2 = GameUITest.overlayRow(app: app, identifier: "debug.a11y")
         XCTAssertTrue(row2.waitForExistence(timeout: 30), "a11y row missing after relaunch")
@@ -116,19 +122,20 @@ final class AccessibilityUITests: XCTestCase {
         // here (the menu switch is not in the tree), so relaunch fresh
         // and flip the toggle off on the real menu.
         app.terminate()
-        GameUITest.launchMenu(app: app, args: [
-            "-uitest-overlay",
-            "-uitest-region", "meadow",
-            "-uitest-days", "1",
-        ])
-        let toggleClean = app.switches["menu.reduceMotion"]
-        XCTAssertTrue(
-            toggleClean.waitForExistence(timeout: 10),
-            "menu toggle missing for cleanup relaunch"
+        GameUITest.launchMenu(
+            app: app,
+            args: [
+                "-uitest-overlay",
+                "-uitest-region", "meadow",
+                "-uitest-days", "1",
+            ])
+        let toggleClean = GameUITest.assertMenuToggle(
+            app: app, identifier: "menu.reduceMotion", "menu toggle missing for cleanup relaunch"
         )
         toggleClean.tap()
         var metaClean = false
-        for _ in 0..<10 where (app.switches["menu.reduceMotion"].value as? String) == "0" {
+        for _ in 0..<10
+        where GameUITest.onState(GameUITest.menuToggle(app: app, identifier: "menu.reduceMotion")) == false {
             metaClean = true
             break
         }
