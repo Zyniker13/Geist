@@ -1528,3 +1528,26 @@ docs-only diff changed no code. Environment flake, not a regression.
   - Note: mid-day probes show an empty `hash` row by design — hash
     refresh only runs at pause/day-end/finish force points; the
     pause/resume test reads it after finish. Not a bug.
+
+- MU-P8.2 falcon-assist steering, commit d816643: seeded avoidance force
+  in the sim (regression-tested in MUCoreTests), menu toggle, profile
+  persistence.
+- MU-P8 split fix, commit 7296d00→d115f86: the P8.2 split of GameModel's
+  render handoff into `GameModel+Render.swift` put STORED properties in an
+  extension — Swift rejects that, and CI went red on all four non-lint
+  jobs. Fixed in d115f86: stored preview/hash members back in GameModel,
+  the extension keeps only computed members, and
+  `previousBirds`/`falconPrev`/`trace` widen to `internal private(set)`
+  so the extension can read them. Lesson: a type_body_length split must
+  demote moved members only to `private(set)`-internal, never leave them
+  `private` in the main file while moving stored state out.
+- MU-P8.3/G8 4,000-bird perf evidence (LOCAL SUBSTITUTE, Release, iPad
+  sim `zGeist_bot-iPad-Pro-13`), env-gated `Perf4000Tests` (commit d115f86):
+  `fps=60 frameMs=1.39`, `** TEST SUCCEEDED **` — fps at the host's 60 Hz
+  cap, frame-build median 1.39 ms ≤ 16 ms (ADR-0017 budget). The gate's
+  120 fps iPad Pro M4 / 60 fps iPad (A16) device numbers remain maintainer
+  item #11. First Release attempt in Debug had read fps=14: Debug
+  configuration perf is not evidence (CI UI jobs run Release).
+- MU-P8.3 thermal soak launched on the final tree (Release, TEST_RUNNER_MU_SOAK=1,
+  30 min real-time, thermal=0 fps=60 through the early samples); result
+  recorded below when the run completes.
