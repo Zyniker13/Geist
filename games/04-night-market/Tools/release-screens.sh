@@ -6,8 +6,8 @@ set -e
 export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer
 # Look up the UDID by name: device-set maintenance can recreate a
 # simulator with a new UDID.
-UDID=$(xcrun simctl list devices | grep 'iPad Pro 13-inch (M5) (' | grep -Eo '[0-9A-F-]{36}')
-test -n "$UDID" || { echo "no iPad Pro 13-inch (M5) found"; exit 1; }
+UDID=$(xcrun simctl list devices | grep 'zGeist_bot-iPad-Pro-13 (' | grep -Eo '[0-9A-F-]{36}')
+test -n "$UDID" || { echo "no zGeist_bot-iPad-Pro-13 found"; exit 1; }
 echo "using $UDID"
 APP=/Users/agent/Library/Developer/Xcode/DerivedData/NightMarket-eormriyvtokrsfdujmzvnqtbvkld/Build/Products/Debug-iphonesimulator/NM.app
 OUT="$(dirname "$0")/../docs/release/screenshots"

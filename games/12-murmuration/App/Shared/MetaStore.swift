@@ -156,4 +156,35 @@ enum MetaStore {
         state.campaignEndSizes = []
         store(state)
     }
+
+    /// Telemetry-free stats export (MU-P9.3): encodes the lifetime stats,
+    /// daily scores, and campaign end sizes with a format header, and
+    /// writes them to Documents as `murmuration-stats.json`. Nothing is
+    /// uploaded; the player shares the file themselves. No identifiers —
+    /// the export holds only aggregate play counts.
+    static func exportStats() -> String {
+        struct Export: Codable {
+            var format = "murmuration-stats"
+            var version = 1
+            var stats: LifetimeStats
+            var dailyScores: [DailyScore]
+            var campaignEndSizes: [Int?]
+        }
+        let state = load()
+        let documents = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        let url = documents.appendingPathComponent("murmuration-stats.json")
+        do {
+            let encoder = JSONEncoder()
+            encoder.outputFormatting = [.sortedKeys]
+            let data = try encoder.encode(
+                Export(
+                    stats: state.stats, dailyScores: state.dailyScores,
+                    campaignEndSizes: state.campaignEndSizes
+                ))
+            try data.write(to: url, options: .atomic)
+            return "saved \(url.lastPathComponent)"
+        } catch {
+            return "export failed"
+        }
+    }
 }

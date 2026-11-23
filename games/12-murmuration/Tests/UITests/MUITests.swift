@@ -418,3 +418,40 @@ final class MUGateTests: XCTestCase {
         XCTAssertTrue(diff.contains("gentle"), "expected gentle tier in overlay, got: \(diff)")
     }
 }
+
+/// MU-P9.3: telemetry-free stats export — opt-in in the menu, file in
+/// Documents, nothing uploaded.
+final class MUStatsExportTests: XCTestCase {
+    func testStatsExportOptInAndExport() throws {
+        let app = XCUIApplication()
+        app.launch()
+
+        let optIn = app.switches["menu.statsOptIn"]
+        XCTAssertTrue(
+            optIn.waitForExistence(timeout: 10),
+            "stats opt-in toggle missing from the menu"
+        )
+        // Off by default: the export row must not exist before opt-in.
+        XCTAssertFalse(
+            app.buttons["menu.statsExport"].exists,
+            "export button must be hidden until the player opts in"
+        )
+        optIn.tap()
+
+        let exportButton = app.buttons["menu.statsExport"]
+        XCTAssertTrue(
+            exportButton.waitForExistence(timeout: 5),
+            "export button never appeared after opt-in"
+        )
+        exportButton.tap()
+        let note = app.staticTexts["menu.statsNote"]
+        XCTAssertTrue(
+            note.waitForExistence(timeout: 5),
+            "export confirmation note missing"
+        )
+        XCTAssertTrue(
+            GameUITest.rowText(of: note).contains("saved"),
+            "export note should report the saved filename"
+        )
+    }
+}

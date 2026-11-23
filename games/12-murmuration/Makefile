@@ -8,7 +8,7 @@ gen:
 	xcodegen generate --spec project.yml
 
 build: gen
-	xcodebuild build -scheme MU -destination 'platform=iOS Simulator,name=iPad Pro 13-inch (M5)' -configuration Debug
+	xcodebuild build -scheme MU -destination 'platform=iOS Simulator,name=zGeist_bot-iPad-Pro-13' -configuration Debug
 	xcodebuild build -scheme MU-macOS -destination 'platform=macOS' -configuration Debug
 
 test: gen
@@ -19,7 +19,7 @@ test: gen
 	swift test --package-path Packages/MUAudio
 	swift test --package-path Packages/MUPlatform
 	swift test --package-path Packages/MUMeta
-	xcodebuild test -scheme MU -destination 'platform=iOS Simulator,name=iPad Pro 13-inch (M5)' -configuration Release
+	xcodebuild test -scheme MU -destination 'platform=iOS Simulator,name=zGeist_bot-iPad-Pro-13' -configuration Release
 
 lint:
 	swiftlint --strict --config .swiftlint.yml
@@ -44,10 +44,10 @@ sim:
 	Tools/sim/.build/out/Products/Release/sim --birds 4000 --seed 1
 
 snapshot: gen
-	xcodebuild test -scheme MU -destination 'platform=iOS Simulator,name=iPad Pro 13-inch (M5)' -configuration Debug -only-testing:Snapshots
+	xcodebuild test -scheme MU -destination 'platform=iOS Simulator,name=zGeist_bot-iPad-Pro-13' -configuration Debug -only-testing:Snapshots
 
 perf: gen
-	xcodebuild test -scheme MU -destination 'platform=iOS Simulator,name=iPad Pro 13-inch (M5)' -configuration Debug -only-testing:PerfTests
+	xcodebuild test -scheme MU -destination 'platform=iOS Simulator,name=zGeist_bot-iPad-Pro-13' -configuration Debug -only-testing:PerfTests
 
 coverage:
 	export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer; \
