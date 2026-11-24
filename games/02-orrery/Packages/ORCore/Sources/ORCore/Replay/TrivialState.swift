@@ -15,7 +15,7 @@ public struct TrivialState: Sendable, Codable, Hashable {
     }
 
     /// Canonical FNV-1a digest (versioned encoding).
-    public func hashValue() -> UInt64 {
+    public func canonicalHash() -> UInt64 {
         var hasher = FNV1a()
         hasher.byte(StateHash.encodingVersion)
         hasher.int(count)
@@ -23,9 +23,9 @@ public struct TrivialState: Sendable, Codable, Hashable {
         return hasher.finish()
     }
 
-    /// Hex form of `hashValue()`.
+    /// Hex form of `canonicalHash()`.
     public func hashHex() -> String {
-        StateHash.hexDigest(hashValue())
+        StateHash.hexDigest(canonicalHash())
     }
 }
 
