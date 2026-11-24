@@ -2,11 +2,9 @@
 
 This file is the single place to resume the program from. Keep every field below current after every meaningful step (see "Resuming After a Restart" in `ROADMAP.md`). Per-game detail (gate evidence and sign-offs) lives in each game's `docs/STATUS.md`.
 
-- **Current game:** Orrery (`02-orrery`) — P1 complete; P1 merge to main pushed (de8b32e), CI on main pending
-- **Phase:** P1 (Rules Engine Prototype) finished on `orrery/phase/P1-rules`;
-  G1 evidence complete in the game's docs/STATUS.md. Merged into `main`
-  (de8b32e) after make test/make lint green; tag `orrery/gate-G1-pass` once CI
-  on main is green, then start P2.
+- **Current game:** Orrery (`02-orrery`) — P1 done, G1 tagged (`orrery/gate-G1-pass` at de8b32e; CI green on main at 82d093e)
+- **Phase:** P2 (Schematic View) starting on `orrery/phase/P2-schematic`.
+  Read `games/02-orrery/ROADMAP.md` P2 block in full before coding.
 - **Last done:** 2026-11-24 — caught a real pre-merge break: the P1 branch was
   based on `70968a0` and still carried `TrivialState.hashValue()`, so it missed
   main's `7194bf0` canonicalHash rename (standalone ORCore `swift test` passed
@@ -43,7 +41,7 @@ If Xcode 27.2 or an iOS 26-or-later runtime is missing and cannot be installed w
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | 04 | [`04-night-market`](games/04-night-market/ROADMAP.md) | Night Market | Done | `night-market/gate-G10-pass` | All gates G0–G10 tagged; TestFlight/App Store steps owner-only in #12 |
 | 2 | 12 | [`12-murmuration`](games/12-murmuration/ROADMAP.md) | Murmuration | Done | `murmur/gate-G10-pass-v2` | All gates G0–G10 tagged; App Store Connect record, TestFlight upload, icon and asset placement owner-only in #16 |
-| 3 | 02 | [`02-orrery`](games/02-orrery/ROADMAP.md) | Orrery | In Progress | `orrery/gate-G0-pass` | P1 done on branch, merged to main (de8b32e), CI pending; tag G1 then P2 |
+| 3 | 02 | [`02-orrery`](games/02-orrery/ROADMAP.md) | Orrery | In Progress | `orrery/gate-G0-pass`, `orrery/gate-G1-pass` | G1 tagged after green CI; P2 next |
 | 4 | 14 | [`14-beacon-coast`](games/14-beacon-coast/ROADMAP.md) | Beacon Coast | Not Started | — | — |
 | 5 | 13 | [`13-terrace`](games/13-terrace/ROADMAP.md) | Terrace | Not Started | — | — |
 | 6 | 20 | [`20-pack-and-herd`](games/20-pack-and-herd/ROADMAP.md) | Pack & Herd | Not Started | — | — |
@@ -178,3 +176,4 @@ One line per meaningful step, newest last: date, phase or game and stage, what w
 - 2026-11-23 (cont.): **Murmuration G10 PASSED and P10 merged to main** (merge c8a30dc; tags `murmur/gate-G10-pass` and `murmur/gate-G10-pass-v2` pushed — the first tag was created before the iPads-shutdown/size-check checklist item completed, so a `-v2` tag marks the closed gate; see ADR in game DECISIONS). G10 evidence (game docs/STATUS.md): four zGeist_bot-iPad-Pro-13 screenshots, preview-video cut notes with exact frame ranges (docs/release/preview.md), App Store metadata + privacy "Data Not Collected" + age 4+ + accessibility labels + press kit + asset list in docs/release/RELEASE.md, all via §8.2 scripted substitutes. Owner-only App Store Connect/TestFlight steps filed as issue #16. iPad shut down inside sim-lock; device dir 4.8 GB (under the 5 GB erase line). **Murmuration is Done.** Next: Orrery (`02-orrery`) P0 — read its ROADMAP.md and _CONVENTIONS.md before scaffolding.
 - 2026-11-23 (cont.): **Orrery P0 scaffolded and G0 PASSED** on `orrery/phase/P0-setup` (commit cc71ad0): XcodeGen project (OR / OR-macOS + UI-test targets), seven SwiftPM packages (ORCore..ORMeta), SeededRNG xoshiro256**/SplitMix64 with independent-computation known-answer vector, magnitude-safe Fixed (Int64.min regressions), `Angle48` OR-P0.1 (wraparound ±1…±96, line indexing per R-9/R-10, clock labels), replay contract + committed golden `trivial-golden-1.json` (hash 8398107817133141332) verified twice per run, check-imports (UI/platform-import ban added) + content-lint skeletons, SwiftLint banned-API rules incl. Float-in-Core, CI workflow pinned to v4.2.2 SHAs, docs skeleton + RULES from roadmap §4 + ADR-0001…0005, debug overlay (3-finger double-tap / ⌘⇧D). Evidence (game docs/STATUS.md): ORCore 32 tests + 6 stub suites green, lint 0, iOS + Mac BUILD SUCCEEDED, iPad UI smoke TEST SUCCEEDED via sim-lock, launch screenshot docs/media/p0-launch.png. iPad shut down; device dir erased at 5.3 GB → 18 MB. Merge to main + tag `orrery/gate-G0-pass` next, then P1.
 - 2026-11-24: **Orrery P1 COMPLETE and merged to main** (merge de8b32e): pre-merge `make test` on the branch tip caught the branch was still based on `70968a0` and carried the `TrivialState.hashValue()` bug main had already fixed in `7194bf0` (standalone ORCore `swift test` had passed from stale build artifacts). Merged origin/main into the branch, full gate set re-run green on the merged tree (ORCore 100/100, make test exit 0, make lint exit 0), merged to main and pushed; CI watcher running. Tag `orrery/gate-G1-pass` next once CI on main is green, then P2 (schematic view).
+- 2026-11-24: **Orrery G1 PASSED and tagged** `orrery/gate-G1-pass` (at de8b32e) after CI on main ran green at 82d093e. Branch `orrery/phase/P2-schematic` created from main; P2 (Schematic View) starting.
