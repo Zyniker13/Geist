@@ -49,10 +49,10 @@ struct RotationTests {
         }
         let (rotated, deltas) = Rotation.rotateRings(rings)
         #expect(deltas == [12, 8, -3, 2])
-        #expect(rotated[0].offset == (0 + 12) % 48)   // 12
-        #expect(rotated[1].offset == (5 + 8) % 48)    // 13
+        #expect(rotated[0].offset == (0 + 12) % 48)  // 12
+        #expect(rotated[1].offset == (5 + 8) % 48)  // 13
         #expect(rotated[2].offset == (10 - 3 + 48) % 48)  // 7
-        #expect(rotated[3].offset == (15 + 2) % 48)   // 17
+        #expect(rotated[3].offset == (15 + 2) % 48)  // 17
     }
 
     @Test("rotation carries occupants along: a planet's angle moves with its ring (R-7)")

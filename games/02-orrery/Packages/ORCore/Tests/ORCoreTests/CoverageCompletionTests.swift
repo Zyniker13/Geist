@@ -38,9 +38,9 @@ struct CoverageCompletionTests {
 
     @Test("Fixed description precision and round-half-up carry")
     func fixedDescription() {
-        #expect(Fixed(1.5).description(precision: 0) == "1")     // precision 0 truncates (contract)
-        #expect(Fixed(1.5).rounded() == 2)                       // rounding lives in rounded()
-        #expect(Fixed(0.999).description(precision: 2) == "1.00") // round-half-up carry
+        #expect(Fixed(1.5).description(precision: 0) == "1")  // precision 0 truncates (contract)
+        #expect(Fixed(1.5).rounded() == 2)  // rounding lives in rounded()
+        #expect(Fixed(0.999).description(precision: 2) == "1.00")  // round-half-up carry
         #expect(Fixed(-0.25).description(precision: 2) == "-0.25")
         #expect(Fixed(-0.999).description(precision: 2) == "-1.00")
     }
@@ -76,7 +76,7 @@ struct CoverageCompletionTests {
             seed: 1,
             variantID: "standard",
             actions: [
-                GameReplay.TimedAction(tick: 0, action: .place(ring: 1, slot: 0)),
+                GameReplay.TimedAction(tick: 0, action: .place(ring: 1, slot: 0))
             ])
         // Out-of-order tick.
         replay.actions.append(GameReplay.TimedAction(tick: 5, action: .place(ring: 2, slot: 0)))
@@ -85,9 +85,10 @@ struct CoverageCompletionTests {
         #expect(result.applied == 1)
         // Post-terminal: run the replay to completion, then append junk.
         var longActions: [GameReplay.TimedAction] = []
-        longActions.append(contentsOf: (0..<40).map { i in
-            GameReplay.TimedAction(tick: i, action: .place(ring: 1 + (i % 4), slot: i % 8))
-        })
+        longActions.append(
+            contentsOf: (0..<40).map { i in
+                GameReplay.TimedAction(tick: i, action: .place(ring: 1 + (i % 4), slot: i % 8))
+            })
         let full = GameReplay(seed: 1, variantID: "standard", actions: longActions)
         result = GameReplay.run(full)
         // Whatever the exact application count, appending actions after the
@@ -107,8 +108,8 @@ struct CoverageCompletionTests {
         state.rings[0].occupants[0] = .one
         state.rings[1].occupants[0] = .one
         state.rings[2].occupants[0] = .one
-        state.rings[3].occupants[0] = .two          // +4: outside the [1, 3] span
-        state.rings[2].occupants[4] = .two          // angle 12: line 6, bystander
+        state.rings[3].occupants[0] = .two  // +4: outside the [1, 3] span
+        state.rings[2].occupants[4] = .two  // angle 12: line 6, bystander
         state.reserve[.one] = 7
         state.reserve[.two] = 8
         let (after, events) = try Reducer.apply(.place(ring: 1, slot: 4), to: state)

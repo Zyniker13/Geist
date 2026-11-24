@@ -33,7 +33,8 @@ public enum Alignment {
             let angle = state.angle(of: planet)
             byLine[angle.lineIndex, default: []].append(planet)
         }
-        return byLine
+        return
+            byLine
             .filter { $0.value.count >= 3 }
             .map { (line: $0.key, planets: $0.value.sorted { ($0.ring, $0.slot) < ($1.ring, $1.slot) }) }
             .sorted { $0.line < $1.line }

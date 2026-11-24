@@ -56,7 +56,8 @@ public enum LegalMoves {
         // Clause 1: may not nudge the ring the opponent nudged on the
         // immediately preceding turn in the opposite direction (undo loop).
         if let last = state.lastNudge, last.player == player.opponent,
-           last.ring == ring, last.dir == -dir {
+            last.ring == ring, last.dir == -dir
+        {
             return false
         }
         // Clause 2: a player may not nudge two turns in a row (must place in

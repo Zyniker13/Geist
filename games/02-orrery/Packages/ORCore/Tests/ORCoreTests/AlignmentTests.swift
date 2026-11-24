@@ -41,20 +41,20 @@ struct AlignmentTests {
     func lineGeometry() {
         #expect(Angle48(0).lineIndex == 0)
         #expect(Angle48(24).lineIndex == 0)
-        #expect(Angle48(30).lineIndex == 6)      // pair {6, 30}
+        #expect(Angle48(30).lineIndex == 6)  // pair {6, 30}
         #expect(Angle48(6).lineIndex == 6)
-        #expect(Angle48(47).lineIndex == 23)     // pair {23, 47}
+        #expect(Angle48(47).lineIndex == 23)  // pair {23, 47}
     }
 
     @Test("signed position is +ring at angle a, −ring at angle a+24 (R-10)")
     func signedPositions() {
         let state = Self.board((1, 0, .one), (2, 24, .one), (3, 0, .two), (4, 24, .two))
         let p1 = state.planets(of: .one)
-        #expect(state.angle(of: p1[0]).lineSign * p1[0].ring == 1)    // +1
-        #expect(state.angle(of: p1[1]).lineSign * p1[1].ring == -2)   // −2
+        #expect(state.angle(of: p1[0]).lineSign * p1[0].ring == 1)  // +1
+        #expect(state.angle(of: p1[1]).lineSign * p1[1].ring == -2)  // −2
         let p2 = state.planets(of: .two)
-        #expect(state.angle(of: p2[0]).lineSign * p2[0].ring == 3)    // +3
-        #expect(state.angle(of: p2[1]).lineSign * p2[1].ring == -4)   // −4
+        #expect(state.angle(of: p2[0]).lineSign * p2[0].ring == 3)  // +3
+        #expect(state.angle(of: p2[1]).lineSign * p2[1].ring == -4)  // −4
     }
 
     // MARK: R-11 alignment threshold
@@ -148,21 +148,25 @@ struct AlignmentTests {
         var state = GameStateFactory.initial(seed: 0)
         Self.placeAt(&state, ring: 1, angle: 0, .one)
         Self.placeAt(&state, ring: 2, angle: 0, .one)
-        Self.placeAt(&state, ring: 3, angle: 0, .two)     // +3: inside the span [1, 4]
-        Self.placeAt(&state, ring: 3, angle: 12, .two)    // angle 12 → line 6: untouched
+        Self.placeAt(&state, ring: 3, angle: 0, .two)  // +3: inside the span [1, 4]
+        Self.placeAt(&state, ring: 3, angle: 12, .two)  // angle 12 → line 6: untouched
         state.reserve[.one] = 8
         state.reserve[.two] = 9
         state.toMove = .one
         // P1 places ring 4 slot 0 (angle 0 → +4): span [1, 4] captures +3.
         let (after, events) = try Reducer.apply(.place(ring: 4, slot: 0), to: state)
         #expect((after.captured[.one] ?? 0) == 1)
-        #expect(events.contains(.aligned(.one, line: 0, planets: [
-            PlanetRef(ring: 1, slot: 0, owner: .one),
-            PlanetRef(ring: 2, slot: 0, owner: .one),
-            PlanetRef(ring: 4, slot: 0, owner: .one),
-        ])))
+        #expect(
+            events.contains(
+                .aligned(
+                    .one, line: 0,
+                    planets: [
+                        PlanetRef(ring: 1, slot: 0, owner: .one),
+                        PlanetRef(ring: 2, slot: 0, owner: .one),
+                        PlanetRef(ring: 4, slot: 0, owner: .one),
+                    ])))
         #expect(events.contains(.captured(.one, planets: [PlanetRef(ring: 3, slot: 0, owner: .two)])))
-        #expect(after.rings[2].occupants[4] == .two)      // the line-6 enemy untouched
+        #expect(after.rings[2].occupants[4] == .two)  // the line-6 enemy untouched
     }
 
     @Test("R-13a: only the acting player is checked for alignments")
@@ -175,16 +179,16 @@ struct AlignmentTests {
         state.toMove = .one
         let (after, events) = try Reducer.apply(.nudge(ring: 4, dir: 1), to: state)
         #expect((after.captured[.one] ?? 0) == 0)
-        #expect(after.rings[0].occupants[0] == .two)      // P2's alignment untouched
+        #expect(after.rings[0].occupants[0] == .two)  // P2's alignment untouched
         #expect(!events.contains { if case .aligned(.two, _, _) = $0 { true } else { false } })
     }
 
     @Test("R-13a: a capture that reaches capturesToWin ends the game (R-15)")
     func captureCanEndGame() throws {
         var state = GameStateFactory.initial(seed: 0)
-        Self.placeAt(&state, ring: 1, angle: 0, .one)     // +1
-        Self.placeAt(&state, ring: 2, angle: 0, .one)     // +2
-        Self.placeAt(&state, ring: 3, angle: 0, .two)     // +3: captured by the span [1, 4]
+        Self.placeAt(&state, ring: 1, angle: 0, .one)  // +1
+        Self.placeAt(&state, ring: 2, angle: 0, .one)  // +2
+        Self.placeAt(&state, ring: 3, angle: 0, .two)  // +3: captured by the span [1, 4]
         state.captured[.one] = 4
         state.captured[.two] = 0
         state.reserve[.one] = 8
@@ -204,14 +208,14 @@ struct AlignmentTests {
         // a22 → post 24). P1's span [−2, +4] captures −1 and +2; P2 is left
         // with −4 alone → no P2 alignment.
         var state = GameStateFactory.initial(seed: 0)
-        Self.placeAt(&state, ring: 1, angle: 36, .one)   // post a0 → +1
-        Self.placeAt(&state, ring: 2, angle: 16, .one)   // post a24 → −2
-        Self.placeAt(&state, ring: 3, angle: 3, .one)    // post a0 → +3
-        Self.placeAt(&state, ring: 4, angle: 46, .one)   // post a0 → +4
-        Self.placeAt(&state, ring: 1, angle: 12, .two)   // post a24 → −1
-        Self.placeAt(&state, ring: 2, angle: 40, .two)   // post a0 → +2
-        Self.placeAt(&state, ring: 4, angle: 22, .two)   // post a24 → −4
-        #expect(Alignment.alignments(for: .one, in: state).isEmpty)   // pre-round: scattered
+        Self.placeAt(&state, ring: 1, angle: 36, .one)  // post a0 → +1
+        Self.placeAt(&state, ring: 2, angle: 16, .one)  // post a24 → −2
+        Self.placeAt(&state, ring: 3, angle: 3, .one)  // post a0 → +3
+        Self.placeAt(&state, ring: 4, angle: 46, .one)  // post a0 → +4
+        Self.placeAt(&state, ring: 1, angle: 12, .two)  // post a24 → −1
+        Self.placeAt(&state, ring: 2, angle: 40, .two)  // post a0 → +2
+        Self.placeAt(&state, ring: 4, angle: 22, .two)  // post a24 → −4
+        #expect(Alignment.alignments(for: .one, in: state).isEmpty)  // pre-round: scattered
         #expect(Alignment.alignments(for: .two, in: state).isEmpty)
         state.toMove = .one
         let (first, _) = try Reducer.apply(.place(ring: 4, slot: 6), to: state)
@@ -219,10 +223,11 @@ struct AlignmentTests {
         #expect(after.round == 2)
         #expect((after.captured[.one] ?? 0) == 2)
         #expect(events.contains { if case .aligned(.one, 0, _) = $0 { true } else { false } })
-        #expect(events.contains { if case .captured(.one, let planets) = $0, planets.count == 2 { true } else { false } })
+        #expect(
+            events.contains { if case .captured(.one, let planets) = $0, planets.count == 2 { true } else { false } })
         #expect(!events.contains { if case .aligned(.two, _, _) = $0 { true } else { false } })
-        #expect(after.rings[0].occupants[2] == nil)       // (1, a12 → slot 2) captured
-        #expect(after.rings[1].occupants[10] == nil)      // (2, a40 → slot 10) captured
+        #expect(after.rings[0].occupants[2] == nil)  // (1, a12 → slot 2) captured
+        #expect(after.rings[1].occupants[10] == nil)  // (2, a40 → slot 10) captured
     }
 
     @Test("R-13b: simultaneous post-rotation alignments — both fire, mover's first")
@@ -307,16 +312,16 @@ struct AlignmentTests {
         // capture P1's +3 if P2's check ran first. P1's Grand check runs
         // first (mover) → P1 wins, no captures, the +3 planet survives.
         var state = GameStateFactory.initial(seed: 0)
-        Self.placeAt(&state, ring: 1, angle: 36, .one)   // post a0
-        Self.placeAt(&state, ring: 2, angle: 40, .one)   // post a0
-        Self.placeAt(&state, ring: 3, angle: 3, .one)    // post a0
-        Self.placeAt(&state, ring: 4, angle: 46, .one)   // post a0
-        Self.placeAt(&state, ring: 3, angle: 9, .one)    // post a6 → +3 (the sacrificial planet)
-        Self.placeAt(&state, ring: 1, angle: 42, .two)   // post a6 → +1
-        Self.placeAt(&state, ring: 3, angle: 33, .two)   // slot 11 → post a30 → −3 on line 6
-        Self.placeAt(&state, ring: 4, angle: 4, .two)    // post a6 → +4
+        Self.placeAt(&state, ring: 1, angle: 36, .one)  // post a0
+        Self.placeAt(&state, ring: 2, angle: 40, .one)  // post a0
+        Self.placeAt(&state, ring: 3, angle: 3, .one)  // post a0
+        Self.placeAt(&state, ring: 4, angle: 46, .one)  // post a0
+        Self.placeAt(&state, ring: 3, angle: 9, .one)  // post a6 → +3 (the sacrificial planet)
+        Self.placeAt(&state, ring: 1, angle: 42, .two)  // post a6 → +1
+        Self.placeAt(&state, ring: 3, angle: 33, .two)  // slot 11 → post a30 → −3 on line 6
+        Self.placeAt(&state, ring: 4, angle: 4, .two)  // post a6 → +4
         #expect(!Alignment.grandAlignment(for: .one, in: state))
-        #expect(Alignment.alignments(for: .two, in: state).isEmpty)   // pre-round: scattered
+        #expect(Alignment.alignments(for: .two, in: state).isEmpty)  // pre-round: scattered
         state.reserve[.one] = 8
         state.reserve[.two] = 9
         state.toMove = .one
@@ -338,8 +343,8 @@ struct AlignmentTests {
         Self.placeAt(&state, ring: 2, angle: 40, .one)
         Self.placeAt(&state, ring: 3, angle: 3, .one)
         Self.placeAt(&state, ring: 4, angle: 46, .one)
-        Self.placeAt(&state, ring: 4, angle: 14, .two)    // bystander (ring 4 is even-angle)
-        #expect(!Alignment.grandAlignment(for: .one, in: state))   // pre-round angles differ
+        Self.placeAt(&state, ring: 4, angle: 14, .two)  // bystander (ring 4 is even-angle)
+        #expect(!Alignment.grandAlignment(for: .one, in: state))  // pre-round angles differ
         state.toMove = .one
         let (first, _) = try Reducer.apply(.place(ring: 4, slot: 6), to: state)
         let (after, events) = try Reducer.apply(.place(ring: 1, slot: 4), to: first)
@@ -357,7 +362,7 @@ struct AlignmentTests {
         Self.placeAt(&state, ring: 2, angle: 40, .two)
         Self.placeAt(&state, ring: 3, angle: 3, .two)
         Self.placeAt(&state, ring: 4, angle: 46, .two)
-        Self.placeAt(&state, ring: 4, angle: 14, .one)    // bystander (ring 4 is even-angle)
+        Self.placeAt(&state, ring: 4, angle: 14, .one)  // bystander (ring 4 is even-angle)
         #expect(!Alignment.grandAlignment(for: .two, in: state))
         state.toMove = .one
         let (first, _) = try Reducer.apply(.place(ring: 4, slot: 6), to: state)

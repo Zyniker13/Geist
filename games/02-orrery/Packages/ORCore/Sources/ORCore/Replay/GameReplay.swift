@@ -24,7 +24,9 @@ public struct GameReplay: Sendable, Codable, Equatable {
     public var contentVersion: String
     public var actions: [TimedAction]
 
-    public init(seed: UInt64, variantID: String, contentVersion: String = GameReplay.contentVersion, actions: [TimedAction]) {
+    public init(
+        seed: UInt64, variantID: String, contentVersion: String = GameReplay.contentVersion, actions: [TimedAction]
+    ) {
         self.seed = seed
         self.variantID = variantID
         self.contentVersion = contentVersion

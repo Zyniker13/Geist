@@ -12,9 +12,9 @@ struct CoreSurfaceTests {
     func ownerAtAngle() {
         var ring = RingState(slots: 8, offset: 0, speed: 12)
         #expect(ring.owner(at: Angle48(0)) == nil)
-        ring.occupants[2] = .one          // angle 12
+        ring.occupants[2] = .one  // angle 12
         #expect(ring.owner(at: Angle48(12)) == .one)
-        #expect(ring.owner(at: Angle48(13)) == nil)   // not a slot angle
+        #expect(ring.owner(at: Angle48(13)) == nil)  // not a slot angle
         ring.rotate(by: 6)
         #expect(ring.owner(at: Angle48(18)) == .one)  // rides the rotation
     }
@@ -36,12 +36,12 @@ struct CoreSurfaceTests {
     @Test("signedPositions groups by line, sorted, signed by ring (R-10)")
     func signedPositionsGrouped() {
         var state = GameStateFactory.initial(seed: 0)
-        state.rings[0].occupants[0] = .one          // ring 1, a0 → line 0, +1
-        state.rings[1].occupants[6] = .one          // ring 2, a24 → line 0, −2
-        state.rings[3].occupants[5] = .one          // ring 4, a10 → line 10, +4 (odd angles live on ring 4 too)
-        state.rings[2].occupants[4] = .two          // ring 3, a12 → line 12, +3
+        state.rings[0].occupants[0] = .one  // ring 1, a0 → line 0, +1
+        state.rings[1].occupants[6] = .one  // ring 2, a24 → line 0, −2
+        state.rings[3].occupants[5] = .one  // ring 4, a10 → line 10, +4 (odd angles live on ring 4 too)
+        state.rings[2].occupants[4] = .two  // ring 3, a12 → line 12, +3
         let p1 = Alignment.signedPositions(of: .one, in: state)
-        #expect(p1[0] == [-2, 1] as [Int])       // sorted ascending (R-10 signed values)
+        #expect(p1[0] == [-2, 1] as [Int])  // sorted ascending (R-10 signed values)
         #expect(p1[10] == [4] as [Int])
         #expect(p1[12] == nil)
         let p2 = Alignment.signedPositions(of: .two, in: state)
@@ -63,14 +63,14 @@ struct CoreSurfaceTests {
             state.rings[index].slots = 1
             state.rings[index].occupants = [0: state.toMove.opponent]
         }
-        state.reserve[state.toMove] = 1                     // non-empty: clause 2 blocks nudges
+        state.reserve[state.toMove] = 1  // non-empty: clause 2 blocks nudges
         state.reserve[state.toMove.opponent] = 0
         state.nudgedLastTurn[state.toMove] = true
         let moves = LegalMoves.all(in: state)
         #expect(moves == [.pass])
         let (after, events) = try Reducer.apply(.pass, to: state)
         #expect(after.toMove == state.toMove.opponent)
-        #expect(events.isEmpty)                             // a pass emits no events of its own
+        #expect(events.isEmpty)  // a pass emits no events of its own
         #expect(LegalMoves.maxEnumerated == 68)
     }
 
@@ -84,7 +84,7 @@ struct CoreSurfaceTests {
             state.rings[index].slots = 1
             state.rings[index].occupants = [0: owner]
         }
-        state.reserve[.one] = 1                     // non-empty: clause 2 blocks P1's nudges → forced pass
+        state.reserve[.one] = 1  // non-empty: clause 2 blocks P1's nudges → forced pass
         state.reserve[.two] = 0
         state.nudgedLastTurn[.one] = true
         state.toMove = .one

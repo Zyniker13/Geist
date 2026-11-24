@@ -51,7 +51,8 @@ public enum Reducer {
             guard state.rings.indices.contains(ringIndex - 1) else { throw RuleError.unknownRing(ringIndex) }
             guard LegalMoves.isNudgeLegal(ring: ringIndex, dir: dir, in: state) else {
                 if let last = state.lastNudge, last.player == player.opponent,
-                   last.ring == ringIndex, last.dir == -dir {
+                    last.ring == ringIndex, last.dir == -dir
+                {
                     throw RuleError.nudgeKo(ring: ringIndex, dir: dir)
                 }
                 throw RuleError.nudgeTwoTurnsInARow
