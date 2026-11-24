@@ -1,0 +1,370 @@
+{
+  "actions" : [
+    {
+      "action" : {
+        "place" : {
+          "ring" : 4,
+          "slot" : 12
+        }
+      },
+      "tick" : 0
+    },
+    {
+      "action" : {
+        "place" : {
+          "ring" : 2,
+          "slot" : 4
+        }
+      },
+      "tick" : 1
+    },
+    {
+      "action" : {
+        "place" : {
+          "ring" : 1,
+          "slot" : 4
+        }
+      },
+      "tick" : 2
+    },
+    {
+      "action" : {
+        "place" : {
+          "ring" : 2,
+          "slot" : 5
+        }
+      },
+      "tick" : 3
+    },
+    {
+      "action" : {
+        "place" : {
+          "ring" : 4,
+          "slot" : 0
+        }
+      },
+      "tick" : 4
+    },
+    {
+      "action" : {
+        "place" : {
+          "ring" : 4,
+          "slot" : 11
+        }
+      },
+      "tick" : 5
+    },
+    {
+      "action" : {
+        "place" : {
+          "ring" : 1,
+          "slot" : 3
+        }
+      },
+      "tick" : 6
+    },
+    {
+      "action" : {
+        "place" : {
+          "ring" : 1,
+          "slot" : 5
+        }
+      },
+      "tick" : 7
+    },
+    {
+      "action" : {
+        "place" : {
+          "ring" : 2,
+          "slot" : 11
+        }
+      },
+      "tick" : 8
+    },
+    {
+      "action" : {
+        "place" : {
+          "ring" : 1,
+          "slot" : 1
+        }
+      },
+      "tick" : 9
+    },
+    {
+      "action" : {
+        "place" : {
+          "ring" : 4,
+          "slot" : 21
+        }
+      },
+      "tick" : 10
+    },
+    {
+      "action" : {
+        "place" : {
+          "ring" : 1,
+          "slot" : 6
+        }
+      },
+      "tick" : 11
+    },
+    {
+      "action" : {
+        "place" : {
+          "ring" : 4,
+          "slot" : 23
+        }
+      },
+      "tick" : 12
+    },
+    {
+      "action" : {
+        "place" : {
+          "ring" : 4,
+          "slot" : 9
+        }
+      },
+      "tick" : 13
+    },
+    {
+      "action" : {
+        "nudge" : {
+          "dir" : 1,
+          "ring" : 2
+        }
+      },
+      "tick" : 14
+    },
+    {
+      "action" : {
+        "place" : {
+          "ring" : 2,
+          "slot" : 6
+        }
+      },
+      "tick" : 15
+    },
+    {
+      "action" : {
+        "place" : {
+          "ring" : 2,
+          "slot" : 5
+        }
+      },
+      "tick" : 16
+    },
+    {
+      "action" : {
+        "place" : {
+          "ring" : 3,
+          "slot" : 15
+        }
+      },
+      "tick" : 17
+    },
+    {
+      "action" : {
+        "place" : {
+          "ring" : 4,
+          "slot" : 2
+        }
+      },
+      "tick" : 18
+    },
+    {
+      "action" : {
+        "nudge" : {
+          "dir" : 1,
+          "ring" : 1
+        }
+      },
+      "tick" : 19
+    },
+    {
+      "action" : {
+        "place" : {
+          "ring" : 4,
+          "slot" : 14
+        }
+      },
+      "tick" : 20
+    },
+    {
+      "action" : {
+        "place" : {
+          "ring" : 2,
+          "slot" : 2
+        }
+      },
+      "tick" : 21
+    },
+    {
+      "action" : {
+        "nudge" : {
+          "dir" : -1,
+          "ring" : 2
+        }
+      },
+      "tick" : 22
+    },
+    {
+      "action" : {
+        "nudge" : {
+          "dir" : -1,
+          "ring" : 1
+        }
+      },
+      "tick" : 23
+    },
+    {
+      "action" : {
+        "nudge" : {
+          "dir" : 1,
+          "ring" : 4
+        }
+      },
+      "tick" : 24
+    },
+    {
+      "action" : {
+        "nudge" : {
+          "dir" : -1,
+          "ring" : 3
+        }
+      },
+      "tick" : 25
+    },
+    {
+      "action" : {
+        "nudge" : {
+          "dir" : 1,
+          "ring" : 1
+        }
+      },
+      "tick" : 26
+    },
+    {
+      "action" : {
+        "nudge" : {
+          "dir" : 1,
+          "ring" : 3
+        }
+      },
+      "tick" : 27
+    },
+    {
+      "action" : {
+        "nudge" : {
+          "dir" : 1,
+          "ring" : 1
+        }
+      },
+      "tick" : 28
+    },
+    {
+      "action" : {
+        "nudge" : {
+          "dir" : 1,
+          "ring" : 1
+        }
+      },
+      "tick" : 29
+    },
+    {
+      "action" : {
+        "nudge" : {
+          "dir" : 1,
+          "ring" : 4
+        }
+      },
+      "tick" : 30
+    },
+    {
+      "action" : {
+        "nudge" : {
+          "dir" : 1,
+          "ring" : 1
+        }
+      },
+      "tick" : 31
+    },
+    {
+      "action" : {
+        "nudge" : {
+          "dir" : 1,
+          "ring" : 4
+        }
+      },
+      "tick" : 32
+    },
+    {
+      "action" : {
+        "nudge" : {
+          "dir" : -1,
+          "ring" : 2
+        }
+      },
+      "tick" : 33
+    },
+    {
+      "action" : {
+        "nudge" : {
+          "dir" : -1,
+          "ring" : 4
+        }
+      },
+      "tick" : 34
+    },
+    {
+      "action" : {
+        "nudge" : {
+          "dir" : -1,
+          "ring" : 3
+        }
+      },
+      "tick" : 35
+    },
+    {
+      "action" : {
+        "nudge" : {
+          "dir" : 1,
+          "ring" : 1
+        }
+      },
+      "tick" : 36
+    },
+    {
+      "action" : {
+        "nudge" : {
+          "dir" : -1,
+          "ring" : 2
+        }
+      },
+      "tick" : 37
+    },
+    {
+      "action" : {
+        "nudge" : {
+          "dir" : -1,
+          "ring" : 3
+        }
+      },
+      "tick" : 38
+    },
+    {
+      "action" : {
+        "nudge" : {
+          "dir" : -1,
+          "ring" : 3
+        }
+      },
+      "tick" : 39
+    }
+  ],
+  "finalHash" : "ae91445129dc4578",
+  "plies" : 40,
+  "reason" : "more planets on the board after 20 rounds",
+  "rounds" : 21,
+  "seed" : 8,
+  "winner" : "one"
+}
