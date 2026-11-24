@@ -90,7 +90,7 @@ make sim + formatting).
 - 5,000-game sim: max single-game 0.654 ms (an outlier pass-start blip),
   well under budget; no core hot path exceeded the 2 ms median target.
 
-### G1: PASS — tag `orrery/gate-G1-pass` after merge to main
+### G1: PASS — merge to main done (de8b32e); tag `orrery/gate-G1-pass` next once CI on main is green
 
 Sign-off: GLM-SELF
 
