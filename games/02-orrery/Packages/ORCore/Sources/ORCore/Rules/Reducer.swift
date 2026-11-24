@@ -39,10 +39,12 @@ public enum Reducer {
             }
             next.reserve[player] = (state.reserve[player] ?? 0) - 1
             events.append(.placed(player, ring: ringIndex, slot: slot))
-            // Any action (place included) replaces or clears the R-6 ko
-            // memory: it binds only the immediately following turn.
+            // The ko memory binds the immediately following turn: this place
+            // clears it. Clause-2 memory is per player's OWN last action, so
+            // only the acting player's flips (the opponent's own-last-action
+            // record is untouched — it governs the opponent's next turn).
             next.lastNudge = nil
-            next.nudgedLastTurn = [.one: false, .two: false]
+            next.nudgedLastTurn[player] = false
 
         case .nudge(let ringIndex, let dir):
             guard dir == 1 || dir == -1 else { throw RuleError.unknownRing(ringIndex) }
@@ -57,7 +59,7 @@ public enum Reducer {
             let step = state.rings[ringIndex - 1].slotStep
             next.rings[ringIndex - 1].rotate(by: dir * step)
             next.lastNudge = GameState.Nudge(player: player, ring: ringIndex, dir: dir)
-            next.nudgedLastTurn = [.one: player == .one, .two: player == .two]
+            next.nudgedLastTurn[player] = true
             events.append(.nudged(ring: ringIndex, dir: dir))
 
         case .pass:
@@ -166,9 +168,11 @@ public enum Reducer {
                     lineCaptures.append(enemy)
                 }
             }
+            // The alignment is reported whether or not it captures: the
+            // schematic view highlights aligned lines on every check.
+            events.append(.aligned(player, line: alignment.line, planets: alignment.planets))
             guard !lineCaptures.isEmpty else { continue }
 
-            events.append(.aligned(player, line: alignment.line, planets: alignment.planets))
             events.append(.captured(player, planets: lineCaptures))
             removed.append(contentsOf: lineCaptures)
             capturedTotal += lineCaptures.count
