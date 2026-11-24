@@ -111,7 +111,8 @@ struct TurnFlowTests {
     func koImmediateUndo() throws {
         var state = GameStateFactory.initial(seed: 1)
         state = try Reducer.apply(.place(ring: 1, slot: 0), to: state).0   // P1 places
-        state = try Reducer.apply(.nudge(ring: 3, dir: 1), to: state).0    // P2 nudges ring 3 + — round ends, rotation fires
+        // P2 nudges ring 3 +; the round ends, rotation fires.
+        state = try Reducer.apply(.nudge(ring: 3, dir: 1), to: state).0
         // Round 2, P1 to move: the ko binds (survives the rotation, which is
         // not a turn), and P1's own last action was a place, so clause 2 is
         // clear — the rejection is purely clause 1.
@@ -127,9 +128,12 @@ struct TurnFlowTests {
     @Test("ko binds only the immediately following turn: an intervening place expires it (R-6)")
     func koExpiresAfterInterveningAction() throws {
         var state = GameStateFactory.initial(seed: 1)
-        state = try Reducer.apply(.nudge(ring: 2, dir: 1), to: state).0   // P1 nudges ring 2 +
-        state = try Reducer.apply(.place(ring: 1, slot: 0), to: state).0  // P2's next turn is a place — ko memory expires
-        state = try Reducer.apply(.place(ring: 3, slot: 2), to: state).0  // P1 places (clause 2 clears too)
+        // P1 nudges ring 2 +.
+        state = try Reducer.apply(.nudge(ring: 2, dir: 1), to: state).0
+        // P2's next turn is a place; the ko memory expires.
+        state = try Reducer.apply(.place(ring: 1, slot: 0), to: state).0
+        // P1 places; clause 2 clears too.
+        state = try Reducer.apply(.place(ring: 3, slot: 2), to: state).0
         // P2 answers on ring 2, opposite direction: no ko (memory expired),
         // and P2's own last action was a place, so clause 2 is clear.
         let (_, events) = try Reducer.apply(.nudge(ring: 2, dir: -1), to: state)
@@ -155,8 +159,8 @@ struct TurnFlowTests {
     @Test("may not nudge on two consecutive own turns with reserve left (R-6 clause 2)")
     func noTwoNudgesInARow() throws {
         var state = GameStateFactory.initial(seed: 1)
-        state = try Reducer.apply(.nudge(ring: 1, dir: 1), to: state).0    // P1 nudge
-        state = try Reducer.apply(.place(ring: 2, slot: 0), to: state).0   // P2 place
+        state = try Reducer.apply(.nudge(ring: 1, dir: 1), to: state).0  // P1 nudge
+        state = try Reducer.apply(.place(ring: 2, slot: 0), to: state).0  // P2 place
         // P1's turn again: their own last action was a nudge and they still
         // hold reserve, so another nudge is illegal — the intervening
         // opponent move does NOT reset the clause.
@@ -172,11 +176,11 @@ struct TurnFlowTests {
     @Test("may nudge on consecutive own turns once reserve is empty (R-6 exception)")
     func twoNudgesAllowedWithEmptyReserve() throws {
         var state = GameStateFactory.initial(seed: 1)
-        state = try Reducer.apply(.place(ring: 1, slot: 0), to: state).0   // P1 on board
-        state = try Reducer.apply(.place(ring: 1, slot: 1), to: state).0   // P2 on board
-        state.reserve[.one] = 0                                            // spent out (board not empty)
+        state = try Reducer.apply(.place(ring: 1, slot: 0), to: state).0  // P1 on board
+        state = try Reducer.apply(.place(ring: 1, slot: 1), to: state).0  // P2 on board
+        state.reserve[.one] = 0  // spent out (board not empty)
         state = try Reducer.apply(.nudge(ring: 1, dir: 1), to: state).0
-        state = try Reducer.apply(.place(ring: 2, slot: 0), to: state).0   // P2 places
+        state = try Reducer.apply(.place(ring: 2, slot: 0), to: state).0  // P2 places
         let (_, events) = try Reducer.apply(.nudge(ring: 2, dir: 1), to: state)
         #expect(events.contains(.nudged(ring: 2, dir: 1)))
     }
@@ -184,8 +188,9 @@ struct TurnFlowTests {
     @Test("the ko survives the end-of-round rotation: R-6 binds turns, not rounds")
     func koSurvivesRotation() throws {
         var state = GameStateFactory.initial(seed: 1)
-        state = try Reducer.apply(.place(ring: 1, slot: 0), to: state).0   // P1 places
-        state = try Reducer.apply(.nudge(ring: 3, dir: 1), to: state).0    // P2 nudges ring 3 + — round ends, rotation fires
+        state = try Reducer.apply(.place(ring: 1, slot: 0), to: state).0  // P1 places
+        // P2 nudges ring 3 +; the round ends, rotation fires.
+        state = try Reducer.apply(.nudge(ring: 3, dir: 1), to: state).0
         // Round 2, P1 to move. The rotation is not a turn: ring 3 − is still
         // ko (immediate undo of P2's nudge).
         #expect(throws: RuleError.nudgeKo(ring: 3, dir: -1)) {
@@ -199,8 +204,8 @@ struct TurnFlowTests {
     @Test("two own nudges across a round boundary are consecutive own turns (R-6 clause 2)")
     func twoNudgesAcrossRoundBoundary() throws {
         var state = GameStateFactory.initial(seed: 1)
-        state = try Reducer.apply(.nudge(ring: 1, dir: 1), to: state).0    // P1 nudge (turn 0)
-        state = try Reducer.apply(.nudge(ring: 2, dir: -1), to: state).0   // P2 nudge — rotation fires
+        state = try Reducer.apply(.nudge(ring: 1, dir: 1), to: state).0  // P1 nudge (turn 0)
+        state = try Reducer.apply(.nudge(ring: 2, dir: -1), to: state).0  // P2 nudge — rotation fires
         // Round 2, P1's turn: their own last action was a nudge and they hold
         // reserve — still illegal even though a round turned in between.
         #expect(throws: RuleError.nudgeTwoTurnsInARow) {
@@ -232,12 +237,12 @@ struct TurnFlowTests {
         // Play a scripted mid-game with mixed ko state, ending with the
         // mover's own last action a nudge, then check the legal set both ways.
         let script: [Action] = [
-            .nudge(ring: 1, dir: 1),    // P1
-            .place(ring: 2, slot: 0),   // P2
-            .place(ring: 3, slot: 2),   // P1 (clause 2 clears for P1)
-            .nudge(ring: 4, dir: -1),   // P2 — round 1 ends, rotation fires
-            .nudge(ring: 1, dir: -1),   // P1 (ring ≠ ko ring; own last was a place)
-            .place(ring: 2, slot: 4),   // P2 — round 2 ends, rotation fires
+            .nudge(ring: 1, dir: 1),  // P1
+            .place(ring: 2, slot: 0),  // P2
+            .place(ring: 3, slot: 2),  // P1 (clause 2 clears for P1)
+            .nudge(ring: 4, dir: -1),  // P2 — round 1 ends, rotation fires
+            .nudge(ring: 1, dir: -1),  // P1 (ring ≠ ko ring; own last was a place)
+            .place(ring: 2, slot: 4),  // P2 — round 2 ends, rotation fires
         ]
         for action in script {
             state = try Reducer.apply(action, to: state).0

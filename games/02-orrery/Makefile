@@ -30,9 +30,13 @@ lint:
 content-lint:
 	./Tools/content-lint
 
-# S1.3 (P1): headless rules-engine games — placeholder until the P1 engine lands.
+# S1.3: headless rules-engine games (INV-4 two-pass hash agreement).
+# N defaults to 5000 (the G1 gate count); override with make sim N=200.
+N ?= 5000
+SEED ?= 1
 sim:
-	@echo "sim: ORCore rules engine arrives in P1 (OR-P1.x); make sim becomes live then."
+	swift build -c release --package-path Tools/sim
+	Tools/sim/.build/out/Products/Release/sim --games $(N) --seed $(SEED)
 
 snapshot: gen
 	xcodebuild test -scheme OR -destination 'platform=iOS Simulator,name=zGeist_bot-iPad-Pro-13' -configuration Debug -only-testing:Snapshots
