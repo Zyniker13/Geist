@@ -63,8 +63,15 @@ public enum Reducer {
             events.append(.nudged(ring: ringIndex, dir: dir))
 
         case .pass:
-            // R-8: pass is legal only when nothing else is (a forced pass).
-            guard LegalMoves.all(in: state).isEmpty else { throw RuleError.illegalPass }
+            // R-8: pass is legal only when no place or nudge is. Note
+            // LegalMoves.all() lists the pass itself when nothing else is
+            // legal, so "empty" is the wrong test — filter for the real
+            // actions.
+            let hasRealAction = LegalMoves.all(in: state).contains { action in
+                if case .pass = action { return false }
+                return true
+            }
+            guard !hasRealAction else { throw RuleError.illegalPass }
             // A pass consumes the turn but is not a place: both R-6 memories
             // carry across it (an opponent nudge may ko through a forced
             // pass; a player's own nudge still blocks their next nudge).
