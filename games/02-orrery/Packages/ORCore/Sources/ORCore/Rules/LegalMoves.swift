@@ -21,7 +21,7 @@ public enum LegalMoves {
         // Nudges: ±1 on any ring, subject to R-6 (no immediate undo of the
         // opponent's last nudge; no nudging two own turns in a row unless
         // reserve is empty).
-        for (index, _) in state.rings.enumerated() {
+        for index in state.rings.indices {
             for dir in [-1, 1] where isNudgeLegal(ring: index + 1, dir: dir, in: state) {
                 moves.append(.nudge(ring: index + 1, dir: dir))
                 if moves.count >= maxEnumerated { return moves }

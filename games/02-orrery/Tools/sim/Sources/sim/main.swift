@@ -121,6 +121,16 @@ func checkInvariant3(_ state: GameState) {
     }
 }
 
+func write(_ data: Data, to path: String) {
+    do {
+        try FileManager.default.createDirectory(
+            atPath: (path as NSString).deletingLastPathComponent, withIntermediateDirectories: true)
+        try data.write(to: URL(fileURLWithPath: path))
+    } catch {
+        fatalError("sim: could not write \(path): \(error)")
+    }
+}
+
 // MARK: Golden generation
 
 func goldenFiles(count: Int, out directory: String?) {
@@ -137,11 +147,15 @@ func goldenFiles(count: Int, out directory: String?) {
     let encoder = JSONEncoder()
     encoder.outputFormatting = [.sortedKeys, .prettyPrinted]
     for (i, record) in records.enumerated() {
-        let data = try! encoder.encode(record)
+        let data: Data
+        do {
+            data = try encoder.encode(record)
+        } catch {
+            fatalError("sim: could not encode golden record: \(error)")
+        }
         let name = "golden-\(String(format: "%03d", i + 1)).json"
         if let dir = directory {
-            try! FileManager.default.createDirectory(atPath: dir, withIntermediateDirectories: true)
-            try! data.write(to: URL(fileURLWithPath: dir + "/" + name))
+            write(data, to: dir + "/" + name)
         } else {
             print("\(name): \(record.finalHash) (\(record.plies) plies, winner \(record.winner ?? "none"), \(record.reason))")
         }
